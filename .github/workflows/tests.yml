@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: make install-dev
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make coverage
+
+      - name: Build
+        run: make
+
+      - name: Check package
+        run: make check
