@@ -3,3 +3,5 @@ black==23.11.0
 flake8==6.1.0
 build==1.0.3
 twine==4.0.2
+
+-e .
