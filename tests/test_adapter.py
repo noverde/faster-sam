@@ -1,6 +1,8 @@
 import unittest
+
 from fastapi import FastAPI
-from src.adapter import SAM
+
+from adapter import SAM
 
 
 class TestSAMAdapter(unittest.TestCase):
