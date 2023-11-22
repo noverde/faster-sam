@@ -17,6 +17,5 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "uvicorn == 0.24.0",
     "fastapi == 0.104.1",
 ]
