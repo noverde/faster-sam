@@ -14,7 +14,7 @@ class TestSAMAdapter(unittest.TestCase):
     def test_read_yml_file(self):
         sam = SAM()
 
-        current_path = os.path.dirname(os.path.abspath(__file__))
+        current_path = os.path.dirname(os.path.relpath(__file__))
 
         file_path = os.path.join(current_path, "template.yaml")
 
