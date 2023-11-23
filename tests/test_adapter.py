@@ -21,3 +21,5 @@ class TestSAMAdapter(unittest.TestCase):
         file = sam.read_yml_file(file_path)
 
         self.assertIsNotNone(file)
+        self.assertIsInstance(file, dict)
+        self.assertIn("Resources", file)
