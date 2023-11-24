@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-api
+
+  Sample SAM Template for sam-api
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+
+Mappings:
+  Environments:
+    development:
+      LogLevel: DEBUG
+    staging:
+      LogLevel: WARNING
+    production:
+      LogLevel: ERROR
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 3
+    Environment:
+      Variables:
+        ENVIRONMENT:
+          Ref: Environment
+        LOG_LEVEL:
+          Fn::FindInMap:
+            - Environments
+            - Ref: Environment
+            - LogLevel
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: sam-api
+      StageName: v1
+
+  ApiGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+            RestApiId: !Ref ApiGateway
+
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value:
+      Fn::Sub: "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/v1/hello/"
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value:
+      Fn::GetAtt: HelloWorldFunction.Arn
