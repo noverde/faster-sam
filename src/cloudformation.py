@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -23,7 +23,7 @@ class CFLoader(yaml.SafeLoader):
     pass
 
 
-def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> dict[str, Any]:
+def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
     tag = tag_suffix
 
     if tag not in WITHOUT_PREFIX:
@@ -41,7 +41,7 @@ def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) 
     raise CFBadTag(f"!{tag} <{type(node)}>")
 
 
-def construct_getatt(node: yaml.nodes.Node) -> list[Any]:
+def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
     if isinstance(node.value, str):
         return node.value.split(".", 1)
     elif isinstance(node.value, list):
@@ -53,7 +53,7 @@ def construct_getatt(node: yaml.nodes.Node) -> list[Any]:
 CFLoader.add_multi_constructor("!", multi_constructor)
 
 
-def load(template: Optional[str] = None) -> dict[str, Any]:
+def load(template: Optional[str] = None) -> Dict[str, Any]:
     path: Optional[Path] = None
 
     if isinstance(template, str):
