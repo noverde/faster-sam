@@ -3,7 +3,6 @@ from typing import Any, Optional
 
 import yaml
 
-
 PREFIX = "Fn::"
 WITHOUT_PREFIX = ("Ref", "Condition")
 

@@ -1,25 +1,23 @@
-import os
 import unittest
 
 from fastapi import FastAPI
 
 from adapter import SAM
+from cloudformation import CFTemplateNotFound
 
 
 class TestSAMAdapter(unittest.TestCase):
     def test_sam_instance_of_fastapi(self):
-        sam = SAM()
+        sam = SAM("tests/template.yaml")
         self.assertIsInstance(sam, FastAPI)
 
-    def test_read_yml_file(self):
-        sam = SAM()
+    def test_initialization_with_template(self):
+        sam = SAM("tests/template.yaml")
 
-        current_path = os.path.dirname(os.path.relpath(__file__))
+        self.assertIsNotNone(sam._cloudformation)
+        self.assertIsInstance(sam._cloudformation, dict)
+        self.assertIn("Resources", sam._cloudformation)
 
-        file_path = os.path.join(current_path, "template.yaml")
-
-        file = sam.read_yml_file(file_path)
-
-        self.assertIsNotNone(file)
-        self.assertIsInstance(file, dict)
-        self.assertIn("Resources", file)
+    def test_initialization_without_template_exception(self):
+        with self.assertRaises(CFTemplateNotFound):
+            SAM()
