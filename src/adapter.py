@@ -1,8 +1,11 @@
-import yaml
+from typing import Optional
+
 from fastapi import FastAPI
+
+import cloudformation
 
 
 class SAM(FastAPI):
-    def read_yml_file(self, path="template.yaml"):
-        with open(path) as file:
-            return yaml.safe_load(file)
+    def __init__(self, template: Optional[str] = None, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._cloudformation = cloudformation.load(template)
