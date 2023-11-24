@@ -24,9 +24,7 @@ class CFLoader(yaml.SafeLoader):
     pass
 
 
-def multi_constructor(
-    loader: yaml.BaseLoader, tag_suffix: str, node: yaml.nodes.Node
-) -> dict[str, Any]:
+def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> dict[str, Any]:
     tag = tag_suffix
 
     if tag not in WITHOUT_PREFIX:
