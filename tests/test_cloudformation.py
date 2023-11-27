@@ -1,3 +1,4 @@
+from importlib import import_module
 import io
 import unittest
 from pathlib import Path
@@ -85,3 +86,59 @@ class TestCloudFormation(unittest.TestCase):
 
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             cf.load(template)
+
+    def test_list_functions(self):
+        template = cf.load("tests/fixtures/templates/example1.yml")
+
+        expected_function = {
+            "HelloWorldFunction": {
+                "Type": "AWS::Serverless::Function",
+                "Properties": {
+                    "CodeUri": "tests/",
+                    "Handler": "fixtures.handlers.app.lambda_handler",
+                    "Runtime": "python3.11",
+                    "Architectures": ["x86_64"],
+                    "Events": {
+                        "HelloWorld": {
+                            "Type": "Api",
+                            "Properties": {"Path": "/hello", "Method": "get"},
+                        }
+                    },
+                },
+            }
+        }
+
+        self.assertDictEqual(cf.list_functions(template), expected_function)
+
+    def test_padronize_name(self):
+        self.assertEqual(cf.padronize_name("camelCaseExemple"), "camel_case_exemple")
+
+    def test_get_handler(self):
+        properties = {
+            "CodeUri": "tests/",
+            "Handler": "fixtures.handlers.app.lambda_handler",
+        }
+
+        handler = cf.get_handler(properties)
+
+        expected_handler = getattr(import_module("tests.fixtures.handlers.app"), "lambda_handler")
+
+        self.assertEqual(handler, expected_handler)
+
+    def test_get_routes(self):
+        routes = cf.build_routes(cf.load("tests/fixtures/templates/example1.yml"))
+
+        expected_handler = getattr(import_module("tests.fixtures.handlers.app"), "lambda_handler")
+
+        expected_routes = {
+            "DefaultApiGateway": {
+                "/hello": {
+                    "GET": {
+                        "name": "hello_world_function",
+                        "handler": expected_handler,
+                    },
+                }
+            }
+        }
+
+        self.assertDictEqual(dict(routes), expected_routes)
