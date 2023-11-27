@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-api
+
+  Sample SAM Template for sam-api
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+
+Mappings:
+  Environments:
+    development:
+      LogLevel: DEBUG
+    staging:
+      LogLevel: WARNING
+    production:
+      LogLevel: ERROR
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 3
+    Environment:
+      Variables:
+        ENVIRONMENT:
+          Ref: Environment
+        LOG_LEVEL:
+          Fn::FindInMap:
+            - Environments
+            - Ref: Environment
+            - LogLevel
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: sam-api
+      StageName: v1
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "./swagger.yml"
+
+  ApiGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
