@@ -7,12 +7,15 @@ from cloudformation import CFTemplateNotFound
 
 
 class TestSAMAdapter(unittest.TestCase):
+    def setUp(self) -> None:
+        self.path_templates = "tests/fixtures/templates"
+
     def test_sam_instance_of_fastapi(self):
-        sam = SAM("tests/template.yaml")
+        sam = SAM(f"{self.path_templates}/example1.yml")
         self.assertIsInstance(sam, FastAPI)
 
     def test_initialization_with_template(self):
-        sam = SAM("tests/template.yaml")
+        sam = SAM(f"{self.path_templates}/example1.yml")
 
         self.assertIsNotNone(sam._cloudformation)
         self.assertIsInstance(sam._cloudformation, dict)
