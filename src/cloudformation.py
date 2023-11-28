@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -21,6 +22,11 @@ class CFBadNode(ValueError):
 
 class CFLoader(yaml.SafeLoader):
     pass
+
+
+class ResourceType(Enum):
+    API_GATEWAY = "AWS::Serverless::Api"
+    LAMBDA = "AWS::Serverless::Function"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -69,3 +75,13 @@ def load(template: Optional[str] = None) -> Dict[str, Any]:
 
     with path.open() as fp:
         return yaml.load(fp, CFLoader)
+
+
+def find_resources(template: Dict[str, Any], resource_type: ResourceType) -> List[Dict[str, Any]]:
+    resources = []
+
+    for id_, properties in template["Resources"].items():
+        if properties["Type"] == resource_type.value:
+            resources.append({id_: properties})
+
+    return resources
