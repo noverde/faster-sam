@@ -86,7 +86,7 @@ class TestCloudFormation(unittest.TestCase):
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             cf.load(template)
 
-    def test_find_resource(self):
+    def test_find_resources(self):
         template = cf.load("tests/fixtures/templates/example1.yml")
         resources = cf.find_resources(template, cf.ResourceType.LAMBDA)
 
