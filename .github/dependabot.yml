@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: "monthly"
     reviewers:
-      - "noverde/architecture"
+      - "noverde/sre"
 
   - open-pull-requests-limit: 10
     package-ecosystem: "github-actions"
@@ -15,4 +15,4 @@ updates:
     schedule:
       interval: "monthly"
     reviewers:
-      - "noverde/architecture"
+      - "noverde/sre"
