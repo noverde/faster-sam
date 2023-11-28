@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -24,7 +24,7 @@ class CFLoader(yaml.SafeLoader):
     pass
 
 
-class ResourceType(StrEnum):
+class ResourceType(Enum):
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
 
@@ -81,7 +81,7 @@ def find_resource(template: Dict[str, Any], resource_type: ResourceType) -> List
     resources = []
 
     for id_, properties in template["Resources"].items():
-        if properties["Type"] == resource_type:
+        if properties["Type"] == resource_type.value:
             resources.append({id_: properties})
 
     return resources
