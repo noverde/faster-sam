@@ -33,6 +33,23 @@ class TestSAMAdapter(unittest.TestCase):
             SAM()
 
     def load_routes_from_cloudformation(self):
+        sam = SAM(f"{self.path_templates}/example2.yml")
+        routes = sam.load_routes_from_cloudformation()
+
+        expected_routes = {
+            "ApiGateway": {
+                "/hello": {
+                    "GET": {
+                        "name": "hello_world_function",
+                        "handler": "app.lambda_handler",
+                    },
+                }
+            }
+        }
+
+        self.assertDictEqual(dict(routes), expected_routes)
+
+    def load_routes_from_cloudformation_with_default_gateway(self):
         sam = SAM(f"{self.path_templates}/example1.yml")
         routes = sam.load_routes_from_cloudformation()
 
