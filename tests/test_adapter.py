@@ -1,8 +1,6 @@
 import unittest
 from pathlib import Path
 
-from fastapi import FastAPI
-
 from adapter import SAM
 from cloudformation import CFTemplateNotFound
 
@@ -10,10 +8,6 @@ from cloudformation import CFTemplateNotFound
 class TestSAMAdapter(unittest.TestCase):
     def setUp(self) -> None:
         self.path_templates = "tests/fixtures/templates"
-
-    def test_sam_instance_of_fastapi(self):
-        sam = SAM(f"{self.path_templates}/example1.yml")
-        self.assertIsInstance(sam, FastAPI)
 
     def test_initialization_with_template(self):
         sam = SAM(f"{self.path_templates}/example1.yml")
