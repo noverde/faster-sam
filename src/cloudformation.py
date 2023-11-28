@@ -77,7 +77,7 @@ def load(template: Optional[str] = None) -> Dict[str, Any]:
         return yaml.load(fp, CFLoader)
 
 
-def find_resource(template: Dict[str, Any], resource_type: ResourceType) -> List[Dict[str, Any]]:
+def find_resources(template: Dict[str, Any], resource_type: ResourceType) -> List[Dict[str, Any]]:
     resources = []
 
     for id_, properties in template["Resources"].items():
