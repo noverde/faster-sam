@@ -85,3 +85,31 @@ class TestCloudFormation(unittest.TestCase):
 
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             cf.load(template)
+
+    def test_find_resource(self):
+        template = "tests/fixtures/templates/example1.yml"
+
+        expected_resource = [
+            {
+                "HelloWorldFunction": {
+                    "Type": "AWS::Serverless::Function",
+                    "Properties": {
+                        "CodeUri": "hello_world/",
+                        "Handler": "app.lambda_handler",
+                        "Runtime": "python3.11",
+                        "Architectures": ["x86_64"],
+                        "Events": {
+                            "HelloWorld": {
+                                "Type": "Api",
+                                "Properties": {"Path": "/hello", "Method": "get"},
+                            }
+                        },
+                    },
+                }
+            }
+        ]
+
+        self.assertEqual(
+            cf.find_resource(cf.load(template), cf.ResourceType("AWS::Serverless::Function")),
+            expected_resource,
+        )
