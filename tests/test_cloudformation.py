@@ -87,7 +87,8 @@ class TestCloudFormation(unittest.TestCase):
             cf.load(template)
 
     def test_find_resource(self):
-        template = "tests/fixtures/templates/example1.yml"
+        template = cf.load("tests/fixtures/templates/example1.yml")
+        resource = cf.find_resource(template, cf.ResourceType.LAMBDA)
 
         expected_resource = [
             {
@@ -109,7 +110,4 @@ class TestCloudFormation(unittest.TestCase):
             }
         ]
 
-        self.assertEqual(
-            cf.find_resource(cf.load(template), cf.ResourceType("AWS::Serverless::Function")),
-            expected_resource,
-        )
+        self.assertEqual(resource, expected_resource)
