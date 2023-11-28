@@ -3,6 +3,7 @@ import unittest
 
 import routing
 from fastapi import Response, Request
+from tests.fixtures.handlers import lambda_handler
 
 
 class TestAPIRoute(unittest.TestCase):
@@ -32,3 +33,10 @@ class TestAPIRoute(unittest.TestCase):
         self.assertEqual(route.methods, {"GET"})
         self.assertIsInstance(route.endpoint, routing.default_endpoint.__class__)
         self.assertIsInstance(route.lambda_handler, handler.__class__)
+
+    def test_get_handler(self):
+        route = routing.APIRoute(path="/test", name="test", lambda_handler=lambda x: ...)
+
+        handler = route.get_handler(path="tests.fixtures.handlers.lambda_handler.handler")
+
+        self.assertEqual(lambda_handler.handler, handler)
