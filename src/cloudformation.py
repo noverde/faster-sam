@@ -29,6 +29,11 @@ class ResourceType(Enum):
     LAMBDA = "AWS::Serverless::Function"
 
 
+class EventType(Enum):
+    API = "Api"
+    CRON = "Cron"
+
+
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
     tag = tag_suffix
 
@@ -85,3 +90,13 @@ def find_resources(template: Dict[str, Any], resource_type: ResourceType) -> Lis
             resources.append({id_: properties})
 
     return resources
+
+
+def find_events(template: Dict[str, Any], event_type: EventType) -> List[Dict[str, Any]]:
+    events = []
+
+    for id_, properties in template["Events"].items():
+        if properties["Type"] == event_type.value:
+            events.append({id_: properties})
+
+    return events

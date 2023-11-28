@@ -1,8 +1,9 @@
-from http import HTTPStatus
 import unittest
+from http import HTTPStatus
+
+from fastapi import Request, Response
 
 import routing
-from fastapi import Response, Request
 
 
 class TestAPIRoute(unittest.TestCase):

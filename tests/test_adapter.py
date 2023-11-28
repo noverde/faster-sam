@@ -31,3 +31,20 @@ class TestSAMAdapter(unittest.TestCase):
     def test_initialization_without_template_exception(self):
         with self.assertRaises(CFTemplateNotFound):
             SAM()
+
+    def load_routes_from_cloudformation(self):
+        sam = SAM(f"{self.path_templates}/example1.yml")
+        routes = sam.load_routes_from_cloudformation()
+
+        expected_routes = {
+            "DefaultApiGateway": {
+                "/hello": {
+                    "GET": {
+                        "name": "hello_world_function",
+                        "handler": "app.lambda_handler",
+                    },
+                }
+            }
+        }
+
+        self.assertDictEqual(dict(routes), expected_routes)
