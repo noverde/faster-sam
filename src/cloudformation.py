@@ -24,9 +24,10 @@ class CFLoader(yaml.SafeLoader):
     pass
 
 
-class ResourceType(Enum):
+class NodeType(Enum):
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
+    API = "Api"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -77,11 +78,11 @@ def load(template: Optional[str] = None) -> Dict[str, Any]:
         return yaml.load(fp, CFLoader)
 
 
-def find_resources(template: Dict[str, Any], resource_type: ResourceType) -> List[Dict[str, Any]]:
-    resources = []
+def find_nodes(tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
+    nodes = []
 
-    for id_, properties in template["Resources"].items():
-        if properties["Type"] == resource_type.value:
-            resources.append({id_: properties})
+    for id_, properties in tree.items():
+        if properties["Type"] == node_type.value:
+            nodes.append({id_: properties})
 
-    return resources
+    return nodes
