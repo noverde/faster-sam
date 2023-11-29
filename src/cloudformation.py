@@ -90,8 +90,8 @@ def find_nodes(tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]
 
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
-        self._cloudformation = load(template)
+        self._template = load(template)
 
     @property
-    def cloudformation(self):
-        return self._cloudformation
+    def template(self):
+        return self._template

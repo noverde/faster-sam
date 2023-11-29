@@ -115,8 +115,7 @@ class TestCloudFormation(unittest.TestCase):
 
 class TestTemplate(unittest.TestCase):
     def test_instantiate_template(self):
-        path_template = "tests/fixtures/templates/example1.yml"
-        template = cf.Template(path_template)
-        content = template.cloudformation
+        template_path = "tests/fixtures/templates/example1.yml"
+        cloudformation = cf.Template(template_path)
 
-        self.assertIsInstance(content, dict)
+        self.assertIsInstance(cloudformation.template, dict)
