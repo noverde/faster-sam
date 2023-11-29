@@ -1,8 +1,9 @@
-from http import HTTPStatus
 import unittest
+from http import HTTPStatus
+
+from fastapi import FastAPI, Request, Response
 
 import routing
-from fastapi import Response, Request
 
 
 class TestAPIRoute(unittest.TestCase):
@@ -45,3 +46,41 @@ class TestImportHandler(unittest.TestCase):
         self.assertTrue(callable(handler))
         self.assertEqual(getattr(handler, "__module__", None), module_name)
         self.assertEqual(getattr(handler, "__name__", None), handler_name)
+
+
+class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
+    async def test_event_builder(self):
+        async def receive():
+            return {"type": "http.request", "body": b'{"message":  "test"}'}
+
+        scope = {
+            "type": "http",
+            "http_version": "1.1",
+            "root_path": "",
+            "path": "/test",
+            "method": "GET",
+            "query_string": [],
+            "path_params": {},
+            "client": ("127.0.0.1", 80),
+            "app": FastAPI(),
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"user-agent", b"python/unittest"),
+            ],
+        }
+        request = Request(scope, receive)
+        expected_keys = {
+            "body",
+            "path",
+            "httpMethod",
+            "isBase64Encoded",
+            "queryStringParameters",
+            "pathParameters",
+            "headers",
+            "requestContext",
+        }
+
+        event = await routing.event_builder(request)
+
+        self.assertIsInstance(event, dict)
+        self.assertEqual(set(event.keys()), expected_keys)
