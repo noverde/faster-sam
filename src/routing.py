@@ -12,6 +12,16 @@ logger = logging.getLogger(__name__)
 Handler = Callable[[Dict[str, Any], Any], Dict[str, Any]]
 
 
+class ApiGatewayResponse(Response):
+    def __init__(self, data: Dict[str, Any]):
+        super().__init__(
+            content=data["body"],
+            status_code=data["statusCode"],
+            headers=data["headers"],
+            media_type=data["headers"].get("Content-Type"),
+        )
+
+
 async def event_builder(request: Request) -> Dict[str, Any]:
     now = datetime.now(timezone.utc)
     body = await request.body()
