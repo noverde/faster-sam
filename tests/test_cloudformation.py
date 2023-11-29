@@ -86,11 +86,11 @@ class TestCloudFormation(unittest.TestCase):
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             cf.load(template)
 
-    def test_find_resources(self):
-        template = cf.load("tests/fixtures/templates/example1.yml")
-        resources = cf.find_resources(template, cf.ResourceType.LAMBDA)
+    def test_find_nodes(self):
+        tree = cf.load("tests/fixtures/templates/example1.yml")
+        nodes = cf.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
 
-        expected_resources = [
+        expected_nodes = [
             {
                 "HelloWorldFunction": {
                     "Type": "AWS::Serverless::Function",
@@ -110,31 +110,4 @@ class TestCloudFormation(unittest.TestCase):
             }
         ]
 
-        self.assertEqual(resources, expected_resources)
-
-    def test_find_events(self):
-        properties = {
-            "CodeUri": "hello_world/",
-            "Handler": "app.lambda_handler",
-            "Runtime": "python3.11",
-            "Architectures": ["x86_64"],
-            "Events": {
-                "HelloWorld": {
-                    "Type": "Api",
-                    "Properties": {"Path": "/hello", "Method": "get"},
-                }
-            },
-        }
-
-        events = cf.find_events(properties, cf.EventType.API)
-
-        expected_events = [
-            {
-                "HelloWorld": {
-                    "Type": "Api",
-                    "Properties": {"Path": "/hello", "Method": "get"},
-                }
-            }
-        ]
-
-        self.assertEqual(events, expected_events)
+        self.assertEqual(nodes, expected_nodes)

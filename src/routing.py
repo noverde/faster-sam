@@ -21,6 +21,13 @@ def default_endpoint(request: Request) -> Response:
     return response
 
 
+def import_handler(path: str) -> Handler:
+    module_name, handler_name = path.rsplit(".", maxsplit=1)
+    module = __import__(module_name, fromlist=(handler_name,))
+
+    return getattr(module, handler_name)
+
+
 class APIRoute(routing.APIRoute):
     def __init__(self, lambda_handler: Handler, *args, **kwargs):
         super().__init__(endpoint=default_endpoint, *args, **kwargs)
