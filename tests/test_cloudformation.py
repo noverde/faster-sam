@@ -111,3 +111,12 @@ class TestCloudFormation(unittest.TestCase):
         ]
 
         self.assertEqual(nodes, expected_nodes)
+
+
+class TestTemplate(unittest.TestCase):
+    def test_instantiate_template(self):
+        path_template = "tests/fixtures/templates/example1.yml"
+        template = cf.Template(path_template)
+        content = template.cloudformation
+
+        self.assertIsInstance(content, dict)
