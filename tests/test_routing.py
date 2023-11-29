@@ -33,6 +33,8 @@ class TestAPIRoute(unittest.TestCase):
         self.assertIsInstance(route.endpoint, routing.default_endpoint.__class__)
         self.assertIsInstance(route.lambda_handler, handler.__class__)
 
+
+class TestAuxiliaryFunctions(unittest.TestCase):
     def test_import_handler(self):
         module_name = "lambda_handler"
         handler_name = "handler"
@@ -40,7 +42,7 @@ class TestAPIRoute(unittest.TestCase):
 
         handler = routing.import_handler(handler_path)
 
-        path_module = f"tests.fixtures.handlers.{module_name}"
+        path_module, _ = handler_path.rsplit(".", maxsplit=1)
 
         self.assertTrue(callable(handler))
         self.assertEqual(getattr(handler, "__module__", None), path_module)
