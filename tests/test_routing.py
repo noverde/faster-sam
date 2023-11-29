@@ -1,3 +1,4 @@
+import copy
 import unittest
 from http import HTTPStatus
 
@@ -46,6 +47,31 @@ class TestImportHandler(unittest.TestCase):
         self.assertTrue(callable(handler))
         self.assertEqual(getattr(handler, "__module__", None), module_name)
         self.assertEqual(getattr(handler, "__name__", None), handler_name)
+
+
+class TestApiGatewayResponse(unittest.TestCase):
+    def setUp(self):
+        self.data = {
+            "statusCode": HTTPStatus.OK.value,
+            "body": '{"message": "test"}',
+            "headers": {"content-type": "application/json"},
+        }
+
+    def test_response_creation(self):
+        response = routing.ApiGatewayResponse(self.data)
+
+        self.assertEqual(response.status_code, self.data["statusCode"])
+        self.assertEqual(response.body.decode(), self.data["body"])
+        self.assertEqual(response.headers["content-type"], self.data["headers"]["content-type"])
+
+    def test_response_creation_fails_when_missing_required_attribute(self):
+        for attr in self.data.keys():
+            with self.subTest(attribute=attr):
+                data = copy.deepcopy(self.data)
+                del data[attr]
+
+                with self.assertRaises(KeyError):
+                    routing.ApiGatewayResponse(data)
 
 
 class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
