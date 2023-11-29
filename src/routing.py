@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Any, Callable, Dict
+from typing import Any, Awaitable, Callable, Dict
 from uuid import uuid4
 
 from fastapi import Request, Response, routing
@@ -10,6 +10,7 @@ from fastapi import Request, Response, routing
 logger = logging.getLogger(__name__)
 
 Handler = Callable[[Dict[str, Any], Any], Dict[str, Any]]
+Endpoint = Callable[[Request], Awaitable[Response]]
 
 
 class ApiGatewayResponse(Response):
@@ -49,6 +50,17 @@ async def event_builder(request: Request) -> Dict[str, Any]:
     }
 
     return event
+
+
+def handler(func: Handler) -> Endpoint:
+    async def wrapper(request: Request) -> Response:
+        event = await event_builder(request)
+        result = func(event, None)
+        response = ApiGatewayResponse(result)
+
+        return response
+
+    return wrapper
 
 
 def default_endpoint(request: Request) -> Response:
