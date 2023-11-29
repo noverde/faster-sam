@@ -36,14 +36,12 @@ class TestAPIRoute(unittest.TestCase):
 
 class TestImportHandler(unittest.TestCase):
     def test_import_handler(self):
-        module_name = "lambda_handler"
+        module_name = "tests.fixtures.handlers.lambda_handler"
         handler_name = "handler"
-        handler_path = f"tests.fixtures.handlers.{module_name}.{handler_name}"
+        handler_path = f"{module_name}.{handler_name}"
 
         handler = routing.import_handler(handler_path)
 
-        path_module, _ = handler_path.rsplit(".", maxsplit=1)
-
         self.assertTrue(callable(handler))
-        self.assertEqual(getattr(handler, "__module__", None), path_module)
+        self.assertEqual(getattr(handler, "__module__", None), module_name)
         self.assertEqual(getattr(handler, "__name__", None), handler_name)
