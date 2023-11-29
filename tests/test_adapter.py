@@ -40,8 +40,8 @@ class TestSAMAdapter(unittest.TestCase):
             "ApiGateway": {
                 "/hello": {
                     "GET": {
-                        "name": "hello_world_function",
-                        "handler": "app.lambda_handler",
+                        "name": "HelloWorldFunction",
+                        "handler": "hello_world.app.lambda_handler",
                     },
                 }
             }
@@ -57,8 +57,8 @@ class TestSAMAdapter(unittest.TestCase):
             "DefaultApiGateway": {
                 "/hello": {
                     "GET": {
-                        "name": "hello_world_function",
-                        "handler": "app.lambda_handler",
+                        "name": "HelloWorldFunction",
+                        "handler": "hello_world.app.lambda_handler",
                     },
                 }
             }
