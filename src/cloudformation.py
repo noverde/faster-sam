@@ -60,16 +60,6 @@ def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
 CFLoader.add_multi_constructor("!", multi_constructor)
 
 
-def find_nodes(tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
-    nodes = []
-
-    for id_, properties in tree.items():
-        if properties["Type"] == node_type.value:
-            nodes.append({id_: properties})
-
-    return nodes
-
-
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
         self._template = self.load(template)
@@ -94,3 +84,12 @@ class Template:
 
         with path.open() as fp:
             return yaml.load(fp, CFLoader)
+
+    def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
+        nodes = []
+
+        for id_, properties in tree.items():
+            if properties["Type"] == node_type.value:
+                nodes.append({id_: properties})
+
+        return nodes
