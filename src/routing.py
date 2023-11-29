@@ -82,6 +82,7 @@ def import_handler(path: str) -> Handler:
 
 
 class APIRoute(routing.APIRoute):
-    def __init__(self, lambda_handler: Handler, *args, **kwargs):
-        super().__init__(endpoint=default_endpoint, *args, **kwargs)
-        self.lambda_handler = lambda_handler
+    def __init__(self, path: str, endpoint: str, *args, **kwargs):
+        handler_path = endpoint
+        handler_func = import_handler(handler_path)
+        super().__init__(path=path, endpoint=handler(handler_func), *args, **kwargs)
