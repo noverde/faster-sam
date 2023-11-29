@@ -7,6 +7,29 @@ from fastapi import FastAPI, Request, Response
 import routing
 
 
+def build_request():
+    async def receive():
+        return {"type": "http.request", "body": b'{"message": "test"}'}
+
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "root_path": "",
+        "path": "/test",
+        "method": "GET",
+        "query_string": [],
+        "path_params": {},
+        "client": ("127.0.0.1", 80),
+        "app": FastAPI(),
+        "headers": [
+            (b"content-type", b"application/json"),
+            (b"user-agent", b"python/unittest"),
+        ],
+    }
+
+    return Request(scope, receive)
+
+
 class TestAPIRoute(unittest.TestCase):
     def test_default_endpoint(self):
         with self.assertLogs(logger=routing.__name__, level="ERROR") as logs:
@@ -76,25 +99,7 @@ class TestApiGatewayResponse(unittest.TestCase):
 
 class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
     async def test_event_builder(self):
-        async def receive():
-            return {"type": "http.request", "body": b'{"message":  "test"}'}
-
-        scope = {
-            "type": "http",
-            "http_version": "1.1",
-            "root_path": "",
-            "path": "/test",
-            "method": "GET",
-            "query_string": [],
-            "path_params": {},
-            "client": ("127.0.0.1", 80),
-            "app": FastAPI(),
-            "headers": [
-                (b"content-type", b"application/json"),
-                (b"user-agent", b"python/unittest"),
-            ],
-        }
-        request = Request(scope, receive)
+        request = build_request()
         expected_keys = {
             "body",
             "path",
@@ -110,3 +115,23 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event.keys()), expected_keys)
+
+
+class TestHandler(unittest.IsolatedAsyncioTestCase):
+    async def test_handler(self):
+        request = build_request()
+
+        def echo(event, _):
+            return {
+                "statusCode": HTTPStatus.OK.value,
+                "body": event["body"],
+                "headers": event["headers"],
+            }
+
+        endpoint = routing.handler(echo)
+        response = await endpoint(request)
+
+        self.assertIsInstance(response, Response)
+        self.assertEqual(response.status_code, HTTPStatus.OK.value)
+        self.assertEqual(response.body.decode(), '{"message": "test"}')
+        self.assertEqual(response.headers["content-type"], "application/json")
