@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 
 import cloudformation as cf
+from cloudformation import Template
 
 
 class TestCloudFormation(unittest.TestCase):
@@ -64,30 +65,9 @@ class TestCloudFormation(unittest.TestCase):
         with self.assertRaisesRegex(cf.CFBadNode, regex):
             cf.construct_getatt(node)
 
-    def test_load(self):
-        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
-
-        for template in templates:
-            with self.subTest(template=template):
-                content = cf.load(template)
-                self.assertIsInstance(content, dict)
-        else:
-            with self.subTest(template=None):
-                symlink = Path("template.yml")
-                symlink.symlink_to("tests/fixtures/templates/example1.yml")
-                content = cf.load()
-                symlink.unlink()
-                self.assertIsInstance(content, dict)
-
-    def test_load_raises_exception(self):
-        template = "unknown.yml"
-        regex = f"^{template}$"
-
-        with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
-            cf.load(template)
-
     def test_find_nodes(self):
-        tree = cf.load("tests/fixtures/templates/example1.yml")
+        cloudformation = Template("tests/fixtures/templates/example1.yml")
+        tree = cloudformation.template
         nodes = cf.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
 
         expected_nodes = [
@@ -114,8 +94,24 @@ class TestCloudFormation(unittest.TestCase):
 
 
 class TestTemplate(unittest.TestCase):
-    def test_instantiate_template(self):
-        template_path = "tests/fixtures/templates/example1.yml"
-        cloudformation = cf.Template(template_path)
+    def test_load(self):
+        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
 
-        self.assertIsInstance(cloudformation.template, dict)
+        for template in templates:
+            with self.subTest(template=template):
+                cloudformation = Template(template)
+                self.assertIsInstance(cloudformation.template, dict)
+        else:
+            with self.subTest(template=None):
+                symlink = Path("template.yml")
+                symlink.symlink_to("tests/fixtures/templates/example1.yml")
+                cloudformation = Template()
+                symlink.unlink()
+                self.assertIsInstance(cloudformation.template, dict)
+
+    def test_load_raises_exception(self):
+        template = "unknown.yml"
+        regex = f"^{template}$"
+
+        with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
+            Template(template)
