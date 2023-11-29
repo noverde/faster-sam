@@ -31,7 +31,7 @@ class ResourceType(Enum):
 
 class EventType(Enum):
     API = "Api"
-    CRON = "Cron"
+    CRON = "Schedule"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
