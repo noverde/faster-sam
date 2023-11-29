@@ -60,24 +60,6 @@ def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
 CFLoader.add_multi_constructor("!", multi_constructor)
 
 
-def load(template: Optional[str] = None) -> Dict[str, Any]:
-    path: Optional[Path] = None
-
-    if isinstance(template, str):
-        path = Path(template)
-    else:
-        paths = (Path("template.yml"), Path("template.yaml"))
-        path_generator = (p for p in paths if p.is_file())
-        path = next(path_generator, None)
-
-    if path is None or not path.is_file():
-        filename = template or "[template.yml, template.yaml]"
-        raise CFTemplateNotFound(filename)
-
-    with path.open() as fp:
-        return yaml.load(fp, CFLoader)
-
-
 def find_nodes(tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
     nodes = []
 
@@ -90,8 +72,25 @@ def find_nodes(tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]
 
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
-        self._template = load(template)
+        self._template = self.load(template)
 
     @property
     def template(self):
         return self._template
+
+    def load(self, template: Optional[str] = None) -> Dict[str, Any]:
+        path: Optional[Path] = None
+
+        if isinstance(template, str):
+            path = Path(template)
+        else:
+            paths = (Path("template.yml"), Path("template.yaml"))
+            path_generator = (p for p in paths if p.is_file())
+            path = next(path_generator, None)
+
+        if path is None or not path.is_file():
+            filename = template or "[template.yml, template.yaml]"
+            raise CFTemplateNotFound(filename)
+
+        with path.open() as fp:
+            return yaml.load(fp, CFLoader)
