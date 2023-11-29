@@ -65,28 +65,6 @@ class TestCloudFormation(unittest.TestCase):
         with self.assertRaisesRegex(cf.CFBadNode, regex):
             cf.construct_getatt(node)
 
-    def test_load(self):
-        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
-
-        for template in templates:
-            with self.subTest(template=template):
-                cloudformation = Template(template)
-                self.assertIsInstance(cloudformation.template, dict)
-        else:
-            with self.subTest(template=None):
-                symlink = Path("template.yml")
-                symlink.symlink_to("tests/fixtures/templates/example1.yml")
-                cloudformation = Template()
-                symlink.unlink()
-                self.assertIsInstance(cloudformation.template, dict)
-
-    def test_load_raises_exception(self):
-        template = "unknown.yml"
-        regex = f"^{template}$"
-
-        with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
-            Template(template)
-
     def test_find_nodes(self):
         cloudformation = Template("tests/fixtures/templates/example1.yml")
         tree = cloudformation.template
@@ -121,3 +99,25 @@ class TestTemplate(unittest.TestCase):
         cloudformation = Template(template_path)
 
         self.assertIsInstance(cloudformation.template, dict)
+
+    def test_load(self):
+        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
+
+        for template in templates:
+            with self.subTest(template=template):
+                cloudformation = Template(template)
+                self.assertIsInstance(cloudformation.template, dict)
+        else:
+            with self.subTest(template=None):
+                symlink = Path("template.yml")
+                symlink.symlink_to("tests/fixtures/templates/example1.yml")
+                cloudformation = Template()
+                symlink.unlink()
+                self.assertIsInstance(cloudformation.template, dict)
+
+    def test_load_raises_exception(self):
+        template = "unknown.yml"
+        regex = f"^{template}$"
+
+        with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
+            Template(template)
