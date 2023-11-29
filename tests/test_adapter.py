@@ -32,7 +32,7 @@ class TestSAMAdapter(unittest.TestCase):
         with self.assertRaises(CFTemplateNotFound):
             SAM()
 
-    def load_routes_from_cloudformation(self):
+    def test_load_routes_from_cloudformation(self):
         sam = SAM(f"{self.path_templates}/example2.yml")
         routes = sam.load_routes_from_cloudformation()
 
@@ -49,7 +49,7 @@ class TestSAMAdapter(unittest.TestCase):
 
         self.assertDictEqual(dict(routes), expected_routes)
 
-    def load_routes_from_cloudformation_with_default_gateway(self):
+    def test_load_routes_from_cloudformation_with_default_gateway(self):
         sam = SAM(f"{self.path_templates}/example1.yml")
         routes = sam.load_routes_from_cloudformation()
 
