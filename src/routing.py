@@ -1,7 +1,5 @@
-import json
 import logging
 from datetime import datetime, timezone
-from http import HTTPStatus
 from typing import Any, Awaitable, Callable, Dict
 from uuid import uuid4
 
@@ -61,17 +59,6 @@ def handler(func: Handler) -> Endpoint:
         return response
 
     return wrapper
-
-
-def default_endpoint(request: Request) -> Response:
-    logger.error(f"Executing default endpoint: {request.scope}")
-
-    status_code = HTTPStatus.INTERNAL_SERVER_ERROR
-    media_type = "application/json"
-    content = json.dumps({"error": "Invalid endpoint execution"})
-    response = Response(status_code=status_code, media_type=media_type, content=content)
-
-    return response
 
 
 def import_handler(path: str) -> Handler:
