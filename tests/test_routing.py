@@ -34,7 +34,7 @@ class TestAPIRoute(unittest.TestCase):
         self.assertIsInstance(route.lambda_handler, handler.__class__)
 
 
-class TestAuxiliaryFunctions(unittest.TestCase):
+class TestImportHandler(unittest.TestCase):
     def test_import_handler(self):
         module_name = "lambda_handler"
         handler_name = "handler"
