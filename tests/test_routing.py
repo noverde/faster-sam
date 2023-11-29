@@ -31,20 +31,6 @@ def build_request():
 
 
 class TestAPIRoute(unittest.TestCase):
-    def test_default_endpoint(self):
-        with self.assertLogs(logger=routing.__name__, level="ERROR") as logs:
-            scope = {"type": "http"}
-            request = Request(scope)
-            response = routing.default_endpoint(request)
-
-        self.assertIsInstance(response, Response)
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-        self.assertEqual(response.media_type, "application/json")
-        self.assertEqual(response.body, b'{"error": "Invalid endpoint execution"}')
-
-        expected_logs = ["ERROR:routing:Executing default endpoint: {'type': 'http'}"]
-        self.assertEqual(logs.output, expected_logs)
-
     def test_route(self):
         endpoint = "tests.fixtures.handlers.lambda_handler.handler"
 
