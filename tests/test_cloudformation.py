@@ -1,11 +1,21 @@
 import io
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
 
 import yaml
 
 import cloudformation as cf
 from cloudformation import CloudformationTemplate
+
+
+@contextmanager
+def link(link, target):
+    symlink = Path(link)
+    try:
+        yield symlink.symlink_to(target)
+    finally:
+        symlink.unlink()
 
 
 class TestCloudFormation(unittest.TestCase):
@@ -85,6 +95,8 @@ class TestTemplate(unittest.TestCase):
             },
         }
 
+        self.template_1 = "tests/fixtures/templates/example1.yml"
+
     def test_load(self):
         templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
 
@@ -94,10 +106,9 @@ class TestTemplate(unittest.TestCase):
                 self.assertIsInstance(cloudformation.template, dict)
         else:
             with self.subTest(template=None):
-                symlink = Path("template.yml")
-                symlink.symlink_to("tests/fixtures/templates/example1.yml")
-                cloudformation = CloudformationTemplate()
-                symlink.unlink()
+                with link("template.yml", self.template_1):
+                    cloudformation = CloudformationTemplate()
+
                 self.assertIsInstance(cloudformation.template, dict)
 
     def test_load_raises_exception(self):
@@ -108,7 +119,7 @@ class TestTemplate(unittest.TestCase):
             CloudformationTemplate(template)
 
     def test_list_functions(self):
-        cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
+        cloudformation = CloudformationTemplate(self.template_1)
 
         expected_functions = [self.function]
 
