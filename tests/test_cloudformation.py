@@ -89,6 +89,23 @@ class TestTemplate(unittest.TestCase):
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             Template(template)
 
+    def test_list_gateways(self):
+        cloudformation = Template("tests/fixtures/templates/example2.yml")
+
+        expected_gateways = [
+            {
+                "ApiGateway": {
+                    "Type": "AWS::Serverless::Api",
+                    "Properties": {
+                        "Name": "sam-api",
+                        "StageName": "v1",
+                    },
+                },
+            },
+        ]
+
+        self.assertEqual(cloudformation.gateways, expected_gateways)
+
     def test_find_nodes(self):
         cloudformation = Template("tests/fixtures/templates/example1.yml")
         tree = cloudformation.template

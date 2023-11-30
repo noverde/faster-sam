@@ -63,10 +63,17 @@ CFLoader.add_multi_constructor("!", multi_constructor)
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
         self._template = self.load(template)
+        self._gateways = None
 
     @property
     def template(self):
         return self._template
+
+    @property
+    def gateways(self):
+        if not self._gateways:
+            self._gateways = self.find_nodes(self._template["Resources"], NodeType.API_GATEWAY)
+        return self._gateways
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None
