@@ -88,8 +88,8 @@ class Template:
     def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
         nodes = []
 
-        for id_, properties in tree.items():
-            if properties["Type"] == node_type.value:
-                nodes.append({id_: properties})
+        for key, node in tree.items():
+            if node["Type"] == node_type.value:
+                nodes.append({key: node})
 
         return nodes
