@@ -73,10 +73,17 @@ def find_nodes(tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
         self._template = self.load(template)
+        self._functions = None
 
     @property
     def template(self):
         return self._template
+
+    @property
+    def functions(self):
+        if not self._functions:
+            self._functions = find_nodes(self._template["Resources"], NodeType.LAMBDA)
+        return self._functions
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None

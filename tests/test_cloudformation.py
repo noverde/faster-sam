@@ -115,3 +115,28 @@ class TestTemplate(unittest.TestCase):
 
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             Template(template)
+
+    def test_list_functions(self):
+        cloudformation = Template("tests/fixtures/templates/example1.yml")
+
+        expected_functions = [
+            {
+                "HelloWorldFunction": {
+                    "Type": "AWS::Serverless::Function",
+                    "Properties": {
+                        "CodeUri": "hello_world/",
+                        "Handler": "app.lambda_handler",
+                        "Runtime": "python3.11",
+                        "Architectures": ["x86_64"],
+                        "Events": {
+                            "HelloWorld": {
+                                "Type": "Api",
+                                "Properties": {"Path": "/hello", "Method": "get"},
+                            }
+                        },
+                    },
+                }
+            },
+        ]
+
+        self.assertEqual(cloudformation.functions, expected_functions)
