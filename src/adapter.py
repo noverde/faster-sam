@@ -18,7 +18,7 @@ class SAM:
         for function in self.template.functions:
             code_uri = function["Properties"]["CodeUri"]
             handler = function["Properties"]["Handler"]
-            handler_path = f"{code_uri}{handler}".replace("/", ".")
+            handler_path = f"{code_uri}.{handler}".replace("/", "")
 
             events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API)
 
