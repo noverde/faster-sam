@@ -60,20 +60,11 @@ def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
 CFLoader.add_multi_constructor("!", multi_constructor)
 
 
-def find_nodes(tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
-    nodes = []
-
-    for id_, properties in tree.items():
-        if properties["Type"] == node_type.value:
-            nodes.append({id_: properties})
-
-    return nodes
-
-
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
         self._template = self.load(template)
         self._functions = None
+        self._gateways = None
 
     @property
     def template(self):
@@ -82,8 +73,14 @@ class Template:
     @property
     def functions(self):
         if not self._functions:
-            self._functions = find_nodes(self._template["Resources"], NodeType.LAMBDA)
+            self._functions = self.find_nodes(self._template["Resources"], NodeType.LAMBDA)
         return self._functions
+
+    @property
+    def gateways(self):
+        if not self._gateways:
+            self._gateways = self.find_nodes(self._template["Resources"], NodeType.API_GATEWAY)
+        return self._gateways
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None
@@ -101,3 +98,12 @@ class Template:
 
         with path.open() as fp:
             return yaml.load(fp, CFLoader)
+
+    def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
+        nodes = []
+
+        for key, node in tree.items():
+            if node["Type"] == node_type.value:
+                nodes.append({key: node})
+
+        return nodes
