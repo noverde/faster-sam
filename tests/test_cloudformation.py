@@ -119,7 +119,7 @@ class TestTemplate(unittest.TestCase):
     def test_list_gateways(self):
         cloudformation = Template("tests/fixtures/templates/example2.yml")
 
-        expected_gateway = [
+        expected_gateways = [
             {
                 "ApiGateway": {
                     "Type": "AWS::Serverless::Api",
@@ -131,4 +131,4 @@ class TestTemplate(unittest.TestCase):
             },
         ]
 
-        self.assertEqual(cloudformation.gateways, expected_gateway)
+        self.assertEqual(cloudformation.gateways, expected_gateways)
