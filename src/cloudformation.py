@@ -104,6 +104,6 @@ class Template:
 
         for key, node in tree.items():
             if node["Type"] == node_type.value:
-                nodes.append({key: node})
+                nodes.append({"Id": key, **node})
 
         return nodes

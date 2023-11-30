@@ -69,21 +69,20 @@ class TestCloudFormation(unittest.TestCase):
 class TestTemplate(unittest.TestCase):
     def setUp(self):
         self.function = {
-            "HelloWorldFunction": {
-                "Type": "AWS::Serverless::Function",
-                "Properties": {
-                    "CodeUri": "hello_world/",
-                    "Handler": "app.lambda_handler",
-                    "Runtime": "python3.11",
-                    "Architectures": ["x86_64"],
-                    "Events": {
-                        "HelloWorld": {
-                            "Type": "Api",
-                            "Properties": {"Path": "/hello", "Method": "get"},
-                        }
-                    },
+            "Id": "HelloWorldFunction",
+            "Type": "AWS::Serverless::Function",
+            "Properties": {
+                "CodeUri": "hello_world/",
+                "Handler": "app.lambda_handler",
+                "Runtime": "python3.11",
+                "Architectures": ["x86_64"],
+                "Events": {
+                    "HelloWorld": {
+                        "Type": "Api",
+                        "Properties": {"Path": "/hello", "Method": "get"},
+                    }
                 },
-            }
+            },
         }
 
     def test_load(self):
@@ -120,12 +119,11 @@ class TestTemplate(unittest.TestCase):
 
         expected_gateways = [
             {
-                "ApiGateway": {
-                    "Type": "AWS::Serverless::Api",
-                    "Properties": {
-                        "Name": "sam-api",
-                        "StageName": "v1",
-                    },
+                "Id": "ApiGateway",
+                "Type": "AWS::Serverless::Api",
+                "Properties": {
+                    "Name": "sam-api",
+                    "StageName": "v1",
                 },
             },
         ]
