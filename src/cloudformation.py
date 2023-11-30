@@ -60,24 +60,20 @@ def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
 CFLoader.add_multi_constructor("!", multi_constructor)
 
 
-class Template:
-    def __init__(self, template: Optional[str] = None) -> None:
-        self._template = self.load(template)
-
-    @property
-    def template(self):
-        return self._template
+class CloudformationTemplate:
+    def __init__(self, template_path: Optional[str] = None) -> None:
+        self.template = self.load(template_path)
 
     @property
     def functions(self) -> List[Dict[str, Any]]:
         if not hasattr(self, "_functions"):
-            self._functions = self.find_nodes(self._template["Resources"], NodeType.LAMBDA)
+            self._functions = self.find_nodes(self.template["Resources"], NodeType.LAMBDA)
         return self._functions
 
     @property
     def gateways(self) -> List[Dict[str, Any]]:
         if not hasattr(self, "_gateways"):
-            self._gateways = self.find_nodes(self._template["Resources"], NodeType.API_GATEWAY)
+            self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
         return self._gateways
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
