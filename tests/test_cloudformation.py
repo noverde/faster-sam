@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 import cloudformation as cf
-from cloudformation import Template
+from cloudformation import CloudformationTemplate
 
 
 class TestCloudFormation(unittest.TestCase):
@@ -90,13 +90,13 @@ class TestTemplate(unittest.TestCase):
 
         for template in templates:
             with self.subTest(template=template):
-                cloudformation = Template(template)
+                cloudformation = CloudformationTemplate(template)
                 self.assertIsInstance(cloudformation.template, dict)
         else:
             with self.subTest(template=None):
                 symlink = Path("template.yml")
                 symlink.symlink_to("tests/fixtures/templates/example1.yml")
-                cloudformation = Template()
+                cloudformation = CloudformationTemplate()
                 symlink.unlink()
                 self.assertIsInstance(cloudformation.template, dict)
 
@@ -105,17 +105,17 @@ class TestTemplate(unittest.TestCase):
         regex = f"^{template}$"
 
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
-            Template(template)
+            CloudformationTemplate(template)
 
     def test_list_functions(self):
-        cloudformation = Template("tests/fixtures/templates/example1.yml")
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
 
         expected_functions = [self.function]
 
         self.assertEqual(cloudformation.functions, expected_functions)
 
     def test_list_gateways(self):
-        cloudformation = Template("tests/fixtures/templates/example2.yml")
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example2.yml")
 
         expected_gateways = [
             {
@@ -131,7 +131,7 @@ class TestTemplate(unittest.TestCase):
         self.assertEqual(cloudformation.gateways, expected_gateways)
 
     def test_find_nodes(self):
-        cloudformation = Template("tests/fixtures/templates/example1.yml")
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
         tree = cloudformation.template
         nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
 
