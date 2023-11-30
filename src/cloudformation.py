@@ -63,22 +63,20 @@ CFLoader.add_multi_constructor("!", multi_constructor)
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
         self._template = self.load(template)
-        self._functions = None
-        self._gateways = None
 
     @property
     def template(self):
         return self._template
 
     @property
-    def functions(self):
-        if not self._functions:
+    def functions(self) -> List[Dict[str, Any]]:
+        if not hasattr(self, "_functions"):
             self._functions = self.find_nodes(self._template["Resources"], NodeType.LAMBDA)
         return self._functions
 
     @property
-    def gateways(self):
-        if not self._gateways:
+    def gateways(self) -> List[Dict[str, Any]]:
+        if not hasattr(self, "_gateways"):
             self._gateways = self.find_nodes(self._template["Resources"], NodeType.API_GATEWAY)
         return self._gateways
 
