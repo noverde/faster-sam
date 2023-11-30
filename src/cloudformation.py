@@ -63,11 +63,18 @@ CFLoader.add_multi_constructor("!", multi_constructor)
 class Template:
     def __init__(self, template: Optional[str] = None) -> None:
         self._template = self.load(template)
+        self._functions = None
         self._gateways = None
 
     @property
     def template(self):
         return self._template
+
+    @property
+    def functions(self):
+        if not self._functions:
+            self._functions = self.find_nodes(self._template["Resources"], NodeType.LAMBDA)
+        return self._functions
 
     @property
     def gateways(self):

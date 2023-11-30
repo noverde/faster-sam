@@ -67,6 +67,25 @@ class TestCloudFormation(unittest.TestCase):
 
 
 class TestTemplate(unittest.TestCase):
+    def setUp(self):
+        self.function = {
+            "HelloWorldFunction": {
+                "Type": "AWS::Serverless::Function",
+                "Properties": {
+                    "CodeUri": "hello_world/",
+                    "Handler": "app.lambda_handler",
+                    "Runtime": "python3.11",
+                    "Architectures": ["x86_64"],
+                    "Events": {
+                        "HelloWorld": {
+                            "Type": "Api",
+                            "Properties": {"Path": "/hello", "Method": "get"},
+                        }
+                    },
+                },
+            }
+        }
+
     def test_load(self):
         templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
 
@@ -88,6 +107,13 @@ class TestTemplate(unittest.TestCase):
 
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             Template(template)
+
+    def test_list_functions(self):
+        cloudformation = Template("tests/fixtures/templates/example1.yml")
+
+        expected_functions = [self.function]
+
+        self.assertEqual(cloudformation.functions, expected_functions)
 
     def test_list_gateways(self):
         cloudformation = Template("tests/fixtures/templates/example2.yml")
@@ -111,24 +137,6 @@ class TestTemplate(unittest.TestCase):
         tree = cloudformation.template
         nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
 
-        expected_nodes = [
-            {
-                "HelloWorldFunction": {
-                    "Type": "AWS::Serverless::Function",
-                    "Properties": {
-                        "CodeUri": "hello_world/",
-                        "Handler": "app.lambda_handler",
-                        "Runtime": "python3.11",
-                        "Architectures": ["x86_64"],
-                        "Events": {
-                            "HelloWorld": {
-                                "Type": "Api",
-                                "Properties": {"Path": "/hello", "Method": "get"},
-                            }
-                        },
-                    },
-                }
-            }
-        ]
+        expected_nodes = [self.function]
 
         self.assertEqual(nodes, expected_nodes)
