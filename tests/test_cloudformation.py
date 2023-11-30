@@ -65,33 +65,6 @@ class TestCloudFormation(unittest.TestCase):
         with self.assertRaisesRegex(cf.CFBadNode, regex):
             cf.construct_getatt(node)
 
-    def test_find_nodes(self):
-        cloudformation = Template("tests/fixtures/templates/example1.yml")
-        tree = cloudformation.template
-        nodes = cf.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
-
-        expected_nodes = [
-            {
-                "HelloWorldFunction": {
-                    "Type": "AWS::Serverless::Function",
-                    "Properties": {
-                        "CodeUri": "hello_world/",
-                        "Handler": "app.lambda_handler",
-                        "Runtime": "python3.11",
-                        "Architectures": ["x86_64"],
-                        "Events": {
-                            "HelloWorld": {
-                                "Type": "Api",
-                                "Properties": {"Path": "/hello", "Method": "get"},
-                            }
-                        },
-                    },
-                }
-            }
-        ]
-
-        self.assertEqual(nodes, expected_nodes)
-
 
 class TestTemplate(unittest.TestCase):
     def test_load(self):
@@ -115,3 +88,30 @@ class TestTemplate(unittest.TestCase):
 
         with self.assertRaisesRegex(cf.CFTemplateNotFound, regex):
             Template(template)
+
+    def test_find_nodes(self):
+        cloudformation = Template("tests/fixtures/templates/example1.yml")
+        tree = cloudformation.template
+        nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
+
+        expected_nodes = [
+            {
+                "HelloWorldFunction": {
+                    "Type": "AWS::Serverless::Function",
+                    "Properties": {
+                        "CodeUri": "hello_world/",
+                        "Handler": "app.lambda_handler",
+                        "Runtime": "python3.11",
+                        "Architectures": ["x86_64"],
+                        "Events": {
+                            "HelloWorld": {
+                                "Type": "Api",
+                                "Properties": {"Path": "/hello", "Method": "get"},
+                            }
+                        },
+                    },
+                }
+            }
+        ]
+
+        self.assertEqual(nodes, expected_nodes)
