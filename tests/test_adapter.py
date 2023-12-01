@@ -24,3 +24,28 @@ class TestSAM(unittest.TestCase):
                 self.assertIsInstance(sam.template, CloudformationTemplate)
                 self.assertIsInstance(sam.routes, dict)
                 self.assertGreaterEqual(len(sam.routes), template["expected_route_count"])
+
+    def test_lambda_handler(self):
+        app = FastAPI()
+        sam = SAM(app, "tests/fixtures/templates/example1.yml")
+
+        functions = [
+            {
+                "Properties": {
+                    "CodeUri": "hello_world",
+                    "Handler": "app.lambda_handler",
+                },
+            },
+            {
+                "Properties": {
+                    "CodeUri": "hello_world/",
+                    "Handler": "app.lambda_handler",
+                },
+            },
+        ]
+
+        for function in functions:
+            with self.subTest():
+                handler_path = sam.lambda_handler(function["Properties"])
+
+                self.assertEqual(handler_path, "hello_world.app.lambda_handler")
