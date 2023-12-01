@@ -87,8 +87,9 @@ class CloudformationTemplate:
                 continue
 
         with open(file) as fp:
-            swagger_file = yaml.load(fp)
-        print(swagger_file)
+            swagger = yaml.load(fp)
+
+        gateway["Properties"]["DefinitionBody"] = swagger
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None
