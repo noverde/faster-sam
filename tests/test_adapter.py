@@ -29,7 +29,7 @@ class TestSAM(unittest.TestCase):
         app = FastAPI()
         sam = SAM(app, "tests/fixtures/templates/example1.yml")
 
-        resources = [
+        functions = [
             {
                 "Properties": {
                     "CodeUri": "hello_world",
@@ -44,8 +44,8 @@ class TestSAM(unittest.TestCase):
             },
         ]
 
-        for resource in resources:
+        for function in functions:
             with self.subTest():
-                handler_path = sam.lambda_handler(resource["Properties"])
+                handler_path = sam.lambda_handler(function["Properties"])
 
                 self.assertEqual(handler_path, "hello_world.app.lambda_handler")
