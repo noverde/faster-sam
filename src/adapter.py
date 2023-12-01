@@ -14,7 +14,9 @@ class SAM:
     def route_mapping(self) -> None:
         self.routes: Dict[str, Any] = {key: dict() for key in self.template.gateways.keys()}
         self.routes["ImplicitGateway"] = {}
+        self.lambda_mapper()
 
+    def lambda_mapper(self):
         for function in self.template.functions.values():
             if "Events" not in function["Properties"]:
                 continue
