@@ -16,6 +16,9 @@ class SAM:
         self.routes["ImplicitGateway"] = {}
 
         for function in self.template.functions:
+            if "Events" not in function["Properties"]:
+                continue
+
             code_uri = function["Properties"]["CodeUri"]
             handler = function["Properties"]["Handler"]
             handler_path = f"{code_uri}.{handler}".replace("/", "")
