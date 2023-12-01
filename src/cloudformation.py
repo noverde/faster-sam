@@ -65,13 +65,13 @@ class CloudformationTemplate:
         self.template = self.load(template_path)
 
     @property
-    def functions(self) -> List[Dict[str, Any]]:
+    def functions(self) -> Dict[str, Any]:
         if not hasattr(self, "_functions"):
             self._functions = self.find_nodes(self.template["Resources"], NodeType.LAMBDA)
         return self._functions
 
     @property
-    def gateways(self) -> List[Dict[str, Any]]:
+    def gateways(self) -> Dict[str, Any]:
         if not hasattr(self, "_gateways"):
             self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
         return self._gateways
@@ -93,11 +93,11 @@ class CloudformationTemplate:
         with path.open() as fp:
             return yaml.load(fp, CFLoader)
 
-    def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> List[Dict[str, Any]]:
-        nodes = []
+    def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> Dict[str, Any]:
+        nodes = {}
 
         for key, node in tree.items():
             if node["Type"] == node_type.value:
-                nodes.append({"Id": key, **node})
+                nodes[key] = node
 
         return nodes
