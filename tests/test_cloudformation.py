@@ -78,19 +78,30 @@ class TestCloudFormation(unittest.TestCase):
 
 class TestTemplate(unittest.TestCase):
     def setUp(self):
-        self.function = {
-            "Id": "HelloWorldFunction",
-            "Type": "AWS::Serverless::Function",
-            "Properties": {
-                "CodeUri": "hello_world/",
-                "Handler": "app.lambda_handler",
-                "Runtime": "python3.11",
-                "Architectures": ["x86_64"],
-                "Events": {
-                    "HelloWorld": {
-                        "Type": "Api",
-                        "Properties": {"Path": "/hello", "Method": "get"},
-                    }
+        self.functions = {
+            "HelloWorldFunction": {
+                "Type": "AWS::Serverless::Function",
+                "Properties": {
+                    "CodeUri": "hello_world/",
+                    "Handler": "app.lambda_handler",
+                    "Runtime": "python3.11",
+                    "Architectures": ["x86_64"],
+                    "Events": {
+                        "HelloWorld": {
+                            "Type": "Api",
+                            "Properties": {"Path": "/hello", "Method": "get"},
+                        }
+                    },
+                },
+            }
+        }
+
+        self.gateways = {
+            "ApiGateway": {
+                "Type": "AWS::Serverless::Api",
+                "Properties": {
+                    "Name": "sam-api",
+                    "StageName": "v1",
                 },
             },
         }
@@ -121,31 +132,16 @@ class TestTemplate(unittest.TestCase):
     def test_list_functions(self):
         cloudformation = CloudformationTemplate(self.template_1)
 
-        expected_functions = [self.function]
-
-        self.assertEqual(cloudformation.functions, expected_functions)
+        self.assertEqual(cloudformation.functions, self.functions)
 
     def test_list_gateways(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example2.yml")
 
-        expected_gateways = [
-            {
-                "Id": "ApiGateway",
-                "Type": "AWS::Serverless::Api",
-                "Properties": {
-                    "Name": "sam-api",
-                    "StageName": "v1",
-                },
-            },
-        ]
-
-        self.assertEqual(cloudformation.gateways, expected_gateways)
+        self.assertEqual(cloudformation.gateways, self.gateways)
 
     def test_find_nodes(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
         tree = cloudformation.template
         nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
 
-        expected_nodes = [self.function]
-
-        self.assertEqual(nodes, expected_nodes)
+        self.assertEqual(nodes, self.functions)

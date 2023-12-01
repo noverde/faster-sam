@@ -12,10 +12,10 @@ class SAM:
         self.route_mapping()
 
     def route_mapping(self) -> None:
-        self.routes: Dict[str, Any] = {gateway["Id"]: dict() for gateway in self.template.gateways}
+        self.routes: Dict[str, Any] = {key: dict() for key in self.template.gateways.keys()}
         self.routes["ImplicitGateway"] = {}
 
-        for function in self.template.functions:
+        for function in self.template.functions.values():
             if "Events" not in function["Properties"]:
                 continue
 
@@ -25,7 +25,7 @@ class SAM:
 
             events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API)
 
-            for event in events:
+            for event in events.values():
                 path = event["Properties"]["Path"]
                 method = event["Properties"]["Method"]
                 endpoint = {method: {"handler": handler_path}}
