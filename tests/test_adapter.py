@@ -9,18 +9,9 @@ from cloudformation import CloudformationTemplate
 class TestSAM(unittest.TestCase):
     def test_initialization(self):
         templates = [
-            {
-                "template_path": "tests/fixtures/templates/example1.yml",
-                "expected_route_count": 1,
-            },
-            {
-                "template_path": "tests/fixtures/templates/example2.yml",
-                "expected_route_count": 2,
-            },
-            {
-                "template_path": "tests/fixtures/templates/example3.yml",
-                "expected_route_count": 2,
-            },
+            {"template_path": "tests/fixtures/templates/example1.yml", "expected_route_count": 1},
+            {"template_path": "tests/fixtures/templates/example2.yml", "expected_route_count": 2},
+            {"template_path": "tests/fixtures/templates/example3.yml", "expected_route_count": 2},
         ]
 
         for template in templates:
