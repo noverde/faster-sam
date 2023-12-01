@@ -74,7 +74,21 @@ class CloudformationTemplate:
     def gateways(self) -> Dict[str, Any]:
         if not hasattr(self, "_gateways"):
             self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
+            self.load_files()
         return self._gateways
+
+    def load_files(self):
+        for gateway in self._gateways.values():
+            try:
+                file = gateway["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
+                    "Location"
+                ]
+            except KeyError:
+                continue
+
+        with open(file) as fp:
+            swagger_file = yaml.load(fp)
+        print(swagger_file)
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None
