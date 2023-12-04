@@ -76,7 +76,7 @@ class TestCloudFormation(unittest.TestCase):
             cf.construct_getatt(node)
 
 
-class TestTemplate(unittest.TestCase):
+class TestCloudformationTemplate(unittest.TestCase):
     def setUp(self):
         self.functions = {
             "HelloWorldFunction": {
@@ -111,10 +111,17 @@ class TestTemplate(unittest.TestCase):
     def test_load(self):
         templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
 
-        for template in templates:
-            with self.subTest(template=template):
+        with open("tests/fixtures/templates/swagger.yml") as fp:
+            swagger = yaml.safe_load(fp)
+
+        for template, definition_body in zip(templates, (None, None, swagger)):
+            with self.subTest(template=template, definition_body=definition_body):
                 cloudformation = CloudformationTemplate(template)
                 self.assertIsInstance(cloudformation.template, dict)
+                api_gateway = cloudformation.template["Resources"].get(
+                    "ApiGateway", {"Properties": {}}
+                )
+                self.assertEqual(api_gateway["Properties"].get("DefinitionBody"), definition_body)
         else:
             with self.subTest(template=None):
                 with link("template.yml", self.template_1):

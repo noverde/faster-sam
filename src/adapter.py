@@ -23,7 +23,7 @@ class SAM:
 
             handler_path = self.lambda_handler(function["Properties"])
 
-            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API)
+            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API_EVENT)
 
             for event in events.values():
                 path = event["Properties"]["Path"]
