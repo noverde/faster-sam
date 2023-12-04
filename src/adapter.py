@@ -21,9 +21,7 @@ class SAM:
             if "Events" not in function["Properties"]:
                 continue
 
-            code_uri = function["Properties"]["CodeUri"]
-            handler = function["Properties"]["Handler"]
-            handler_path = f"{code_uri}.{handler}".replace("/", "")
+            handler_path = self.lambda_handler(function["Properties"])
 
             events = self.template.find_nodes(
                 function["Properties"]["Events"], NodeType.EVENT_TYPE_API
@@ -39,3 +37,10 @@ class SAM:
                     gateway = event["Properties"]["RestApiId"]["Ref"]
 
                 self.routes[gateway].setdefault(path, {}).update(endpoint)
+
+    def lambda_handler(self, function: Dict[str, Any]) -> str:
+        code_uri = function["CodeUri"]
+        handler = function["Handler"]
+        handler_path = f"{code_uri}.{handler}".replace("/", "")
+
+        return handler_path
