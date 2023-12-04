@@ -79,15 +79,20 @@ class CloudformationTemplate:
 
     def load_files(self):
         for gateway in self.gateways.values():
-            if "DefinitionBody" in gateway["Properties"]:
+            if "DefinitionBody" not in gateway["Properties"]:
+                continue
+
+            try:
                 file = gateway["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
                     "Location"
                 ]
+            except KeyError:
+                continue
 
-                with open(file) as fp:
-                    swagger = yaml.safe_load(fp)
+            with open(file) as fp:
+                swagger = yaml.safe_load(fp)
 
-                gateway["Properties"]["DefinitionBody"] = swagger
+            gateway["Properties"]["DefinitionBody"] = swagger
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None
