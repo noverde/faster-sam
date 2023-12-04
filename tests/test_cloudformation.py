@@ -111,10 +111,17 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_load(self):
         templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(1, 3))
 
-        for template in templates:
-            with self.subTest(template=template):
+        with open("tests/fixtures/templates/swagger.yml") as fp:
+            swagger = yaml.safe_load(fp)
+
+        for template, definition_body in zip(templates, (None, None, swagger)):
+            with self.subTest(template=template, definition_body=definition_body):
                 cloudformation = CloudformationTemplate(template)
                 self.assertIsInstance(cloudformation.template, dict)
+                api_gateway = cloudformation.template["Resources"].get(
+                    "ApiGateway", {"Properties": {}}
+                )
+                self.assertEqual(api_gateway["Properties"].get("DefinitionBody"), definition_body)
         else:
             with self.subTest(template=None):
                 with link("template.yml", self.template_1):
@@ -145,25 +152,3 @@ class TestCloudformationTemplate(unittest.TestCase):
         nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
 
         self.assertEqual(nodes, self.functions)
-
-    def test_load_with_swagger(self):
-        template = "tests/fixtures/templates/example3.yml"
-
-        cloudformation = CloudformationTemplate(template)
-
-        self.assertIsInstance(cloudformation.template, dict)
-
-        with open("tests/fixtures/templates/swagger.yml", "r") as file:
-            swagger_content = file.read()
-
-        swagger = yaml.safe_load(swagger_content)
-
-        self.assertIsInstance(swagger, dict)
-        self.assertDictEqual(
-            swagger,
-            cloudformation.gateways["ApiGateway"]["Properties"]["DefinitionBody"],
-        )
-        self.assertEqual(
-            id(cloudformation.gateways["ApiGateway"]["Properties"]["DefinitionBody"]),
-            id(cloudformation.template["Resources"]["ApiGateway"]["Properties"]["DefinitionBody"]),
-        )
