@@ -1,4 +1,3 @@
-import re
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -86,9 +85,7 @@ class CloudformationTemplate:
                 ]
 
                 with open(file) as fp:
-                    swagger = yaml.safe_load(
-                        fp
-                    )
+                    swagger = yaml.safe_load(fp)
 
                 gateway["Properties"]["DefinitionBody"] = swagger
 
