@@ -79,12 +79,9 @@ class CloudformationTemplate:
         return self._gateways
 
     def load_with_swagger(self):
-        for template in self.template["Resources"].values():
-            if template["Type"] != NodeType.API_GATEWAY.value:
-                continue
-
+        for gateway in self.gateways.values():
             try:
-                file = template["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
+                file = gateway["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
                     "Location"
                 ]
             except KeyError:
@@ -97,7 +94,7 @@ class CloudformationTemplate:
                     fp,
                 )
 
-            template["Properties"]["DefinitionBody"] = swagger
+            gateway["Properties"]["DefinitionBody"] = swagger
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None

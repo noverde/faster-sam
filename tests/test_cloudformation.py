@@ -241,5 +241,9 @@ class TestCloudformationTemplate(unittest.TestCase):
         self.assertIsInstance(swagger, dict)
         self.assertDictEqual(
             swagger,
-            cloudformation.template["Resources"]["ApiGateway"]["Properties"]["DefinitionBody"],
+            cloudformation.gateways["ApiGateway"]["Properties"]["DefinitionBody"],
+        )
+        self.assertEqual(
+            id(cloudformation.gateways["ApiGateway"]["Properties"]["DefinitionBody"]),
+            id(cloudformation.template["Resources"]["ApiGateway"]["Properties"]["DefinitionBody"]),
         )
