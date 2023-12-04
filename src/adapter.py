@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 from fastapi import FastAPI
 
 from cloudformation import CloudformationTemplate, NodeType
+from routing import APIRoute
 
 
 class SAM:
@@ -15,6 +16,7 @@ class SAM:
         self.routes: Dict[str, Any] = {key: dict() for key in self.template.gateways.keys()}
         self.routes["ImplicitGateway"] = {}
         self.lambda_mapper()
+        self.register_routes()
 
     def lambda_mapper(self):
         for function in self.template.functions.values():
@@ -42,3 +44,18 @@ class SAM:
         handler_path = f"{code_uri}.{handler}".replace("/", "")
 
         return handler_path
+
+    def register_routes(self):
+        # TODO: support multiple API Gateways
+        for paths in self.routes.values():
+            if not paths:
+                continue
+
+            for path, methods in paths.items():
+                for method, config in methods.items():
+                    self.app.router.add_api_route(
+                        path,
+                        config["handler"],
+                        methods=[method],
+                        route_class_override=APIRoute,
+                    )

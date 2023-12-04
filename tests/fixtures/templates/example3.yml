@@ -61,5 +61,5 @@ Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
+      CodeUri: tests/
+      Handler: fixtures.handlers.lambda_handler.handler

@@ -82,8 +82,8 @@ class TestTemplate(unittest.TestCase):
             "HelloWorldFunction": {
                 "Type": "AWS::Serverless::Function",
                 "Properties": {
-                    "CodeUri": "hello_world/",
-                    "Handler": "app.lambda_handler",
+                    "CodeUri": "tests/",
+                    "Handler": "fixtures.handlers.lambda_handler.handler",
                     "Runtime": "python3.11",
                     "Architectures": ["x86_64"],
                     "Events": {
