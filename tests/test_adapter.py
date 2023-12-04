@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 
 from fastapi import FastAPI
 
@@ -15,9 +14,6 @@ class TestSAM(unittest.TestCase):
             {"template_path": "tests/fixtures/templates/example3.yml", "expected_route_count": 2},
         ]
 
-        symlink = Path("swagger.yml")
-        symlink.symlink_to("tests/fixtures/templates/swagger.yml")
-
         for template in templates:
             with self.subTest(template_path=template["template_path"]):
                 app = FastAPI()
@@ -28,8 +24,6 @@ class TestSAM(unittest.TestCase):
                 self.assertIsInstance(sam.template, CloudformationTemplate)
                 self.assertIsInstance(sam.routes, dict)
                 self.assertGreaterEqual(len(sam.routes), template["expected_route_count"])
-
-        symlink.unlink()
 
     def test_lambda_handler(self):
         app = FastAPI()

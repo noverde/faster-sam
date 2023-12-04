@@ -43,7 +43,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: "./swagger.yml"
+            Location: "./tests/fixtures/templates/swagger.yml"
 
   ApiGatewayRole:
     Type: AWS::IAM::Role

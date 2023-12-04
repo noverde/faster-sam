@@ -28,7 +28,7 @@ class CFLoader(yaml.SafeLoader):
 class NodeType(Enum):
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
-    EVENT_TYPE_API = "Api"
+    API_EVENT = "Api"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
