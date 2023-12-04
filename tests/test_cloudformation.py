@@ -76,7 +76,7 @@ class TestCloudFormation(unittest.TestCase):
             cf.construct_getatt(node)
 
 
-class TestTemplate(unittest.TestCase):
+class TestCloudformationTemplate(unittest.TestCase):
     def setUp(self):
         self.functions = {
             "HelloWorldFunction": {
@@ -145,3 +145,101 @@ class TestTemplate(unittest.TestCase):
         nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
 
         self.assertEqual(nodes, self.functions)
+
+    def test_load_with_swagger(self):
+        template = "tests/fixtures/templates/example3.yml"
+
+        with link("swagger.yml", "tests/fixtures/templates/swagger.yml"):
+            cloudformation = CloudformationTemplate(template)
+
+        self.assertIsInstance(cloudformation.template, dict)
+
+        swagger = {
+            "openapi": "3.0.1",
+            "info": {
+                "title": "SAM API",
+                "description": "Sample SAM API",
+                "version": "v1.0",
+                "contact": {"email": "developers@mail.com"},
+            },
+            "servers": [{"url": "https://hello.mydomain.com", "description": "Sample SAM API"}],
+            "x-amazon-apigateway-request-validator": "all",
+            "x-amazon-apigateway-request-validators": {
+                "all": {"validateRequestBody": True, "validateRequestParameters": True}
+            },
+            "x-amazon-apigateway-cors": {
+                "allowOrigins": ["*"],
+                "allowMethods": ["OPTIONS", "GET"],
+                "allowHeaders": ["Content-Type"],
+            },
+            "components": {
+                "schemas": {
+                    "HelloResponse": {
+                        "type": "object",
+                        "properties": {"message": {"type": "string"}},
+                    }
+                },
+                "examples": {
+                    "HelloResponse": {
+                        "summary": "An example of hello message",
+                        "value": {"message": "Hello World!"},
+                    }
+                },
+            },
+            "tags": [{"name": "Hello"}],
+            "paths": {
+                "/hello/{name}": {
+                    "get": {
+                        "operationId": "sayHello",
+                        "tags": ["Hello"],
+                        "summary": "Say hello",
+                        "description": "Returns a greeting message",
+                        "parameters": [
+                            {
+                                "in": "path",
+                                "name": "name",
+                                "required": True,
+                                "schema": {"type": "string"},
+                                "description": "Your name",
+                            }
+                        ],
+                        "responses": {
+                            "200": {
+                                "description": "OK",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {"$ref": "#/components/schemas/HelloResponse"},
+                                        "examples": {
+                                            "address_response": {
+                                                "$ref": "#/components/examples/HelloResponse"
+                                            }
+                                        },
+                                    }
+                                },
+                            },
+                            "400": {"description": "Bad Request"},
+                            "500": {"description": "Internal Server Error"},
+                        },
+                        "x-amazon-apigateway-integration": {
+                            "passthroughBehavior": "when_no_match",
+                            "httpMethod": "POST",
+                            "type": "aws_proxy",
+                            "uri": {
+                                "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/"
+                                "2015-03-31/functions/${HelloWorldFunction.Arn}/invocations"
+                            },
+                            "credentials": {
+                                "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/"
+                                "apigateway-invoke-lambda-role"
+                            },
+                        },
+                    }
+                }
+            },
+        }
+
+        self.assertIsInstance(swagger, dict)
+        self.assertDictEqual(
+            swagger,
+            cloudformation.template["Resources"]["ApiGateway"]["Properties"]["DefinitionBody"],
+        )

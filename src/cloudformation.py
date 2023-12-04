@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -27,7 +28,7 @@ class CFLoader(yaml.SafeLoader):
 class NodeType(Enum):
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
-    API = "Api"
+    EVENT_TYPE_API = "Api"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -63,6 +64,7 @@ CFLoader.add_multi_constructor("!", multi_constructor)
 class CloudformationTemplate:
     def __init__(self, template_path: Optional[str] = None) -> None:
         self.template = self.load(template_path)
+        self.load_with_swagger()
 
     @property
     def functions(self) -> Dict[str, Any]:
@@ -74,22 +76,28 @@ class CloudformationTemplate:
     def gateways(self) -> Dict[str, Any]:
         if not hasattr(self, "_gateways"):
             self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
-            self.load_files()
         return self._gateways
 
-    def load_files(self):
-        for gateway in self._gateways.values():
+    def load_with_swagger(self):
+        for template in self.template["Resources"].values():
+            if template["Type"] != NodeType.API_GATEWAY.value:
+                continue
+
             try:
-                file = gateway["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
+                file = template["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
                     "Location"
                 ]
             except KeyError:
                 continue
 
-        with open(file) as fp:
-            swagger = yaml.load(fp)
+            file = re.sub(r"^\./", "", file)
 
-        gateway["Properties"]["DefinitionBody"] = swagger
+            with open(file) as fp:
+                swagger = yaml.safe_load(
+                    fp,
+                )
+
+            template["Properties"]["DefinitionBody"] = swagger
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         path: Optional[Path] = None
