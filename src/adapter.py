@@ -48,7 +48,7 @@ class SAM:
 
                     handler_path = self.lambda_handler(func["Properties"])
 
-                    endpoint = {method: {"handlers": handler_path}}
+                    endpoint = {method: {"handler": handler_path}}
 
                     self.routes[id].setdefault(path, {}).update(endpoint)
 
