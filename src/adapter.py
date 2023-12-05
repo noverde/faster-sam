@@ -17,6 +17,7 @@ class SAM:
     def route_mapping(self) -> None:
         self.routes: Dict[str, Any] = {key: dict() for key in self.template.gateways.keys()}
         self.routes["ImplicitGateway"] = {}
+        self._mapped_functions = set()
         self.openapi_mapper()
         self.lambda_mapper()
 
@@ -43,10 +44,7 @@ class SAM:
                     arn = match.group(1)
                     func = self.template.functions[arn]
 
-                    if func is None:
-                        continue
-
-                    # Cache function ARN
+                    self._mapped_functions |= {arn}
 
                     handler_path = self.lambda_handler(func["Properties"])
 
