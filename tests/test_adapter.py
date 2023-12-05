@@ -27,7 +27,7 @@ class TestSAM(unittest.TestCase):
         ]
 
         for scenario in scenarios:
-            with self.subTest(template_path=scenario["template_path"]):
+            with self.subTest(**scenario):
                 app = FastAPI()
                 sam = SAM(app, scenario["template_path"])
 
