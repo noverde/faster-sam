@@ -32,7 +32,7 @@ class TestSAM(unittest.TestCase):
                 app = FastAPI()
                 sam = SAM(app, scenario["template_path"])
                 key = scenario["gateway_name"]
-                routes = [route for route in sam.app.routes if isinstance(route, APIRoute)]
+                routes_count = sum(1 for r in app.routes if isinstance(r, APIRoute))
 
                 self.assertIsInstance(sam, SAM)
                 self.assertEqual(id(app), id(sam.app))
@@ -40,7 +40,7 @@ class TestSAM(unittest.TestCase):
                 self.assertIsInstance(sam.routes, dict)
                 self.assertGreaterEqual(len(sam.routes), scenario["gateway_count"])
                 self.assertGreaterEqual(len(sam.routes[key]), 1)
-                self.assertEqual(len(routes), 1)
+                self.assertEqual(routes_count, 1)
 
     def test_lambda_handler(self):
         app = FastAPI()
