@@ -53,8 +53,8 @@ class SAM:
                     self.routes[id].setdefault(path, {}).update(endpoint)
 
     def lambda_mapper(self):
-        for arn, function in self.template.functions.items():
-            if "Events" not in function["Properties"] or arn in self._mapped_functions:
+        for id, function in self.template.functions.items():
+            if "Events" not in function["Properties"] or id in self._mapped_functions:
                 continue
 
             handler_path = self.lambda_handler(function["Properties"])
