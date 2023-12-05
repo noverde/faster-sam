@@ -8,7 +8,7 @@ from cloudformation import CloudformationTemplate
 
 class TestSAM(unittest.TestCase):
     def test_initialization(self):
-        expected_data = [
+        scenarios = [
             {
                 "template_path": "tests/fixtures/templates/example1.yml",
                 "gateway_count": 1,
@@ -26,17 +26,17 @@ class TestSAM(unittest.TestCase):
             },
         ]
 
-        for data in expected_data:
-            with self.subTest(template_path=data["template_path"]):
+        for scenario in scenarios:
+            with self.subTest(template_path=scenario["template_path"]):
                 app = FastAPI()
-                sam = SAM(app, data["template_path"])
+                sam = SAM(app, scenario["template_path"])
 
                 self.assertIsInstance(sam, SAM)
                 self.assertEqual(id(app), id(sam.app))
                 self.assertIsInstance(sam.template, CloudformationTemplate)
                 self.assertIsInstance(sam.routes, dict)
-                self.assertGreaterEqual(len(sam.routes), data["gateway_count"])
-                key = data["gateway_name"]
+                self.assertGreaterEqual(len(sam.routes), scenario["gateway_count"])
+                key = scenario["gateway_name"]
                 self.assertGreaterEqual(len(sam.routes[key]), 1)
 
     def test_lambda_handler(self):
