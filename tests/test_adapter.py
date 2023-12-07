@@ -1,10 +1,12 @@
 import unittest
 
 from fastapi import FastAPI
+import yaml
 
-from adapter import SAM
+from adapter import SAM, custom_openapi
 from cloudformation import CloudformationTemplate
 from routing import APIRoute
+from pydantic import BaseModel
 
 
 class TestSAM(unittest.TestCase):
@@ -66,3 +68,52 @@ class TestSAM(unittest.TestCase):
                 handler_path = sam.lambda_handler(function["Properties"])
 
                 self.assertEqual(handler_path, "hello_world.app.lambda_handler")
+
+
+class Foo(BaseModel):
+    foo: str
+    bar: int
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "foo": 1,
+                    "bar": "Foo",
+                }
+            ]
+        }
+    }
+
+
+class TestCustomOpenAPI(unittest.TestCase):
+    def setUp(self) -> None:
+        with open("tests/fixtures/templates/swagger.yml") as fp:
+            self.openapi_schema = yaml.safe_load(fp)
+
+    def test_custom_load_openapi(self):
+        app = FastAPI()
+
+        app.openapi = custom_openapi(app, self.openapi_schema)
+
+        openapi = app.openapi()
+
+        self.assertDictEqual(self.openapi_schema["paths"], openapi["paths"])
+        self.assertDictEqual(self.openapi_schema["components"], openapi["components"])
+
+    def test_register_route(self):
+        app = FastAPI()
+
+        @app.post("/foo")
+        async def handler(body: Foo):
+            return {"response": body}
+
+        app.openapi = custom_openapi(app, self.openapi_schema)
+
+        openapi = app.openapi()
+
+        foo_expected_example = Foo.model_config["json_schema_extra"]["examples"][0]
+        foo_actual_example = openapi["components"]["schemas"]["Foo"]["examples"][0]
+
+        self.assertIn("/foo", openapi["paths"])
+        self.assertDictEqual(foo_expected_example, foo_actual_example)
