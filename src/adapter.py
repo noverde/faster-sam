@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -10,74 +10,87 @@ from routing import APIRoute
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
 
+class GatewayLookupError(LookupError):
+    pass
+
+
 class SAM:
-    def __init__(self, app: FastAPI, template_path: Optional[str] = None) -> None:
-        self.app = app
-        self.openapi = None
+    def __init__(self, template_path: Optional[str] = None) -> None:
         self.template = CloudformationTemplate(template_path)
-        self.route_mapping()
-        app.openapi = custom_openapi(app, self.openapi)
 
-    def route_mapping(self) -> None:
-        self.routes: Dict[str, Any] = {key: dict() for key in self.template.gateways.keys()}
-        self.routes["ImplicitGateway"] = {}
-        self._mapped_functions = set()
-        self.openapi_mapper()
-        self.lambda_mapper()
-        self.register_routes()
+    def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
+        gateway: Dict[str, Any] = {"Properties": {}}
 
-    def openapi_mapper(self) -> None:
-        for id, gateway in self.template.gateways.items():
-            self.routes[id] = {}
+        if gateway_id is not None:
+            gateway = self.template.gateways[gateway_id]
+        else:
+            gateway_ids = list(self.template.gateways.keys())
+            gateway_len = len(gateway_ids)
 
-            if "DefinitionBody" not in gateway["Properties"]:
-                continue
+            if gateway_len > 1:
+                ids = ", ".join(gateway_ids)
+                raise GatewayLookupError(f"Missing required gateway ID. Found: {ids}")
 
-            openapi = gateway["Properties"]["DefinitionBody"]
+            if gateway_len == 1:
+                gateway_id = gateway_ids[0]
+                gateway = self.template.gateways[gateway_id]
 
-            self.openapi = openapi
+        openapi_schema = gateway["Properties"].get("DefinitionBody")
 
-            for path, methods in openapi["paths"].items():
-                for method, info in methods.items():
-                    if "x-amazon-apigateway-integration" not in info:
-                        continue
+        if openapi_schema is None:
+            routes = self.lambda_mapper(gateway_id)
+        else:
+            routes = self.openapi_mapper(openapi_schema)
+            app.openapi = custom_openapi(app, openapi_schema)
 
-                    uri = info["x-amazon-apigateway-integration"]["uri"]["Fn::Sub"]
-                    match = re.match(ARN_PATTERN, uri)
+        self.register_routes(app, routes)
 
-                    if not match:
-                        continue
+    def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
+        routes: Dict[str, Any] = {}
 
-                    arn = match.group(1)
-                    func = self.template.functions[arn]
+        for path, methods in openapi_schema["paths"].items():
+            for method, info in methods.items():
+                if "x-amazon-apigateway-integration" not in info:
+                    continue
 
-                    self._mapped_functions |= {arn}
+                uri = info["x-amazon-apigateway-integration"]["uri"]["Fn::Sub"]
+                match = re.match(ARN_PATTERN, uri)
 
-                    handler_path = self.lambda_handler(func["Properties"])
+                if not match:
+                    continue
 
-                    endpoint = {method: {"handler": handler_path}}
+                resource_id = match.group(1)
+                function = self.template.functions[resource_id]
+                handler_path = self.lambda_handler(function["Properties"])
+                endpoint = {method: {"handler": handler_path}}
 
-                    self.routes[id].setdefault(path, {}).update(endpoint)
+                routes.setdefault(path, {}).update(endpoint)
 
-    def lambda_mapper(self):
-        for id, function in self.template.functions.items():
-            if "Events" not in function["Properties"] or id in self._mapped_functions:
+        return routes
+
+    def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
+        routes: Dict[str, Any] = {}
+
+        for function in self.template.functions.values():
+            if "Events" not in function["Properties"]:
                 continue
 
             handler_path = self.lambda_handler(function["Properties"])
-
             events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API_EVENT)
 
             for event in events.values():
+                rest_api_id = event["Properties"].get("RestApiId", {"Ref": None})["Ref"]
+
+                if rest_api_id != gateway_id:
+                    continue
+
                 path = event["Properties"]["Path"]
                 method = event["Properties"]["Method"]
                 endpoint = {method: {"handler": handler_path}}
-                gateway = "ImplicitGateway"
 
-                if "RestApiId" in event["Properties"]:
-                    gateway = event["Properties"]["RestApiId"]["Ref"]
+                routes.setdefault(path, {}).update(endpoint)
 
-                self.routes[gateway].setdefault(path, {}).update(endpoint)
+        return routes
 
     def lambda_handler(self, function: Dict[str, Any]) -> str:
         code_uri = function["CodeUri"]
@@ -86,26 +99,22 @@ class SAM:
 
         return handler_path
 
-    def register_routes(self):
-        # TODO: support multiple API Gateways
-        for paths in self.routes.values():
-            if not paths:
-                continue
-
-            for path, methods in paths.items():
-                for method, config in methods.items():
-                    self.app.router.add_api_route(
-                        path,
-                        config["handler"],
-                        methods=[method],
-                        route_class_override=APIRoute,
-                    )
+    def register_routes(self, app: FastAPI, routes: Dict[str, Any]) -> None:
+        for path, methods in routes.items():
+            for method, config in methods.items():
+                app.router.add_api_route(
+                    path,
+                    config["handler"],
+                    methods=[method],
+                    route_class_override=APIRoute,
+                )
 
 
-def custom_openapi(app, openapi_schema):
-    def openapi():
+def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[], Dict[str, Any]]:
+    def openapi() -> Dict[str, Any]:
         if app.openapi_schema is not None:
             return app.openapi_schema
+
         fastapi_schema = get_openapi(
             title=app.title,
             version=app.version,
@@ -127,12 +136,8 @@ def custom_openapi(app, openapi_schema):
         fastapi_examples = fastapi_components.get("examples", {})
 
         schemas = {**fastapi_schemas, **openapi_schemas}
-
         security_schemas = {**fastapi_security_schemes, **openapi_security_schemes}
-
         examples = {**fastapi_examples, **openapi_examples}
-
-        app.openapi_schema = {**openapi_schema, "paths": paths}
 
         components = {}
 
@@ -145,6 +150,7 @@ def custom_openapi(app, openapi_schema):
         if examples:
             components["examples"] = examples
 
+        app.openapi_schema = {**openapi_schema, "paths": paths}
         app.openapi_schema["components"] = components
 
         return app.openapi_schema
