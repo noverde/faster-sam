@@ -2,6 +2,7 @@ import re
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
 
 from cloudformation import CloudformationTemplate, NodeType
 from routing import APIRoute
@@ -12,8 +13,10 @@ ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 class SAM:
     def __init__(self, app: FastAPI, template_path: Optional[str] = None) -> None:
         self.app = app
+        self.openapi = None
         self.template = CloudformationTemplate(template_path)
         self.route_mapping()
+        app.openapi = custom_openapi(app, self.openapi)
 
     def route_mapping(self) -> None:
         self.routes: Dict[str, Any] = {key: dict() for key in self.template.gateways.keys()}
@@ -31,6 +34,8 @@ class SAM:
                 continue
 
             openapi = gateway["Properties"]["DefinitionBody"]
+
+            self.openapi = openapi
 
             for path, methods in openapi["paths"].items():
                 for method, info in methods.items():
@@ -95,3 +100,53 @@ class SAM:
                         methods=[method],
                         route_class_override=APIRoute,
                     )
+
+
+def custom_openapi(app, openapi_schema):
+    def openapi():
+        if app.openapi_schema is not None:
+            return app.openapi_schema
+        fastapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            summary=app.summary,
+            description=app.description,
+            routes=app.routes,
+        )
+
+        paths = {**fastapi_schema["paths"], **openapi_schema["paths"]}
+
+        openapi_components = openapi_schema.get("components", {})
+        openapi_schemas = openapi_components.get("schemas", {})
+        openapi_security_schemes = openapi_components.get("securitySchemes", {})
+        openapi_examples = openapi_components.get("examples", {})
+
+        fastapi_components = fastapi_schema.get("components", {})
+        fastapi_schemas = fastapi_components.get("schemas", {})
+        fastapi_security_schemes = fastapi_components.get("securitySchemes", {})
+        fastapi_examples = fastapi_components.get("examples", {})
+
+        schemas = {**fastapi_schemas, **openapi_schemas}
+
+        security_schemas = {**fastapi_security_schemes, **openapi_security_schemes}
+
+        examples = {**fastapi_examples, **openapi_examples}
+
+        app.openapi_schema = {**openapi_schema, "paths": paths}
+
+        components = {}
+
+        if schemas:
+            components["schemas"] = schemas
+
+        if security_schemas:
+            components["securitySchemes"] = security_schemas
+
+        if examples:
+            components["examples"] = examples
+
+        app.openapi_schema["components"] = components
+
+        return app.openapi_schema
+
+    return openapi
