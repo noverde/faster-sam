@@ -1,12 +1,12 @@
 import unittest
 
-from fastapi import FastAPI
 import yaml
+from fastapi import FastAPI
+from pydantic import BaseModel
 
 from adapter import SAM, custom_openapi
 from cloudformation import CloudformationTemplate
 from routing import APIRoute
-from pydantic import BaseModel
 
 
 class TestSAM(unittest.TestCase):
