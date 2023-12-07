@@ -70,23 +70,22 @@ class TestSAM(unittest.TestCase):
                 self.assertEqual(handler_path, "hello_world.app.lambda_handler")
 
 
-class Foo(BaseModel):
-    foo: str
-    bar: int
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "foo": 1,
-                    "bar": "Foo",
-                }
-            ]
-        }
-    }
-
-
 class TestCustomOpenAPI(unittest.TestCase):
+    class Foo(BaseModel):
+        foo: str
+        bar: int
+
+        model_config = {
+            "json_schema_extra": {
+                "examples": [
+                    {
+                        "foo": 1,
+                        "bar": "Foo",
+                    }
+                ]
+            }
+        }
+
     def setUp(self) -> None:
         with open("tests/fixtures/templates/swagger.yml") as fp:
             self.openapi_schema = yaml.safe_load(fp)
@@ -105,15 +104,15 @@ class TestCustomOpenAPI(unittest.TestCase):
         app = FastAPI()
 
         @app.post("/foo")
-        async def handler(body: Foo):
+        async def handler(body: TestCustomOpenAPI.Foo):
             return {"response": body}
 
         app.openapi = custom_openapi(app, self.openapi_schema)
 
         openapi = app.openapi()
 
-        foo_expected_example = Foo.model_config["json_schema_extra"]["examples"][0]
+        foo_example = TestCustomOpenAPI.Foo.model_config["json_schema_extra"]["examples"][0]
         foo_actual_example = openapi["components"]["schemas"]["Foo"]["examples"][0]
 
         self.assertIn("/foo", openapi["paths"])
-        self.assertDictEqual(foo_expected_example, foo_actual_example)
+        self.assertDictEqual(foo_example, foo_actual_example)
