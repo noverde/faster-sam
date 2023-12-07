@@ -16,8 +16,8 @@ class ApiGatewayResponse(Response):
         super().__init__(
             content=data["body"],
             status_code=data["statusCode"],
-            headers=data["headers"],
-            media_type=data["headers"].get("Content-Type"),
+            headers=data.get("headers"),
+            media_type=data.get("headers", {}).get("Content-Type"),
         )
 
 
