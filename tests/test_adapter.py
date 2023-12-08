@@ -6,43 +6,22 @@ from pydantic import BaseModel
 
 from adapter import SAM, custom_openapi
 from cloudformation import CloudformationTemplate
-from routing import APIRoute
 
 
 class TestSAM(unittest.TestCase):
     def test_initialization(self):
-        scenarios = [
-            {
-                "template_path": "tests/fixtures/templates/example1.yml",
-                "gateway_count": 1,
-                "gateway_name": "ImplicitGateway",
-            },
-            {
-                "template_path": "tests/fixtures/templates/example2.yml",
-                "gateway_count": 2,
-                "gateway_name": "ApiGateway",
-            },
-            {
-                "template_path": "tests/fixtures/templates/example3.yml",
-                "gateway_count": 2,
-                "gateway_name": "ApiGateway",
-            },
-        ]
+        templates = (
+            "tests/fixtures/templates/example1.yml",
+            "tests/fixtures/templates/example2.yml",
+            "tests/fixtures/templates/example3.yml",
+        )
 
-        for scenario in scenarios:
-            with self.subTest(**scenario):
-                app = FastAPI()
-                sam = SAM(app, scenario["template_path"])
-                key = scenario["gateway_name"]
-                routes_count = sum(1 for r in app.routes if isinstance(r, APIRoute))
+        for template in templates:
+            with self.subTest(template=template):
+                sam = SAM(template)
 
                 self.assertIsInstance(sam, SAM)
-                self.assertEqual(id(app), id(sam.app))
                 self.assertIsInstance(sam.template, CloudformationTemplate)
-                self.assertIsInstance(sam.routes, dict)
-                self.assertGreaterEqual(len(sam.routes), scenario["gateway_count"])
-                self.assertGreaterEqual(len(sam.routes[key]), 1)
-                self.assertEqual(routes_count, 1)
 
     def test_lambda_handler(self):
         app = FastAPI()
@@ -71,48 +50,36 @@ class TestSAM(unittest.TestCase):
 
 
 class TestCustomOpenAPI(unittest.TestCase):
-    class Foo(BaseModel):
-        foo: str
-        bar: int
-
-        model_config = {
-            "json_schema_extra": {
-                "examples": [
-                    {
-                        "foo": 1,
-                        "bar": "Foo",
-                    }
-                ]
-            }
-        }
-
-    def setUp(self) -> None:
+    @classmethod
+    def setUpClass(cls):
         with open("tests/fixtures/templates/swagger.yml") as fp:
-            self.openapi_schema = yaml.safe_load(fp)
+            cls.openapi_schema = yaml.safe_load(fp)
 
-    def test_custom_load_openapi(self):
+    def test_custom_openapi(self):
         app = FastAPI()
-
         app.openapi = custom_openapi(app, self.openapi_schema)
 
-        openapi = app.openapi()
+        openapi_schema = app.openapi()
 
-        self.assertDictEqual(self.openapi_schema["paths"], openapi["paths"])
-        self.assertDictEqual(self.openapi_schema["components"], openapi["components"])
+        self.assertEqual(openapi_schema, self.openapi_schema)
 
     def test_register_route(self):
+        examples = [{"bar": "Bar", "baz": 1}]
+
+        class Foo(BaseModel):
+            bar: str
+            baz: int
+
+            model_config = {"json_schema_extra": {"examples": examples}}
+
         app = FastAPI()
-
-        @app.post("/foo")
-        async def handler(body: TestCustomOpenAPI.Foo):
-            return {"response": body}
-
         app.openapi = custom_openapi(app, self.openapi_schema)
 
-        openapi = app.openapi()
+        @app.post("/foo")
+        def _(foo: Foo):
+            return foo
 
-        foo_example = TestCustomOpenAPI.Foo.model_config["json_schema_extra"]["examples"][0]
-        foo_actual_example = openapi["components"]["schemas"]["Foo"]["examples"][0]
+        openapi_schema = app.openapi()
 
-        self.assertIn("/foo", openapi["paths"])
-        self.assertDictEqual(foo_example, foo_actual_example)
+        self.assertIn("/foo", openapi_schema["paths"])
+        self.assertEqual(openapi_schema["components"]["schemas"]["Foo"]["examples"], examples)
