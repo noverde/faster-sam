@@ -24,8 +24,7 @@ class TestSAM(unittest.TestCase):
                 self.assertIsInstance(sam.template, CloudformationTemplate)
 
     def test_lambda_handler(self):
-        app = FastAPI()
-        sam = SAM(app, "tests/fixtures/templates/example1.yml")
+        sam = SAM("tests/fixtures/templates/example1.yml")
 
         functions = [
             {
@@ -43,9 +42,8 @@ class TestSAM(unittest.TestCase):
         ]
 
         for function in functions:
-            with self.subTest():
+            with self.subTest(**function["Properties"]):
                 handler_path = sam.lambda_handler(function["Properties"])
-
                 self.assertEqual(handler_path, "hello_world.app.lambda_handler")
 
 
