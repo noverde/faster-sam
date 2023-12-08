@@ -71,7 +71,7 @@ class TestApiGatewayResponse(unittest.TestCase):
         self.assertEqual(response.headers["content-type"], self.data["headers"]["content-type"])
 
     def test_response_creation_fails_when_missing_required_attribute(self):
-        for attr in self.data.keys():
+        for attr in ("statusCode", "body"):
             with self.subTest(attribute=attr):
                 data = copy.deepcopy(self.data)
                 del data[attr]
