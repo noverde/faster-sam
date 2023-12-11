@@ -4,7 +4,7 @@ import yaml
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from adapter import SAM, custom_openapi
+from adapter import SAM, GatewayLookupError, custom_openapi
 from cloudformation import CloudformationTemplate
 
 
@@ -39,6 +39,14 @@ class TestSAM(unittest.TestCase):
                 sam.configure_api(app, gateway)
 
                 self.assertEqual(len(app.routes), 5)
+
+    def test_configure_api_raises_gateway_lookup_error(self):
+        error = "^Missing required gateway ID. Found: ApiGateway, ApiGatewayPrivate$"
+
+        with self.assertRaisesRegex(GatewayLookupError, error):
+            app = FastAPI()
+            sam = SAM(self.templates[3])
+            sam.configure_api(app)
 
     def test_lambda_handler(self):
         functions = [
