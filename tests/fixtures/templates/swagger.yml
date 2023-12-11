@@ -51,6 +51,8 @@ tags:
 paths:
   /hello/{name}:
     get:
+      security:
+        - ApiKey: []
       operationId: sayHello
       tags:
         - Hello
