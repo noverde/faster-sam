@@ -63,7 +63,7 @@ CFLoader.add_multi_constructor("!", multi_constructor)
 class CloudformationTemplate:
     def __init__(self, template_path: Optional[str] = None) -> None:
         self.template = self.load(template_path)
-        self.load_files()
+        self.include_files()
 
     @property
     def functions(self) -> Dict[str, Any]:
@@ -77,19 +77,14 @@ class CloudformationTemplate:
             self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
         return self._gateways
 
-    def load_files(self):
+    def include_files(self):
         for gateway in self.gateways.values():
             if "DefinitionBody" not in gateway["Properties"]:
                 continue
 
-            try:
-                file = gateway["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
-                    "Location"
-                ]
-            except KeyError:
-                continue
+            lc = gateway["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"]["Location"]
 
-            with open(file) as fp:
+            with open(lc) as fp:
                 swagger = yaml.safe_load(fp)
 
             gateway["Properties"]["DefinitionBody"] = swagger
