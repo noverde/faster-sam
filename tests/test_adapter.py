@@ -15,6 +15,7 @@ class TestSAM(unittest.TestCase):
             "tests/fixtures/templates/example1.yml",
             "tests/fixtures/templates/example2.yml",
             "tests/fixtures/templates/example3.yml",
+            "tests/fixtures/templates/example4.yml",
         )
 
     def test_initialization(self):
@@ -24,6 +25,20 @@ class TestSAM(unittest.TestCase):
 
                 self.assertIsInstance(sam, SAM)
                 self.assertIsInstance(sam.template, CloudformationTemplate)
+
+    def test_configure_api(self):
+        gateways = (None, None, "ApiGateway", "ApiGatewayPrivate")
+
+        for template, gateway in zip(self.templates, gateways):
+            with self.subTest(template=template, gateway=gateway):
+                app = FastAPI()
+                sam = SAM(template)
+
+                self.assertEqual(len(app.routes), 4)
+
+                sam.configure_api(app, gateway)
+
+                self.assertEqual(len(app.routes), 5)
 
     def test_lambda_handler(self):
         functions = [
