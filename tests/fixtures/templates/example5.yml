@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Sample SAM Template for sam-api
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 3
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: tests/
+      Handler: fixtures.handlers.lambda_handler.handler
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+
+  HelloNameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: tests/
+      Handler: fixtures.handlers.lambda_handler.handler
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello/{name}
+            Method: get
+            RestApiId:
+              Ref: UnknownResource
+
+  NoTriggersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: tests/
+      Handler: fixtures.handlers.lambda_handler.handler

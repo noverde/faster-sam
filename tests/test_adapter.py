@@ -16,6 +16,7 @@ class TestSAM(unittest.TestCase):
             "tests/fixtures/templates/example2.yml",
             "tests/fixtures/templates/example3.yml",
             "tests/fixtures/templates/example4.yml",
+            "tests/fixtures/templates/example5.yml",
         )
 
     def test_initialization(self):
@@ -27,7 +28,7 @@ class TestSAM(unittest.TestCase):
                 self.assertIsInstance(sam.template, CloudformationTemplate)
 
     def test_configure_api(self):
-        gateways = (None, None, "ApiGateway", "ApiGatewayPrivate")
+        gateways = (None, None, "ApiGateway", "ApiGatewayPrivate", None)
 
         for template, gateway in zip(self.templates, gateways):
             with self.subTest(template=template, gateway=gateway):
