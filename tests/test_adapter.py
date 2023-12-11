@@ -28,7 +28,7 @@ class TestSAM(unittest.TestCase):
                 self.assertIsInstance(sam.template, CloudformationTemplate)
 
     def test_configure_api(self):
-        gateways = (None, None, "ApiGateway", "ApiGatewayPrivate", None)
+        gateways = (None, None, "ApiGateway", "ApiGatewayTwo", None)
 
         for template, gateway in zip(self.templates, gateways):
             with self.subTest(template=template, gateway=gateway):
@@ -41,8 +41,20 @@ class TestSAM(unittest.TestCase):
 
                 self.assertEqual(len(app.routes), 5)
 
+    def test_configure_multiple_apis(self):
+        app = FastAPI()
+        subapp = FastAPI()
+        app.mount("/subapp", subapp)
+
+        sam = SAM(self.templates[3])
+        sam.configure_api(app, "ApiGateway")
+        sam.configure_api(subapp, "ApiGatewayTwo")
+
+        self.assertEqual(len(app.routes), 6)
+        self.assertEqual(len(subapp.routes), 5)
+
     def test_configure_api_raises_gateway_lookup_error(self):
-        error = "^Missing required gateway ID. Found: ApiGateway, ApiGatewayPrivate$"
+        error = "^Missing required gateway ID. Found: ApiGateway, ApiGatewayTwo"
 
         with self.assertRaisesRegex(GatewayLookupError, error):
             app = FastAPI()

@@ -45,7 +45,7 @@ Resources:
           Parameters:
             Location: "./tests/fixtures/templates/swagger.yml"
 
-  ApiGatewayPrivate:
+  ApiGatewayTwo:
     Type: AWS::Serverless::Api
     Properties:
       Name: sam-api-private
