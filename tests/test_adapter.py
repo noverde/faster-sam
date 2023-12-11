@@ -9,14 +9,16 @@ from cloudformation import CloudformationTemplate
 
 
 class TestSAM(unittest.TestCase):
-    def test_initialization(self):
-        templates = (
+    @classmethod
+    def setUpClass(cls):
+        cls.templates = (
             "tests/fixtures/templates/example1.yml",
             "tests/fixtures/templates/example2.yml",
             "tests/fixtures/templates/example3.yml",
         )
 
-        for template in templates:
+    def test_initialization(self):
+        for template in self.templates:
             with self.subTest(template=template):
                 sam = SAM(template)
 
@@ -24,22 +26,22 @@ class TestSAM(unittest.TestCase):
                 self.assertIsInstance(sam.template, CloudformationTemplate)
 
     def test_lambda_handler(self):
-        sam = SAM("tests/fixtures/templates/example1.yml")
-
         functions = [
             {
                 "Properties": {
                     "CodeUri": "hello_world",
                     "Handler": "app.lambda_handler",
-                },
+                }
             },
             {
                 "Properties": {
                     "CodeUri": "hello_world/",
                     "Handler": "app.lambda_handler",
-                },
+                }
             },
         ]
+
+        sam = SAM(self.templates[0])
 
         for function in functions:
             with self.subTest(**function["Properties"]):
