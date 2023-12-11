@@ -28,6 +28,11 @@ x-amazon-apigateway-cors:
     - "Content-Type"
 
 components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
   schemas:
     HelloResponse:
       type: object

@@ -77,7 +77,13 @@ class TestCustomOpenAPI(unittest.TestCase):
         def _(foo: Foo):
             return foo
 
-        openapi_schema = app.openapi()
+        self.assertIsNone(app.openapi_schema)
 
-        self.assertIn("/foo", openapi_schema["paths"])
-        self.assertEqual(openapi_schema["components"]["schemas"]["Foo"]["examples"], examples)
+        schema1 = app.openapi()
+
+        self.assertIsNotNone(app.openapi_schema)
+        self.assertIn("/foo", schema1["paths"])
+        self.assertEqual(schema1["components"]["schemas"]["Foo"]["examples"], examples)
+
+        schema2 = app.openapi()
+        self.assertIs(schema1, schema2)
