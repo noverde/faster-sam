@@ -9,8 +9,6 @@ info:
 servers:
   - url: http://localhost:8000
     description: Local SAM API
-  - url: https://hello.mydomain.com
-    description: Sample SAM API
 
 x-amazon-apigateway-request-validator: all
 x-amazon-apigateway-request-validators:
@@ -50,6 +48,61 @@ tags:
 
 paths:
   /hello/{name}:
+    options:
+      operationId: checkOptionsSayHello
+      tags:
+        - Hello
+      summary: Say hello
+      description: Returns a greeting message
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+          description: Your name
+      responses:
+        '200':
+          description: "OK"
+        '400':
+          description: "Bad Request"
+        '500':
+          description: "Internal Server Error"
+    head:
+      operationId: retrieveHeadersSayHello
+      tags:
+        - Hello
+      summary: Say hello
+      description: Returns a greeting message
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+          description: Your name
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelloResponse"
+              examples:
+                address_response:
+                  $ref: "#/components/examples/HelloResponse"
+        '400':
+          description: "Bad Request"
+        '500':
+          description: "Internal Server Error"
+      x-amazon-apigateway-integration:
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction}/invocations"
+        credentials:
+          Fn::Sub: "arn:aws:iam::${AWS::AccountId}:role/apigateway-invoke-lambda-role"
     get:
       security:
         - ApiKey: []

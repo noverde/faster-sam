@@ -1,118 +1,127 @@
 import unittest
 
-from fastapi import FastAPI
 import yaml
-
-from adapter import SAM, custom_openapi
-from cloudformation import CloudformationTemplate
-from routing import APIRoute
+from fastapi import FastAPI
 from pydantic import BaseModel
+
+from adapter import SAM, GatewayLookupError, custom_openapi
+from cloudformation import CloudformationTemplate
 
 
 class TestSAM(unittest.TestCase):
-    def test_initialization(self):
-        scenarios = [
-            {
-                "template_path": "tests/fixtures/templates/example1.yml",
-                "gateway_count": 1,
-                "gateway_name": "ImplicitGateway",
-            },
-            {
-                "template_path": "tests/fixtures/templates/example2.yml",
-                "gateway_count": 2,
-                "gateway_name": "ApiGateway",
-            },
-            {
-                "template_path": "tests/fixtures/templates/example3.yml",
-                "gateway_count": 2,
-                "gateway_name": "ApiGateway",
-            },
-        ]
+    @classmethod
+    def setUpClass(cls):
+        cls.templates = (
+            "tests/fixtures/templates/example1.yml",
+            "tests/fixtures/templates/example2.yml",
+            "tests/fixtures/templates/example3.yml",
+            "tests/fixtures/templates/example4.yml",
+            "tests/fixtures/templates/example5.yml",
+        )
 
-        for scenario in scenarios:
-            with self.subTest(**scenario):
-                app = FastAPI()
-                sam = SAM(app, scenario["template_path"])
-                key = scenario["gateway_name"]
-                routes_count = sum(1 for r in app.routes if isinstance(r, APIRoute))
+    def test_initialization(self):
+        for template in self.templates:
+            with self.subTest(template=template):
+                sam = SAM(template)
 
                 self.assertIsInstance(sam, SAM)
-                self.assertEqual(id(app), id(sam.app))
                 self.assertIsInstance(sam.template, CloudformationTemplate)
-                self.assertIsInstance(sam.routes, dict)
-                self.assertGreaterEqual(len(sam.routes), scenario["gateway_count"])
-                self.assertGreaterEqual(len(sam.routes[key]), 1)
-                self.assertEqual(routes_count, 1)
+
+    def test_configure_api(self):
+        gateways = (None, None, "ApiGateway", "ApiGatewayTwo", None)
+
+        for template, gateway in zip(self.templates, gateways):
+            with self.subTest(template=template, gateway=gateway):
+                app = FastAPI()
+                sam = SAM(template)
+
+                self.assertEqual(len(app.routes), 4)
+
+                sam.configure_api(app, gateway)
+
+                self.assertEqual(len(app.routes), 5)
+
+    def test_configure_multiple_apis(self):
+        app = FastAPI()
+        subapp = FastAPI()
+        app.mount("/subapp", subapp)
+
+        sam = SAM(self.templates[3])
+        sam.configure_api(app, "ApiGateway")
+        sam.configure_api(subapp, "ApiGatewayTwo")
+
+        self.assertEqual(len(app.routes), 6)
+        self.assertEqual(len(subapp.routes), 5)
+
+    def test_configure_api_raises_gateway_lookup_error(self):
+        error = "^Missing required gateway ID. Found: ApiGateway, ApiGatewayTwo"
+
+        with self.assertRaisesRegex(GatewayLookupError, error):
+            app = FastAPI()
+            sam = SAM(self.templates[3])
+            sam.configure_api(app)
 
     def test_lambda_handler(self):
-        app = FastAPI()
-        sam = SAM(app, "tests/fixtures/templates/example1.yml")
-
         functions = [
             {
                 "Properties": {
                     "CodeUri": "hello_world",
                     "Handler": "app.lambda_handler",
-                },
+                }
             },
             {
                 "Properties": {
                     "CodeUri": "hello_world/",
                     "Handler": "app.lambda_handler",
-                },
+                }
             },
         ]
 
-        for function in functions:
-            with self.subTest():
-                handler_path = sam.lambda_handler(function["Properties"])
+        sam = SAM(self.templates[0])
 
+        for function in functions:
+            with self.subTest(**function["Properties"]):
+                handler_path = sam.lambda_handler(function["Properties"])
                 self.assertEqual(handler_path, "hello_world.app.lambda_handler")
 
 
 class TestCustomOpenAPI(unittest.TestCase):
-    class Foo(BaseModel):
-        foo: str
-        bar: int
-
-        model_config = {
-            "json_schema_extra": {
-                "examples": [
-                    {
-                        "foo": 1,
-                        "bar": "Foo",
-                    }
-                ]
-            }
-        }
-
-    def setUp(self) -> None:
+    @classmethod
+    def setUpClass(cls):
         with open("tests/fixtures/templates/swagger.yml") as fp:
-            self.openapi_schema = yaml.safe_load(fp)
+            cls.openapi_schema = yaml.safe_load(fp)
 
-    def test_custom_load_openapi(self):
+    def test_custom_openapi(self):
         app = FastAPI()
-
         app.openapi = custom_openapi(app, self.openapi_schema)
 
-        openapi = app.openapi()
+        openapi_schema = app.openapi()
 
-        self.assertDictEqual(self.openapi_schema["paths"], openapi["paths"])
-        self.assertDictEqual(self.openapi_schema["components"], openapi["components"])
+        self.assertEqual(openapi_schema, self.openapi_schema)
 
     def test_register_route(self):
+        examples = [{"bar": "Bar", "baz": 1}]
+
+        class Foo(BaseModel):
+            bar: str
+            baz: int
+
+            model_config = {"json_schema_extra": {"examples": examples}}
+
         app = FastAPI()
-
-        @app.post("/foo")
-        async def handler(body: TestCustomOpenAPI.Foo):
-            return {"response": body}
-
         app.openapi = custom_openapi(app, self.openapi_schema)
 
-        openapi = app.openapi()
+        @app.post("/foo")
+        def _(foo: Foo):
+            return foo
 
-        foo_example = TestCustomOpenAPI.Foo.model_config["json_schema_extra"]["examples"][0]
-        foo_actual_example = openapi["components"]["schemas"]["Foo"]["examples"][0]
+        self.assertIsNone(app.openapi_schema)
 
-        self.assertIn("/foo", openapi["paths"])
-        self.assertDictEqual(foo_example, foo_actual_example)
+        schema1 = app.openapi()
+
+        self.assertIsNotNone(app.openapi_schema)
+        self.assertIn("/foo", schema1["paths"])
+        self.assertEqual(schema1["components"]["schemas"]["Foo"]["examples"], examples)
+
+        schema2 = app.openapi()
+        self.assertIs(schema1, schema2)
