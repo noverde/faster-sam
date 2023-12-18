@@ -58,26 +58,3 @@ class TestSAM(unittest.TestCase):
             app = FastAPI()
             sam = SAM(self.templates[3])
             sam.configure_api(app)
-
-    def test_lambda_handler(self):
-        functions = [
-            {
-                "Properties": {
-                    "CodeUri": "hello_world",
-                    "Handler": "app.lambda_handler",
-                }
-            },
-            {
-                "Properties": {
-                    "CodeUri": "hello_world/",
-                    "Handler": "app.lambda_handler",
-                }
-            },
-        ]
-
-        sam = SAM(self.templates[0])
-
-        for function in functions:
-            with self.subTest(**function["Properties"]):
-                handler_path = sam.lambda_handler(function["Properties"])
-                self.assertEqual(handler_path, "hello_world.app.lambda_handler")

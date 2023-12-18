@@ -60,8 +60,7 @@ class SAM:
                     continue
 
                 resource_id = match.group(1)
-                function = self.template.functions[resource_id]
-                handler_path = self.lambda_handler(function["Properties"])
+                handler_path = self.template.lambda_handler(resource_id)
                 endpoint = {method: {"handler": handler_path}}
 
                 routes.setdefault(path, {}).update(endpoint)
@@ -71,11 +70,11 @@ class SAM:
     def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
         routes: Dict[str, Any] = {}
 
-        for function in self.template.functions.values():
+        for resource_id, function in self.template.functions.items():
             if "Events" not in function["Properties"]:
                 continue
 
-            handler_path = self.lambda_handler(function["Properties"])
+            handler_path = self.template.lambda_handler(resource_id)
             events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API_EVENT)
 
             for event in events.values():
@@ -91,13 +90,6 @@ class SAM:
                 routes.setdefault(path, {}).update(endpoint)
 
         return routes
-
-    def lambda_handler(self, function: Dict[str, Any]) -> str:
-        code_uri = function["CodeUri"]
-        handler = function["Handler"]
-        handler_path = f"{code_uri}.{handler}".replace("/", "")
-
-        return handler_path
 
     def register_routes(self, app: FastAPI, routes: Dict[str, Any]) -> None:
         for path, methods in routes.items():
