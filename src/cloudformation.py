@@ -114,3 +114,9 @@ class CloudformationTemplate:
                 nodes[key] = node
 
         return nodes
+
+    def lambda_handler(self, resource_id: str) -> str:
+        code_uri = self.functions[resource_id]["Properties"]["CodeUri"]
+        handler = self.functions[resource_id]["Properties"]["Handler"]
+        handler_path = f"{code_uri}.{handler}".replace("/", "")
+        return handler_path
