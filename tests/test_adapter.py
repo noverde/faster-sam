@@ -4,7 +4,7 @@ import yaml
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from adapter import SAM, GatewayLookupError, custom_openapi
+from adapter import SAM, GatewayLookupError, CustomOpenAPI
 from cloudformation import CloudformationTemplate
 
 
@@ -93,7 +93,7 @@ class TestCustomOpenAPI(unittest.TestCase):
 
     def test_custom_openapi(self):
         app = FastAPI()
-        app.openapi = custom_openapi(app, self.openapi_schema)
+        app.openapi = CustomOpenAPI(app, self.openapi_schema)
 
         openapi_schema = app.openapi()
 
@@ -109,7 +109,7 @@ class TestCustomOpenAPI(unittest.TestCase):
             model_config = {"json_schema_extra": {"examples": examples}}
 
         app = FastAPI()
-        app.openapi = custom_openapi(app, self.openapi_schema)
+        app.openapi = CustomOpenAPI(app, self.openapi_schema)
 
         @app.post("/foo")
         def _(foo: Foo):
