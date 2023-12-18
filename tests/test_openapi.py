@@ -4,7 +4,7 @@ import yaml
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from adapter import custom_openapi
+from openapi import custom_openapi
 
 
 class TestCustomOpenAPI(unittest.TestCase):
