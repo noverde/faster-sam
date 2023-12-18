@@ -1,29 +1,25 @@
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 
-class CustomOpenAPI:
-    def __init__(self, app: FastAPI, openapi_schema: Dict[str, Any]) -> None:
-        self.app = app
-        self.openapi_schema = openapi_schema
-
-    def __call__(self) -> Dict[str, Any]:
-        if self.app.openapi_schema is not None:
-            return self.app.openapi_schema
+def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[], Dict[str, Any]]:
+    def openapi() -> Dict[str, Any]:
+        if app.openapi_schema is not None:
+            return app.openapi_schema
 
         fastapi_schema = get_openapi(
-            title=self.app.title,
-            version=self.app.version,
-            summary=self.app.summary,
-            description=self.app.description,
-            routes=self.app.routes,
+            title=app.title,
+            version=app.version,
+            summary=app.summary,
+            description=app.description,
+            routes=app.routes,
         )
 
-        paths = {**fastapi_schema["paths"], **self.openapi_schema["paths"]}
+        paths = {**fastapi_schema["paths"], **openapi_schema["paths"]}
 
-        openapi_components = self.openapi_schema.get("components", {})
+        openapi_components = openapi_schema.get("components", {})
         openapi_schemas = openapi_components.get("schemas", {})
         openapi_security_schemes = openapi_components.get("securitySchemes", {})
         openapi_examples = openapi_components.get("examples", {})
@@ -48,7 +44,9 @@ class CustomOpenAPI:
         if examples:
             components["examples"] = examples
 
-        self.app.openapi_schema = {**self.openapi_schema, "paths": paths}
-        self.app.openapi_schema["components"] = components
+        app.openapi_schema = {**openapi_schema, "paths": paths}
+        app.openapi_schema["components"] = components
 
-        return self.app.openapi_schema
+        return app.openapi_schema
+
+    return openapi

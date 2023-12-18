@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from fastapi import FastAPI
 
 from cloudformation import CloudformationTemplate, NodeType
-from openapi import CustomOpenAPI
+from openapi import custom_openapi
 from routing import APIRoute
 
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
@@ -41,7 +41,7 @@ class SAM:
             routes = self.lambda_mapper(gateway_id)
         else:
             routes = self.openapi_mapper(openapi_schema)
-            app.openapi = CustomOpenAPI(app, openapi_schema)
+            app.openapi = custom_openapi(app, openapi_schema)
 
         self.register_routes(app, routes)
 
