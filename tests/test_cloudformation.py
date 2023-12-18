@@ -153,30 +153,29 @@ class TestCloudformationTemplate(unittest.TestCase):
 
         self.assertEqual(nodes, self.functions)
 
-
-def test_lambda_handler(self):
-    cloudformation = CloudformationTemplate("tests/fixtures/templates/example5.yml")
-    functions = {
-        "HelloWorldFunction": {
-            "Properties": {
-                "CodeUri": "tests/",
-                "Handler": "fixtures.handlers.lambda_handler.handler",
-            }
-        },
-        "HelloNameFunction": {
-            "Properties": {
-                "CodeUri": "tests/",
-                "Handler": "fixtures.handlers.lambda_handler.handler",
-            }
-        },
-        "NoTriggersFunction": {
-            "Properties": {
-                "CodeUri": "tests/",
-                "Handler": "fixtures.handlers.lambda_handler.handler",
-            }
-        },
-    }
-    for key, function in functions.items():
-        with self.subTest(**function["Properties"]):
-            handler_path = cloudformation.lambda_handler(key)
-            self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")
+    def test_lambda_handler(self):
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example5.yml")
+        functions = {
+            "HelloWorldFunction": {
+                "Properties": {
+                    "CodeUri": "tests/",
+                    "Handler": "fixtures.handlers.lambda_handler.handler",
+                }
+            },
+            "HelloNameFunction": {
+                "Properties": {
+                    "CodeUri": "tests/",
+                    "Handler": "fixtures.handlers.lambda_handler.handler",
+                }
+            },
+            "NoTriggersFunction": {
+                "Properties": {
+                    "CodeUri": "tests/",
+                    "Handler": "fixtures.handlers.lambda_handler.handler",
+                }
+            },
+        }
+        for key, function in functions.items():
+            with self.subTest(**function["Properties"]):
+                handler_path = cloudformation.lambda_handler(key)
+                self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")

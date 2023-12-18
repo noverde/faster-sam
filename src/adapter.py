@@ -70,11 +70,11 @@ class SAM:
     def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
         routes: Dict[str, Any] = {}
 
-        for key, function in self.template.functions.items():
+        for resource_id, function in self.template.functions.items():
             if "Events" not in function["Properties"]:
                 continue
 
-            handler_path = self.template.lambda_handler(key)
+            handler_path = self.template.lambda_handler(resource_id)
             events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API_EVENT)
 
             for event in events.values():
