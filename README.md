@@ -18,22 +18,22 @@
 
 ## Installation
 
-To install the ```Faster-SAM``` library, use the following pip command:
+To install the `Faster-SAM` library, use the following pip command:
 
-   ```sh
-   pip install faster-sam
-   ```
+```sh
+pip install faster-sam
+```
 
 ## Usage example
 
 Add this code exemple in your project:
 
-   ```python
-   from fastapi import SAM
-   from faster_sam import FastAPI
+```python
+from fastapi import SAM
+from faster_sam import FastAPI
 
-   app = FastAPI()
+app = FastAPI()
 
-   sam = SAM()
-   sam.configure_api(app)
-   ```
+sam = SAM()
+sam.configure_api(app)
+```
