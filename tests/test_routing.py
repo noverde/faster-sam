@@ -4,7 +4,7 @@ from http import HTTPStatus
 
 from fastapi import FastAPI, Request, Response
 
-import routing
+import faster_sam.routing
 
 
 def build_request():
@@ -34,7 +34,7 @@ class TestAPIRoute(unittest.TestCase):
     def test_route(self):
         endpoint = "tests.fixtures.handlers.lambda_handler.handler"
 
-        route = routing.APIRoute(path="/test", name="test", endpoint=endpoint)
+        route = faster_sam.routing.APIRoute(path="/test", name="test", endpoint=endpoint)
 
         self.assertEqual(route.path, "/test")
         self.assertEqual(route.name, "test")
@@ -48,7 +48,7 @@ class TestImportHandler(unittest.TestCase):
         handler_name = "handler"
         handler_path = f"{module_name}.{handler_name}"
 
-        handler = routing.import_handler(handler_path)
+        handler = faster_sam.routing.import_handler(handler_path)
 
         self.assertTrue(callable(handler))
         self.assertEqual(getattr(handler, "__module__", None), module_name)
@@ -64,7 +64,7 @@ class TestApiGatewayResponse(unittest.TestCase):
         }
 
     def test_response_creation(self):
-        response = routing.ApiGatewayResponse(self.data)
+        response = faster_sam.routing.ApiGatewayResponse(self.data)
 
         self.assertEqual(response.status_code, self.data["statusCode"])
         self.assertEqual(response.body.decode(), self.data["body"])
@@ -77,7 +77,7 @@ class TestApiGatewayResponse(unittest.TestCase):
                 del data[attr]
 
                 with self.assertRaises(KeyError):
-                    routing.ApiGatewayResponse(data)
+                    faster_sam.routing.ApiGatewayResponse(data)
 
 
 class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
@@ -94,7 +94,7 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
             "requestContext",
         }
 
-        event = await routing.event_builder(request)
+        event = await faster_sam.routing.event_builder(request)
 
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event.keys()), expected_keys)
@@ -111,7 +111,7 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
                 "headers": event["headers"],
             }
 
-        endpoint = routing.handler(echo)
+        endpoint = faster_sam.routing.handler(echo)
         response = await endpoint(request)
 
         self.assertIsInstance(response, Response)

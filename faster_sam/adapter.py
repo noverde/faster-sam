@@ -3,9 +3,9 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 
-from cloudformation import CloudformationTemplate, NodeType
-from openapi import custom_openapi
-from routing import APIRoute
+from faster_sam.cloudformation import CloudformationTemplate, NodeType
+from faster_sam.openapi import custom_openapi
+from faster_sam.routing import APIRoute
 
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 

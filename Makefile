@@ -1,5 +1,5 @@
 # project settings
-PROJECT_PATH := src
+PROJECT_PATH := faster_sam
 
 # venv settings
 export VIRTUALENV := $(PWD)/.venv
