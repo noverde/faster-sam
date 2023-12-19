@@ -1,1 +1,1 @@
-from .adapter import SAM  # noqa: F401
+from faster_sam.adapter import SAM  # noqa: F401
