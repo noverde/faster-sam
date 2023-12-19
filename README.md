@@ -6,16 +6,9 @@
 [![Tests](https://github.com/noverde/faster-sam/actions/workflows/tests.yml/badge.svg)](https://github.com/noverde/faster-sam/actions/workflows/tests.yml)
 [![PyPI version](https://badge.fury.io/py/example.svg)](https://badge.fury.io/py/example)
 
-Table of Contents
-
-- About The Project
-- Dependencies
-- Installation
-- Usage example
-
 ## About The Project
 
-```Faster-SAM``` is a library designed to integrate APIs built using the AWS Serverless Application Model (SAM) with FastAPI, enabling developers to run their AWS SAM applications outside of the AWS environment. FastAPI, known for its high-performance and easy-to-use framework for building APIs with Python, gains compatibility with AWS SAM through this specialized adapter.
+`Faster-SAM` is a library designed to integrate APIs built using the AWS Serverless Application Model (SAM) with FastAPI, enabling developers to run their AWS SAM applications outside of the AWS environment. FastAPI, known for its high-performance and easy-to-use framework for building APIs with Python, gains compatibility with AWS SAM through this specialized adapter.
 
 ### Dependencies
 
@@ -36,8 +29,8 @@ To install the ```Faster-SAM``` library, use the following pip command:
 Add this code exemple in your project:
 
    ```python
-   from adapter import SAM
-   from fastapi import FastAPI
+   from fastapi import SAM
+   from faster_sam import FastAPI
 
    app = FastAPI()
 
