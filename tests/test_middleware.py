@@ -3,7 +3,7 @@ import unittest
 
 from fastapi import FastAPI, Request, Response
 
-from middleware import RemovePathMiddleware
+from faster_sam.middleware import RemovePathMiddleware
 
 
 class TestRemovePathMiddleware(unittest.IsolatedAsyncioTestCase):

@@ -5,8 +5,8 @@ from pathlib import Path
 
 import yaml
 
-import cloudformation as cf
-from cloudformation import CloudformationTemplate
+import faster_sam.cloudformation as cf
+from faster_sam.cloudformation import CloudformationTemplate
 
 
 @contextmanager

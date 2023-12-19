@@ -2,8 +2,8 @@ import unittest
 
 from fastapi import FastAPI
 
-from adapter import SAM, GatewayLookupError
-from cloudformation import CloudformationTemplate
+from faster_sam.adapter import SAM, GatewayLookupError
+from faster_sam.cloudformation import CloudformationTemplate
 
 
 class TestSAM(unittest.TestCase):
