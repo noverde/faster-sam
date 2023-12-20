@@ -26,11 +26,11 @@ pip install faster-sam
 
 ## Usage example
 
-Add this code exemple in your project:
+Add this code example in your project:
 
 ```python
-from fastapi import SAM
-from faster_sam import FastAPI
+from faster_sam import SAM
+from fastapi import FastAPI
 
 app = FastAPI()
 
