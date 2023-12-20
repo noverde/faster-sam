@@ -20,15 +20,9 @@ We actively welcome your pull requests:
 
 1. Fork the repo and create your branch from the default repo branch.
 2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
-6. Submit that pull request!
-
-Consult
-[Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow) and
-[About GitHub Pull Requests](https://help.github.com/articles/about-pull-requests/) for more
-information on using pull requests.
+3. If needed, update the documentation.
+4. Make sure your code lints.
+5. Submit that pull request!
 
 ## Code of Conduct
 
