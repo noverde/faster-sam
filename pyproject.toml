@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "An adapter to enable running APIs built with AWS SAM applications using FastAPI."
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
-    {name = "Noverde Developers", email = "dev@noverde.com.br"},
+    {name = "Noverde Developers", email = "devs-dotz@dotz.com"},
 ]
 license = {text = "MIT"}
 keywords = ["utilities", "fastapi", "sam"]
