@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -15,7 +15,11 @@ def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[],
             summary=app.summary,
             description=app.description,
             routes=app.routes,
+            servers=app.servers,
         )
+
+        servers: List[Dict[str, Any]] = fastapi_schema.get("servers", [])
+        servers.extend(openapi_schema.get("servers", []))
 
         paths = {**fastapi_schema["paths"], **openapi_schema["paths"]}
 
@@ -44,7 +48,7 @@ def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[],
         if examples:
             components["examples"] = examples
 
-        app.openapi_schema = {**openapi_schema, "paths": paths}
+        app.openapi_schema = {**openapi_schema, "servers": servers, "paths": paths}
         app.openapi_schema["components"] = components
 
         return app.openapi_schema

@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import yaml
@@ -14,12 +15,16 @@ class TestCustomOpenAPI(unittest.TestCase):
             cls.openapi_schema = yaml.safe_load(fp)
 
     def test_custom_openapi(self):
-        app = FastAPI()
+        server = {"url": "/test"}
+        app = FastAPI(servers=[server])
         app.openapi = custom_openapi(app, self.openapi_schema)
 
         openapi_schema = app.openapi()
 
-        self.assertEqual(openapi_schema, self.openapi_schema)
+        expected_schema = copy.deepcopy(self.openapi_schema)
+        expected_schema["servers"].insert(0, server)
+
+        self.assertEqual(openapi_schema, expected_schema)
 
     def test_register_route(self):
         examples = [{"bar": "Bar", "baz": 1}]
