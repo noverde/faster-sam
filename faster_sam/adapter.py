@@ -11,14 +11,73 @@ ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
 
 class GatewayLookupError(LookupError):
+    """
+    Custom exception for errors related to Gateway.
+    """
+
     pass
 
 
 class SAM:
+    """
+    SAM class to run AWS SAM applications with FastAPI.
+
+    ...
+
+    Parameters
+    ----------
+    template_path : Optional[str]
+        Path to the CloudFormation template file.
+
+    Attributes
+    ----------
+    template : CloudformationTemplate
+        Instance of CloudformationTemplate based on the provided template_path.
+
+    Methods
+    -------
+    configure_api(app: FastAPI, gateway_id: Optional[str] = None) -> None:
+        Configures the FastAPI app with routes based on the template file.
+
+    openapi_mapper(openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
+        Maps OpenAPI schema with FastAPI routes.
+
+    lambda_mapper(gateway_id: Optional[str]) -> Dict[str, Any]:
+        Maps Lambda functions associated with an API Gateway to FastAPI routes.
+
+    register_routes(app: FastAPI, routes: Dict[str, Any]) -> None:
+        Registers FastAPI routes based on the provided routes dictionary.
+    """
+
     def __init__(self, template_path: Optional[str] = None) -> None:
+        """
+        Initializes the SAM object.
+
+        Parameters
+        ----------
+        template_path : Optional[str]
+            Path to the CloudFormation template file.
+        """
+
         self.template = CloudformationTemplate(template_path)
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
+        """
+        Configures the FastAPI app with routes based on the template file.
+
+        Parameters
+        ----------
+        app : FastAPI
+            The FastAPI app instance to be configured.
+        gateway_id : Optional[str], optional
+            Optional gateway ID to filter the routes for a specific API Gateway.
+
+        Raises
+        ------
+        GatewayLookupError
+            Any error related to gateway, like missing the gateway id.
+        """
+
         gateway: Dict[str, Any] = {"Properties": {}}
 
         if gateway_id is not None:
@@ -46,6 +105,20 @@ class SAM:
         self.register_routes(app, routes)
 
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Maps OpenAPI schema with FastAPI routes.
+
+        Parameters
+        ----------
+        openapi_schema : Dict[str, Any]
+            OpenAPI schema dictionary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing FastAPI routes.
+        """
+
         routes: Dict[str, Any] = {}
 
         for path, methods in openapi_schema["paths"].items():
@@ -68,6 +141,20 @@ class SAM:
         return routes
 
     def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
+        """
+        Maps Lambda functions associated with an API Gateway to FastAPI routes.
+
+        Parameters
+        ----------
+        gateway_id : Optional[str]
+            Optional gateway ID to filter the routes for a specific API Gateway.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing FastAPI routes.
+        """
+
         routes: Dict[str, Any] = {}
 
         for resource_id, function in self.template.functions.items():
@@ -92,6 +179,17 @@ class SAM:
         return routes
 
     def register_routes(self, app: FastAPI, routes: Dict[str, Any]) -> None:
+        """
+        Registers FastAPI routes based on the provided routes dictionary.
+
+        Parameters
+        ----------
+        app : FastAPI
+            The FastAPI app instance.
+        routes : Dict[str, Any]
+            Dictionary containing FastAPI routes.
+        """
+
         for path, methods in routes.items():
             for method, config in methods.items():
                 app.router.add_api_route(
