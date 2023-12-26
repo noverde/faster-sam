@@ -4,7 +4,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)
 [![Tests](https://github.com/noverde/faster-sam/actions/workflows/tests.yml/badge.svg)](https://github.com/noverde/faster-sam/actions/workflows/tests.yml)
-[![PyPI version](https://badge.fury.io/py/example.svg)](https://badge.fury.io/py/example)
+[![PyPI version](https://badge.fury.io/py/faster-sam.svg)](https://badge.fury.io/py/faster-sam)
 
 ## About The Project
 
@@ -29,8 +29,8 @@ pip install faster-sam
 Add this code example in your project:
 
 ```python
-from faster_sam import SAM
 from fastapi import FastAPI
+from faster_sam import SAM
 
 app = FastAPI()
 
