@@ -9,28 +9,72 @@ WITHOUT_PREFIX = ("Ref", "Condition")
 
 
 class CFTemplateNotFound(FileNotFoundError):
+    """Exception raised when CloudFormation template file is not found."""
+
     pass
 
 
 class CFBadTag(TypeError):
+    """Exception raised when encountering an invalid CloudFormation tag."""
+
     pass
 
 
 class CFBadNode(ValueError):
+    """Exception raised when encountering an invalid CloudFormation node."""
+
     pass
 
 
 class CFLoader(yaml.SafeLoader):
+    """Custom YAML loader for CloudFormation templates."""
+
     pass
 
 
 class NodeType(Enum):
+    """
+    Enum representing different types of CloudFormation nodes.
+
+    Attributes
+    ----------
+    API_GATEWAY : str
+        Represents the "AWS::Serverless::Api" node type.
+    LAMBDA : str
+        Represents the "AWS::Serverless::Function" node type.
+    API_EVENT : str
+        Represents the "Api" node type.
+    """
+
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
     API_EVENT = "Api"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
+    """
+    Multi-constructor function for handling different CloudFormation template loading.
+
+    Parameters
+    ----------
+    loader : CFLoader
+        The YAML loader instance.
+    tag_suffix : str
+        The YAML tag suffix.
+    node : yaml.nodes.Node
+        The YAML node.
+
+    Returns
+    -------
+    List[Any]
+        List representing the constructed CloudFormation GetAtt element.
+
+    Raises
+    ------
+    CFBadTag
+        If an invalid CloudFormation tag is encountered.
+    """
+
     tag = tag_suffix
 
     if tag not in WITHOUT_PREFIX:
@@ -49,6 +93,25 @@ def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) 
 
 
 def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
+    """
+    Constructs a CloudFormation GetAtt element from a node.
+
+    Parameters
+    ----------
+    node : yaml.nodes.Node
+        The node representing a CloudFormation GetAtt element.
+
+    Returns
+    -------
+    List[Any]
+        List representing the constructed CloudFormation GetAtt element.
+
+    Raises
+    ------
+    CFBadNode
+        If an invalid CloudFormation node is encountered.
+    """
+
     if isinstance(node.value, str):
         return node.value.split(".", 1)
     elif isinstance(node.value, list):
@@ -61,23 +124,74 @@ CFLoader.add_multi_constructor("!", multi_constructor)
 
 
 class CloudformationTemplate:
+    """
+    Represents a CloudFormation template.
+
+    Parameters
+    ----------
+    template_path : Optional[str]
+        Path to the CloudFormation template file.
+
+    Attributes
+    ----------
+    template : Dict[str, Any]
+        Dictionary representing the loaded CloudFormation template.
+
+    Methods
+    -------
+    include_files() -> None:
+        Includes external files specified in the CloudFormation template.
+
+    load(template: Optional[str] = None) -> Dict[str, Any]:
+        Loads the CloudFormation template from the specified path.
+
+    find_nodes(tree: Dict[str, Any], node_type: NodeType) -> Dict[str, Any]:
+        Finds nodes of a specific type in the CloudFormation template.
+
+    lambda_handler(resource_id: str) -> str:
+        Constructs the Lambda handler path for a given resource ID.
+    """
+
     def __init__(self, template_path: Optional[str] = None) -> None:
+        """
+        Initializes the CloudFormationTemplate object.
+
+        Parameters
+        ----------
+        template_path : Optional[str]
+            Path to the CloudFormation template file.
+        """
+
         self.template = self.load(template_path)
         self.include_files()
 
     @property
     def functions(self) -> Dict[str, Any]:
+        """
+        Dict[str, Any]:
+            Dictionary containing Lambda function resources in the CloudFormation template.
+        """
+
         if not hasattr(self, "_functions"):
             self._functions = self.find_nodes(self.template["Resources"], NodeType.LAMBDA)
         return self._functions
 
     @property
     def gateways(self) -> Dict[str, Any]:
+        """
+        Dict[str, Any]:
+            Dictionary containing API Gateway resources in the CloudFormation template.
+        """
+
         if not hasattr(self, "_gateways"):
             self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
         return self._gateways
 
     def include_files(self):
+        """
+        Includes external files specified in the CloudFormation template.
+        """
+
         for gateway in self.gateways.values():
             if "DefinitionBody" not in gateway["Properties"]:
                 continue
@@ -90,6 +204,25 @@ class CloudformationTemplate:
             gateway["Properties"]["DefinitionBody"] = swagger
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Loads the CloudFormation template from the specified path.
+
+        Parameters
+        ----------
+        template : Optional[str]
+            Path to the CloudFormation template file.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary representing the loaded CloudFormation template.
+
+        Raises
+        ------
+        CFTemplateNotFound
+            Exception raised when CloudFormation template file is not found.
+        """
+
         path: Optional[Path] = None
 
         if isinstance(template, str):
@@ -107,6 +240,22 @@ class CloudformationTemplate:
             return yaml.load(fp, CFLoader)
 
     def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> Dict[str, Any]:
+        """
+        Finds nodes of a specific type in the CloudFormation template.
+
+        Parameters
+        ----------
+        tree : Dict[str, Any]
+            Dictionary representing a tree of the CloudFormation template.
+        node_type : NodeType
+            The type of node to search for.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing nodes of the specified type.
+        """
+
         nodes = {}
 
         for key, node in tree.items():
@@ -116,6 +265,20 @@ class CloudformationTemplate:
         return nodes
 
     def lambda_handler(self, resource_id: str) -> str:
+        """
+        Constructs the Lambda handler path for a given resource ID.
+
+        Parameters
+        ----------
+        resource_id : str
+            The ID of the Lambda function resource.
+
+        Returns
+        -------
+        str
+            The constructed Lambda handler path.
+        """
+
         code_uri = self.functions[resource_id]["Properties"]["CodeUri"]
         handler = self.functions[resource_id]["Properties"]["Handler"]
         handler_path = f"{code_uri}.{handler}".replace("/", "")
