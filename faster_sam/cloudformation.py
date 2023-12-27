@@ -187,7 +187,10 @@ class CloudformationTemplate:
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         """
-        Loads the CloudFormation template file from the specified path or the find one.
+        Reads CloudFormation template file from the disk and convert it to a dictionary.
+
+        If the template argument is not set it is assumed an YAML file named
+        template exists in the current directory.
 
         Parameters
         ----------
@@ -248,7 +251,10 @@ class CloudformationTemplate:
 
     def lambda_handler(self, resource_id: str) -> str:
         """
-        Constructs the Lambda handler path from the given resource id.
+        Returns a string representing the full module path for a Lambda Function handler.
+
+        The path is built by joining the code URI and the handler attributes on
+        the CloudFormation for the given Lambda Function identified by resource_id.
 
         Parameters
         ----------
