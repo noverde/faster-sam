@@ -12,7 +12,7 @@ ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
 class GatewayLookupError(LookupError):
     """
-    Custom exception for errors related to Gateway.
+    Exception for errors related to Gateway.
     """
 
     pass
@@ -106,7 +106,7 @@ class SAM:
 
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Maps OpenAPI schema with FastAPI routes.
+        Maps OpenAPI schema with OpenAPI format routes.
 
         Parameters
         ----------
@@ -142,7 +142,7 @@ class SAM:
 
     def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
         """
-        Maps Lambda functions associated with an API Gateway to FastAPI routes.
+        Maps Lambda functions associated with an API Gateway to OpenAPI format routes.
 
         Parameters
         ----------
