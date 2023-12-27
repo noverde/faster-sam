@@ -110,7 +110,7 @@ class SAM:
         ...          type: aws_proxy
         ...          uri:
         ...            Fn::Sub: "arn:aws:apigateway::lambda:path/2015-03-31/
-                       functions/${HealthFunction.Arn}/invocations"
+        ...            functions/${HealthFunction.Arn}/invocations"
         ...          credentials: "arn:aws:iam:::role/apigateway-invoke-lambda-role"
         ... '''
         >>> SAM().openapi_mapper(schema)
