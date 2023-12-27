@@ -12,7 +12,8 @@ ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
 class GatewayLookupError(LookupError):
     """
-    Exception for errors related to Gateway.
+    Raised when performing API Gateway lookup, usually when multiple gateways
+    are available requiring an explicit target.
     """
 
     pass
@@ -20,33 +21,13 @@ class GatewayLookupError(LookupError):
 
 class SAM:
     """
-    SAM class to run AWS SAM applications with FastAPI.
-
-    ...
-
-    Parameters
-    ----------
-    template_path : Optional[str]
-        Path to the CloudFormation template file.
+    Adapter class for FastAPI applications allowing map API routes defined
+    on a CloudFormation template or OpenAPI file.
 
     Attributes
     ----------
     template : CloudformationTemplate
         Instance of CloudformationTemplate based on the provided template_path.
-
-    Methods
-    -------
-    configure_api(app: FastAPI, gateway_id: Optional[str] = None) -> None:
-        Configures the FastAPI app with routes based on the template file.
-
-    openapi_mapper(openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
-        Maps OpenAPI schema with FastAPI routes.
-
-    lambda_mapper(gateway_id: Optional[str]) -> Dict[str, Any]:
-        Maps Lambda functions associated with an API Gateway to FastAPI routes.
-
-    register_routes(app: FastAPI, routes: Dict[str, Any]) -> None:
-        Registers FastAPI routes based on the provided routes dictionary.
     """
 
     def __init__(self, template_path: Optional[str] = None) -> None:
@@ -63,19 +44,23 @@ class SAM:
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
         """
-        Configures the FastAPI app with routes based on the template file.
+        Configures the FastAPI application with routes based on one of
+        the following template files: CloudFormation, OpenAPI.
 
         Parameters
         ----------
         app : FastAPI
-            The FastAPI app instance to be configured.
+            The FastAPI application instance to be configured.
         gateway_id : Optional[str], optional
-            Optional gateway ID to filter the routes for a specific API Gateway.
+            Optional API Gateway resource ID defined on the CloudFormation
+            template. When multiple API Gateways are defined on the template
+            this argument is required to identify which gateway is being mapped.
 
         Raises
         ------
         GatewayLookupError
-            Any error related to gateway, like missing the gateway id.
+            Raised if multiple API Gateways are defined on the CloudFormation
+            template and the gateway_id are not set.
         """
 
         gateway: Dict[str, Any] = {"Properties": {}}
@@ -106,7 +91,30 @@ class SAM:
 
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Maps OpenAPI schema with OpenAPI format routes.
+        Create a route map extracted from the given OpenAPI schema.
+
+        Notice that this is an OpenAPI schema used by AWS SAM to configure
+        an API Gateway, therefore it requires AWS extensions pointing to
+        event consumers, most of the time Lambda Functions.
+
+        e.g.
+
+        >>> # The OpenAPI input schema is omitting information for brevity
+        >>> schema = '''
+        ... paths:
+        ...   /health:
+        ...     get:
+        ...       x-amazon-apigateway-integration:
+        ...          passthroughBehavior: when_no_match
+        ...          httpMethod: POST
+        ...          type: aws_proxy
+        ...          uri:
+        ...            Fn::Sub: "arn:aws:apigateway::lambda:path/2015-03-31/
+                       functions/${HealthFunction.Arn}/invocations"
+        ...          credentials: "arn:aws:iam:::role/apigateway-invoke-lambda-role"
+        ... '''
+        >>> SAM().openapi_mapper(schema)
+        {"/health": {"get": {"handler": "src.handlers.health"}}}
 
         Parameters
         ----------
@@ -116,7 +124,7 @@ class SAM:
         Returns
         -------
         Dict[str, Any]
-            Dictionary containing FastAPI routes.
+            Dictionary containing the routes.
         """
 
         routes: Dict[str, Any] = {}
@@ -142,17 +150,18 @@ class SAM:
 
     def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
         """
-        Maps Lambda functions associated with an API Gateway to OpenAPI format routes.
+        Generate a route map extracted from the lambda functions schema
+        corresponding to the given gateway id.
 
         Parameters
         ----------
         gateway_id : Optional[str]
-            Optional gateway ID to filter the routes for a specific API Gateway.
+            Optional gateway id to filter the routes for a specific API Gateway.
 
         Returns
         -------
         Dict[str, Any]
-            Dictionary containing FastAPI routes.
+            Dictionary containing the routes.
         """
 
         routes: Dict[str, Any] = {}
@@ -180,12 +189,13 @@ class SAM:
 
     def register_routes(self, app: FastAPI, routes: Dict[str, Any]) -> None:
         """
-        Registers FastAPI routes based on the provided routes dictionary.
+        Registers FastAPI routes based on the provided route map into the
+        given FastAPI application.
 
         Parameters
         ----------
         app : FastAPI
-            The FastAPI app instance.
+            The FastAPI application instance.
         routes : Dict[str, Any]
             Dictionary containing FastAPI routes.
         """
