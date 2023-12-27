@@ -162,7 +162,9 @@ class SAM:
                 continue
 
             handler_path = self.template.lambda_handler(resource_id)
-            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API_EVENT)
+            events = self.template.find_nodes(
+                function["Properties"]["Events"], NodeType.API_EVENT
+            )
 
             for event in events.values():
                 rest_api_id = event["Properties"].get("RestApiId", {"Ref": None})["Ref"]
