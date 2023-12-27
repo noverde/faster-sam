@@ -9,19 +9,19 @@ WITHOUT_PREFIX = ("Ref", "Condition")
 
 
 class CFTemplateNotFound(FileNotFoundError):
-    """Exception raised when CloudFormation template file is not found."""
+    """Raised when the CloudFormation template file cannot be found."""
 
     pass
 
 
 class CFBadTag(TypeError):
-    """Exception raised when encountering an invalid CloudFormation tag."""
+    """Raised when an invalid CloudFormation tag is encountered."""
 
     pass
 
 
 class CFBadNode(ValueError):
-    """Exception raised when encountering an invalid CloudFormation node."""
+    """Raised when an invalid CloudFormation node is encountered."""
 
     pass
 
@@ -125,31 +125,13 @@ CFLoader.add_multi_constructor("!", multi_constructor)
 
 class CloudformationTemplate:
     """
-    Represents a CloudFormation template.
-
-    Parameters
-    ----------
-    template_path : Optional[str]
-        Path to the CloudFormation template file.
+    Represents an AWS CloudFormation template and provides methods for
+    extracting information from the template.
 
     Attributes
     ----------
     template : Dict[str, Any]
         Dictionary representing the loaded CloudFormation template.
-
-    Methods
-    -------
-    include_files() -> None:
-        Includes external files specified in the CloudFormation template.
-
-    load(template: Optional[str] = None) -> Dict[str, Any]:
-        Loads the CloudFormation template from the specified path.
-
-    find_nodes(tree: Dict[str, Any], node_type: NodeType) -> Dict[str, Any]:
-        Finds nodes of a specific type in the CloudFormation template.
-
-    lambda_handler(resource_id: str) -> str:
-        Constructs the Lambda handler path for a given resource ID.
     """
 
     def __init__(self, template_path: Optional[str] = None) -> None:
@@ -189,7 +171,7 @@ class CloudformationTemplate:
 
     def include_files(self):
         """
-        Includes external files specified in the CloudFormation template.
+        Load external files specified in the CloudFormation template like OpenAPI schema.
         """
 
         for gateway in self.gateways.values():
@@ -205,7 +187,7 @@ class CloudformationTemplate:
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         """
-        Loads the CloudFormation template from the specified path.
+        Loads the CloudFormation template file from the specified path or the find one.
 
         Parameters
         ----------
@@ -266,12 +248,12 @@ class CloudformationTemplate:
 
     def lambda_handler(self, resource_id: str) -> str:
         """
-        Constructs the Lambda handler path for a given resource ID.
+        Constructs the Lambda handler path from the given resource id.
 
         Parameters
         ----------
         resource_id : str
-            The ID of the Lambda function resource.
+            The id of the Lambda function resource.
 
         Returns
         -------
