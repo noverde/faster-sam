@@ -53,7 +53,9 @@ class NodeType(Enum):
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
     """
-    Multi-constructor function for handling different CloudFormation template loading.
+    Custom YAML node constructor.
+
+    Handles AWS CloudFormation extensions for its short version of intrinsic functions.
 
     Parameters
     ----------
@@ -67,7 +69,7 @@ def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) 
     Returns
     -------
     List[Any]
-        List representing the constructed CloudFormation GetAtt element.
+        A dictionary representation of the given YAML node.
 
     Raises
     ------
@@ -94,7 +96,7 @@ def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) 
 
 def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
     """
-    Constructs a CloudFormation GetAtt element from a node.
+    Custom YAML node constructor for AWS CloudFormation GetAtt intrinsic function.
 
     Parameters
     ----------
@@ -231,7 +233,7 @@ class CloudformationTemplate:
         Parameters
         ----------
         tree : Dict[str, Any]
-            Dictionary representing a tree of the CloudFormation template.
+            Dictionary representing a subset of the CloudFormation template.
         node_type : NodeType
             The type of node to search for.
 
