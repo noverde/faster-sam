@@ -13,7 +13,7 @@ def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[],
     app : FastAPI
         The FastAPI application instance.
     openapi_schema : Dict[str, Any]
-        OpenAPI schema to be merged with the new one. 
+        OpenAPI schema to be merged with the new one.
 
     Returns
     -------
@@ -21,7 +21,7 @@ def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[],
         A callable function that generates the OpenAPI schema.
 
     e.g
-    
+
     >>> schema = json.load(open("swagger.json"))
     >>> app = FastAPI()
     >>> app.openapi = custom_openapi(app, schema)
