@@ -12,7 +12,20 @@ Endpoint = Callable[[Request], Awaitable[Response]]
 
 
 class ApiGatewayResponse(Response):
+    """
+    Represents an API Gateway HTTP response.
+    """
+
     def __init__(self, data: Dict[str, Any]):
+        """
+        Initializes the ApiGatewayResponse.
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            The dictionary containing the response data.
+        """
+
         super().__init__(
             content=data["body"],
             status_code=data["statusCode"],
@@ -22,6 +35,22 @@ class ApiGatewayResponse(Response):
 
 
 async def event_builder(request: Request) -> Dict[str, Any]:
+    """
+    Builds an event of type aws_proxy from API Gateway.
+
+    It uses the given request object to fill the event details.
+
+    Parameters
+    ----------
+    request : Request
+        A request object.
+
+    Returns
+    -------
+    Dict[str, Any]
+        An aws_proxy event.
+    """
+
     now = datetime.now(timezone.utc)
     body = await request.body()
     event = {
