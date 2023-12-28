@@ -6,13 +6,15 @@ from starlette.types import ASGIApp
 
 class RemovePathMiddleware(BaseHTTPMiddleware):
     """
-    Middleware for removing a specified part of the request path.
+    Remove a specified part of the request path using middleware.
 
     e.g
 
+    This example apply the middleware to transform the request path from "/foo/bar" to "/bar"
+    by removing a specified part ("/foo").
+
     >>> app = FastAPI()
-    >>> app.add_middleware(RemovePathMiddleware, path="/foo")  # Removes /foo from requests path
-    >>> # /foo/bar ---> midleware ----> /bar
+    >>> app.add_middleware(RemovePathMiddleware, path="/foo")
     >>> @app.get("/bar")
     ... def bar():
     ...     return {"message": "Responding to GET /foo/bar}
@@ -25,7 +27,7 @@ class RemovePathMiddleware(BaseHTTPMiddleware):
         Parameters
         ----------
         app : ASGIApp
-            The application that the middleware is applied.
+            Application instance the middleware is being registered to.
         path : str
             The part of the path to be removed from incoming requests.
         """
@@ -34,7 +36,7 @@ class RemovePathMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
-        Method that removes the specified part of the request path.
+        Removes the specified part of the request path.
 
         Parameters
         ----------
