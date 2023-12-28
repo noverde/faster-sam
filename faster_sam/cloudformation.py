@@ -68,7 +68,7 @@ def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) 
 
     Returns
     -------
-    List[Any]
+    Dict[str, Any]
         A dictionary representation of the given YAML node.
 
     Raises
