@@ -12,7 +12,20 @@ Endpoint = Callable[[Request], Awaitable[Response]]
 
 
 class ApiGatewayResponse(Response):
+    """
+    Represents an API Gateway http response.
+    """
+
     def __init__(self, data: Dict[str, Any]):
+        """
+        Initializes the ApiGatewayResponse.
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            The dictionary containing the response data.
+        """
+
         super().__init__(
             content=data["body"],
             status_code=data["statusCode"],
@@ -22,6 +35,20 @@ class ApiGatewayResponse(Response):
 
 
 async def event_builder(request: Request) -> Dict[str, Any]:
+    """
+    Builds an event dictionary from the given request.
+
+    Parameters
+    ----------
+    request : Request
+        The application request.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The event dictionary.
+    """
+
     now = datetime.now(timezone.utc)
     body = await request.body()
     event = {
