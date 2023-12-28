@@ -6,7 +6,7 @@ from starlette.types import ASGIApp
 
 class RemovePathMiddleware(BaseHTTPMiddleware):
     """
-    Remove a specified part of the request path using middleware.
+    Removes a specified part of the request path.
 
     e.g
 
