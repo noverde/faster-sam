@@ -22,7 +22,9 @@ def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[],
 
     e.g
 
-    >>> schema = json.load(open("swagger.json"))
+    >>> file = open("swagger.json")
+    >>> schema = json.load(file)
+    >>> file.close()
     >>> app = FastAPI()
     >>> app.openapi = custom_openapi(app, schema)
     """
