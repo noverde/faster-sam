@@ -12,6 +12,7 @@ class RemovePathMiddleware(BaseHTTPMiddleware):
 
     >>> app = FastAPI()
     >>> app.add_middleware(RemovePathMiddleware, path="/foo")  # Removes /foo from requests path
+    >>> # /foo/bar ---> midleware ----> /bar
     >>> @app.get("/bar")
     ... def bar():
     ...     return {"message": "Responding to GET /foo/bar}
