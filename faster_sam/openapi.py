@@ -5,7 +5,38 @@ from fastapi.openapi.utils import get_openapi
 
 
 def custom_openapi(app: FastAPI, openapi_schema: Dict[str, Any]) -> Callable[[], Dict[str, Any]]:
+    """
+    Custom OpenAPI generator for the FastAPI application.
+
+    Parameters
+    ----------
+    app : FastAPI
+        The FastAPI application instance.
+    openapi_schema : Dict[str, Any]
+        OpenAPI schema to be merged with the new one. 
+
+    Returns
+    -------
+    Callable[[], Dict[str, Any]]
+        A callable function that generates the OpenAPI schema.
+
+    e.g
+    
+    >>> schema = json.load(open("swagger.json"))
+    >>> app = FastAPI()
+    >>> app.openapi = custom_openapi(app, schema)
+    """
+
     def openapi() -> Dict[str, Any]:
+        """
+        Generates the merged OpenAPI schema.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The merged OpenAPI schema.
+        """
+
         if app.openapi_schema is not None:
             return app.openapi_schema
 
