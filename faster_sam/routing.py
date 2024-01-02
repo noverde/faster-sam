@@ -80,6 +80,24 @@ async def event_builder(request: Request) -> Dict[str, Any]:
 
 
 def handler(func: Handler) -> Endpoint:
+    """
+    Returns a wrapper function.
+
+    The returning function converts a request object into a AWS proxy event,
+    then the event is passed to the handler function,
+    finally the function result is converted to a response object.
+
+    Parameters
+    ----------
+    func : Handler
+        A callable object.
+
+    Returns
+    -------
+    Endpoint
+        An async function, which accepts a single request argument and return a response.
+    """
+
     async def wrapper(request: Request) -> Response:
         event = await event_builder(request)
         result = func(event, None)
@@ -91,6 +109,19 @@ def handler(func: Handler) -> Endpoint:
 
 
 def import_handler(path: str) -> Handler:
+    """
+    Returns a callable object from the given module path.
+
+    Parameters
+    ----------
+    path : str
+        Full module path.
+
+    Returns
+    -------
+    Handler
+        A callable object.
+    """
     module_name, handler_name = path.rsplit(".", maxsplit=1)
     module = __import__(module_name, fromlist=(handler_name,))
 
@@ -98,7 +129,24 @@ def import_handler(path: str) -> Handler:
 
 
 class APIRoute(routing.APIRoute):
+    """
+    Extends FastAPI Router class used to describe path operations.
+
+    This custom router class receives the endpoint parameter as a string with
+    the full module path instead of the actual callable.
+    """
+
     def __init__(self, path: str, endpoint: str, *args, **kwargs):
+        """
+        Initializes the APIRoute object.
+
+        Parameters
+        ----------
+        path : str
+            HTTP route path.
+        endpoint : str
+            Full module path.
+        """
         handler_path = endpoint
         handler_func = import_handler(handler_path)
         super().__init__(path=path, endpoint=handler(handler_func), *args, **kwargs)
