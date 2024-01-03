@@ -10,7 +10,7 @@ ifeq ($(filter undefine,$(value .FEATURES)),)
 SHELL = env PATH="$(PATH)" /bin/bash
 endif
 
-.PHONY: .venv
+.PHONY: .venv docs
 
 build:
 	python -m build
@@ -46,3 +46,7 @@ coverage: test .coverage
 
 check:
 	twine check dist/*
+
+docs:
+	sphinx-apidoc -feMT -o docs/ faster_sam
+	sphinx-build -M html docs/ docs/_build
