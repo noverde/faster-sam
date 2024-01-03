@@ -2,7 +2,7 @@ project = "Faster SAM"
 author = "Dotz"
 release = "0.1.0"
 
-extensions = []
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
