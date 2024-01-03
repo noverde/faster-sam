@@ -1,12 +1,16 @@
-SPHINXOPTS    ?=
-SPHINXBUILD   ?= sphinx-build
-SOURCEDIR     = .
-BUILDDIR      = _build
+SPHINXOPTS	?=
+SPHINXBUILD	?= sphinx-build
+SPHINXAPIDOC	= sphinx-apidoc
+SOURCEDIR	= docs/
+BUILDDIR	= docs/_build
+MODULE_PATH	= faster_sam
 
+.PHONY: help
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
+auto:
+	@$(SPHINXAPIDOC) -feMT -o "$(SOURCEDIR)" "$(MODULE_PATH)"
 
-%: Makefile
+%:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
