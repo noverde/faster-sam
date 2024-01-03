@@ -1,5 +1,4 @@
 project = "Faster SAM"
-copyright = "2024, Dotz"
 author = "Dotz"
 release = "0.1.0"
 
