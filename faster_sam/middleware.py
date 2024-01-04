@@ -18,18 +18,18 @@ class RemovePathMiddleware(BaseHTTPMiddleware):
     >>> @app.get("/bar")
     ... def bar():
     ...     return {"message": "Responding to GET /foo/bar}
+
+    Parameters
+    ----------
+        app : ASGIApp
+            Application instance the middleware is being registered to.
+        path : str
+            The part of the path to be removed from incoming requests.
     """
 
     def __init__(self, app: ASGIApp, path: str) -> None:
         """
         Initializes the RemovePathMiddleware.
-
-        Parameters
-        ----------
-        app : ASGIApp
-            Application instance the middleware is being registered to.
-        path : str
-            The part of the path to be removed from incoming requests.
         """
         super().__init__(app, self.dispatch)
         self.path = path

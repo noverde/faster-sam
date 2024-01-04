@@ -130,6 +130,11 @@ class CloudformationTemplate:
     Represents an AWS CloudFormation template and provides methods for
     extracting information from the template.
 
+    Parameters
+    ----------
+    template_path : Optional[str]
+        Path to the CloudFormation template file.
+
     Attributes
     ----------
     template : Dict[str, Any]
@@ -139,11 +144,6 @@ class CloudformationTemplate:
     def __init__(self, template_path: Optional[str] = None) -> None:
         """
         Initializes the CloudFormationTemplate object.
-
-        Parameters
-        ----------
-        template_path : Optional[str]
-            Path to the CloudFormation template file.
         """
 
         self.template = self.load(template_path)

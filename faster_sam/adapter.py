@@ -24,6 +24,11 @@ class SAM:
     Adapter class for FastAPI applications allowing map API routes defined
     on a CloudFormation template or OpenAPI file.
 
+    Parameters
+    ----------
+    template_path : Optional[str]
+        Path to the CloudFormation template file.
+
     Attributes
     ----------
     template : CloudformationTemplate
@@ -33,11 +38,6 @@ class SAM:
     def __init__(self, template_path: Optional[str] = None) -> None:
         """
         Initializes the SAM object.
-
-        Parameters
-        ----------
-        template_path : Optional[str]
-            Path to the CloudFormation template file.
         """
 
         self.template = CloudformationTemplate(template_path)
