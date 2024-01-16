@@ -3,14 +3,14 @@ import unittest
 
 from fastapi import FastAPI, Request, Response
 
-from faster_sam.middleware import RemovePathMiddleware
+from faster_sam.middlewares import remove_path
 
 
 class TestRemovePathMiddleware(unittest.IsolatedAsyncioTestCase):
     async def test_middleware_remove_path(self):
         app = FastAPI()
 
-        middleware = RemovePathMiddleware(app, path="/test")
+        middleware = remove_path.RemovePathMiddleware(app, path="/test")
 
         async def call_next(request: Request) -> Response:
             return Response(content=json.dumps({"path": request.scope["path"]}))
