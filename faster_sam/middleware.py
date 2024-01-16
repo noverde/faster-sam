@@ -1,11 +1,12 @@
-from http import HTTPStatus
 import json
+from http import HTTPStatus
+from typing import Dict
+
+from botocore.client import BaseClient
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
-from typing import Dict
-from botocore.client import BaseClient
 
 
 class RemovePathMiddleware(BaseHTTPMiddleware):
