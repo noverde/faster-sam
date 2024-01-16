@@ -4,5 +4,6 @@ flake8==6.1.0
 build==1.0.3
 twine==4.0.2
 sphinx==7.1.2
+boto3 == 1.34.19
 
 -e .
