@@ -27,7 +27,8 @@ class TestLambdaAuthorizer(unittest.IsolatedAsyncioTestCase):
         app = FastAPI()
 
         middleware = LambdaAuthorizer(
-            app, "arn:aws:lambda:region:account-id:function:function-name"
+            app,
+            "arn:aws:lambda:region:account-id:function:function-name",
         )
 
         async def call_next(request: Request) -> Response:
