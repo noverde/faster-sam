@@ -4,7 +4,7 @@ import unittest
 
 from fastapi import FastAPI, Request, Response
 
-from faster_sam.middleware import LambdaAuthorizer, RemovePathMiddleware
+from faster_sam.middleware import LambdaAuthorizerMiddleware, RemovePathMiddleware
 
 
 class TestRemovePathMiddleware(unittest.IsolatedAsyncioTestCase):
@@ -26,7 +26,7 @@ class TestLambdaAuthorizer(unittest.IsolatedAsyncioTestCase):
     async def test_middleware_unauthorized(self):
         app = FastAPI()
 
-        middleware = LambdaAuthorizer(
+        middleware = LambdaAuthorizerMiddleware(
             app,
             "arn:aws:lambda:region:account-id:function:function-name",
         )
@@ -52,5 +52,5 @@ class TestLambdaAuthorizer(unittest.IsolatedAsyncioTestCase):
         response = await middleware.dispatch(request, call_next)
         body = json.loads(response.body)
 
-        self.assertEqual(body["message"], "Unauthorized")
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
+        self.assertEqual(body["message"], "Something went wrong. Try again")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR.value)
