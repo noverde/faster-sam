@@ -5,6 +5,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 from typing import Dict
+from botocore.client import BaseClient
 
 
 class RemovePathMiddleware(BaseHTTPMiddleware):
@@ -68,9 +69,10 @@ class LambdaAuthorizer(BaseHTTPMiddleware):
     >>> app.add_middleware(LambdaAuthorizer, arn="arn:aws:lambda:region:id:function:name")
     """
 
-    def __init__(self, app: ASGIApp, arn: str) -> None:
+    def __init__(self, app: ASGIApp, arn: str, client: BaseClient) -> None:
         super().__init__(app, self.dispatch)
         self.arn = arn
+        self.client = client
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
