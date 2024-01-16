@@ -64,10 +64,13 @@ class LambdaAuthorizer(BaseHTTPMiddleware):
     """
     Invoke lambda function in aws to authorize apis
 
+    e.g
+
     This example apply the middleware to authorize an app.
 
     >>> app = FastAPI()
     >>> app.add_middleware(LambdaAuthorizer, arn="arn:aws:lambda:region:id:function:name")
+
     Parameters
     ----------
         app : ASGIApp
@@ -120,6 +123,7 @@ class LambdaAuthorizer(BaseHTTPMiddleware):
         ----------
         request : Request
             The incoming request.
+
         Returns
         -------
         Response
