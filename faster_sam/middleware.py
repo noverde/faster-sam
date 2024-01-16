@@ -68,9 +68,20 @@ class LambdaAuthorizer(BaseHTTPMiddleware):
 
     >>> app = FastAPI()
     >>> app.add_middleware(LambdaAuthorizer, arn="arn:aws:lambda:region:id:function:name")
+    Parameters
+    ----------
+        app : ASGIApp
+            Application instance the middleware is being registered to.
+        arn : str
+            The amazon resource name for the lambda will be invoked.
+        client: BaseClient
+            Client lambda object
     """
 
     def __init__(self, app: ASGIApp, arn: str, client: Optional[BaseClient] = None) -> None:
+        """
+        Initializes the LambdaAuthorizer.
+        """
         super().__init__(app, self.dispatch)
         self.arn = arn
         self.client = client
