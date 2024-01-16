@@ -4,7 +4,7 @@ import unittest
 
 from fastapi import FastAPI, Request, Response
 
-from faster_sam.middlewares import remove_path
+from faster_sam.middlewares import remove_path, authorize
 
 
 class TestRemovePathMiddleware(unittest.IsolatedAsyncioTestCase):
@@ -26,7 +26,7 @@ class TestLambdaAuthorizer(unittest.IsolatedAsyncioTestCase):
     async def test_middleware_unauthorized(self):
         app = FastAPI()
 
-        middleware = remove_path.LambdaAuthorizerMiddleware(
+        middleware = authorize.LambdaAuthorizerMiddleware(
             app,
             "arn:aws:lambda:region:account-id:function:function-name",
         )
