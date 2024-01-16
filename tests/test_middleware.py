@@ -1,10 +1,10 @@
-from http import HTTPStatus
 import json
 import unittest
+from http import HTTPStatus
 
 from fastapi import FastAPI, Request, Response
 
-from faster_sam.middlewares import remove_path, authorize
+from faster_sam.middlewares import authorize, remove_path
 
 
 class TestRemovePathMiddleware(unittest.IsolatedAsyncioTestCase):
