@@ -9,6 +9,7 @@ from faster_sam.middlewares import lambda_authorizer
 from unittest import mock
 import io
 from botocore.response import StreamingBody
+from botocore.exceptions import ClientError
 
 
 def invokation_response(effect: str):
@@ -63,13 +64,10 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             "client": ("127.0.0.1", 80),
             "app": FastAPI(),
             "headers": [
-                # (b"host", b"localhost:8000"),
-                # (b"user-agent", b"curl/7.81.0"),
-                # (b"accept", b"*/*"),
-                # (b"authorization", b"eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k"),
-                (b"content-type", b"application/json"),
-                (b"user-agent", b"python/unittest"),
-                (b"Authorization", b"eyJhbGciO.iJIUzI1NiIsInR5c.CI6IkpXVCJ9"),
+                (b"host", b"localhost:8000"),
+                (b"user-agent", b"curl/7.81.0"),
+                (b"accept", b"*/*"),
+                (b"Authorization", b"eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k"),
             ],
         }
 
@@ -108,7 +106,8 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
     async def test_middleware_internal_server_error(self):
         request = Request(scope=self.scope)
         client_lambda = self.mock_boto.client.return_value
-        client_lambda.invoke.side_effect = client_lambda.exceptions.ServiceException(
+
+        client_lambda.invoke.side_effect = ClientError(
             error_response={
                 "Error": {
                     "Code": "ServiceException",
@@ -117,6 +116,7 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             },
             operation_name="InvokeFunction ",
         )
+
         response = await self.middleware.dispatch(request, lambda x: ...)
         body = json.loads(response.body)
         self.assertEqual(body["message"], "Something went wrong. Try again")
