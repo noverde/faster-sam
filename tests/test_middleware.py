@@ -67,18 +67,23 @@ class TestLambdaAuthorizer(unittest.IsolatedAsyncioTestCase):
             app,
             "arn:aws:lambda:region:account-id:function:function-name",
         )
-
         self.scope = {
             "type": "http",
+            "http_version": "1.1",
             "method": "GET",
+            "root_path": "",
+            "query_string": [],
+            "path_params": {},
             "path": "/test/foo",
+            "client": ("127.0.0.1", 80),
+            "app": FastAPI(),
             "headers": [
                 (b"content-type", b"application/json"),
                 (b"user-agent", b"python/unittest"),
-                (
-                    b"Authorization",
-                    b"eyJhbGciO.iJIUzI1NiIsInR5c.CI6IkpXVCJ9",
-                ),
+                # (
+                #     b"Authorization",
+                #     b"eyJhbGciO.iJIUzI1NiIsInR5c.CI6IkpXVCJ9",
+                # ),
             ],
         }
 

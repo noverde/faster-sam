@@ -2,6 +2,7 @@ import json
 import logging
 from http import HTTPStatus
 from typing import Any, Dict, Optional
+from uuid import uuid4
 
 import boto3
 from botocore.client import BaseClient
@@ -111,4 +112,25 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         return output_payload
 
     def build_event(self, request: Request) -> Optional[Dict[str, Any]]:
-        return {}
+        path = request.url.path
+        event = {
+            "type": "REQUEST",
+            "methodArn": f"arn:aws:execute-api:us-east-1:123456789012:/{request.method}/{request.url.path}",  # noqa
+            "resource": path,
+            "path": path,
+            "httpMethod": request.method,
+            "headers": dict(request.headers),
+            "queryStringParameters": dict(request.query_params),
+            "pathParameters": request.path_params,
+            "requestContext": {
+                "path": path,
+                "stage": request.app.version,
+                "requestId": str(uuid4()),
+                "identity": {
+                    "userAgent": request.headers.get("user-agent"),
+                    "sourceIp": getattr(request.client, "host", None),
+                },
+                "httpMethod": request.method,
+            },
+        }
+        return event
