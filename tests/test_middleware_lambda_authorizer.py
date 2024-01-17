@@ -63,12 +63,13 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             "client": ("127.0.0.1", 80),
             "app": FastAPI(),
             "headers": [
+                # (b"host", b"localhost:8000"),
+                # (b"user-agent", b"curl/7.81.0"),
+                # (b"accept", b"*/*"),
+                # (b"authorization", b"eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k"),
                 (b"content-type", b"application/json"),
                 (b"user-agent", b"python/unittest"),
-                # (
-                #     b"Authorization",
-                #     b"eyJhbGciO.iJIUzI1NiIsInR5c.CI6IkpXVCJ9",
-                # ),
+                (b"Authorization", b"eyJhbGciO.iJIUzI1NiIsInR5c.CI6IkpXVCJ9"),
             ],
         }
 
@@ -103,3 +104,20 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(body["message"], "Authorized")
         self.assertEqual(response.status_code, HTTPStatus.OK.value)
+
+    async def test_middleware_internal_server_error(self):
+        request = Request(scope=self.scope)
+        client_lambda = self.mock_boto.client.return_value
+        client_lambda.invoke.side_effect = client_lambda.exceptions.ServiceException(
+            error_response={
+                "Error": {
+                    "Code": "ServiceException",
+                    "Message": "An error occurred (ServiceException) when calling the InvokeFunction operation (reached max retries: 4): An error occurred and the request cannot be processed.",  # noqa
+                }
+            },
+            operation_name="InvokeFunction ",
+        )
+        response = await self.middleware.dispatch(request, lambda x: ...)
+        body = json.loads(response.body)
+        self.assertEqual(body["message"], "Something went wrong. Try again")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR.value)
