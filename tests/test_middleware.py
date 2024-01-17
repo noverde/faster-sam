@@ -11,7 +11,7 @@ import io
 from botocore.response import StreamingBody
 
 
-def invokation_response(type: str):
+def invokation_response(effect: str):
     response_payload = json.dumps(
         {
             "principalId": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ",
@@ -20,7 +20,7 @@ def invokation_response(type: str):
                 "Statement": [
                     {
                         "Action": "execute-api:Invoke",
-                        "Effect": type,
+                        "Effect": effect,
                         "Resource": ["arn:aws:execute-api:us-east4:xpl3tuf2r0/v1/*/*"],
                     }
                 ],
