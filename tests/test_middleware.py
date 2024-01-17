@@ -30,22 +30,6 @@ def invokation_response(type: str):
     )
 
     response = {
-        "ResponseMetadata": {
-            "RequestId": "7106a0bf-de63-421c-bbdf-4140337a9da4",
-            "HTTPStatusCode": 200,
-            "HTTPHeaders": {
-                "date": "Tue, 16 Jan 2024 13:19:30 GMT",
-                "content-type": "application/json",
-                "content-length": "817",
-                "connection": "keep-alive",
-                "x-amzn-requestid": "7106a0bf-de63-421c-bbdf-4140337a9da4",
-                "x-amzn-remapped-content-length": "0",
-                "x-amz-executed-version": "$LATEST",
-                "x-amz-log-result": "asdfg==",
-                "x-amzn-trace-id": "root=1-65a6825f;sampled=0;lineage=8adfd012:0",
-            },
-            "RetryAttempts": 0,
-        },
         "StatusCode": 200,
         "LogResult": "asdfg==",
         "ExecutedVersion": "$LATEST",
