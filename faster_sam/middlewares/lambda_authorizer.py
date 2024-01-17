@@ -119,7 +119,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
             "resource": path,
             "path": path,
             "httpMethod": request.method,
-            "headers": dict(request.headers.items()),
+            "headers": dict(request.headers),
             "queryStringParameters": dict(request.query_params),
             "pathParameters": request.path_params,
             "requestContext": {
@@ -131,6 +131,9 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
                     "sourceIp": getattr(request.client, "host", None),
                 },
                 "httpMethod": request.method,
+                "domainName": "noverde.com",
+                "apiId": "xpl3tuf2r0",
+                "accountId": "",
             },
         }
         return event

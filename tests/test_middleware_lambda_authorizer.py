@@ -67,7 +67,7 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
                 (b"host", b"localhost:8000"),
                 (b"user-agent", b"curl/7.81.0"),
                 (b"accept", b"*/*"),
-                (b"Authorization", b"eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k"),
+                (b"authorization", b"eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k"),
             ],
         }
 
