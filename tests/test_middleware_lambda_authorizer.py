@@ -4,7 +4,7 @@ from http import HTTPStatus
 
 from fastapi import FastAPI, Request, Response
 
-from faster_sam.middlewares import lambda_authorizer, remove_path
+from faster_sam.middlewares import lambda_authorizer
 
 from unittest import mock
 import io
@@ -41,22 +41,7 @@ def invokation_response(effect: str):
     return response
 
 
-class TestRemovePathMiddleware(unittest.IsolatedAsyncioTestCase):
-    async def test_middleware_remove_path(self):
-        app = FastAPI()
-
-        middleware = remove_path.RemovePathMiddleware(app, path="/test")
-
-        async def call_next(request: Request) -> Response:
-            return Response(content=json.dumps({"path": request.scope["path"]}))
-
-        request = Request(scope={"type": "http", "method": "GET", "path": "/test/foo"})
-        response = await middleware.dispatch(request, call_next)
-
-        self.assertEqual(json.loads(response.body), {"path": "/foo"})
-
-
-class TestLambdaAuthorizer(unittest.IsolatedAsyncioTestCase):
+class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.boto_patch = mock.patch("faster_sam.middlewares.lambda_authorizer.boto3")
         self.mock_boto = self.boto_patch.start()
