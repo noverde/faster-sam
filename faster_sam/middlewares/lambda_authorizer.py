@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+from dateutil import tz
 import json
 import logging
 from http import HTTPStatus
@@ -32,7 +33,7 @@ class Client:
     def __init__(self, credentials: Credentials) -> None:
         self.credentials = credentials
         self.expiration_time = None
-        self.client = self.set_client()
+        self.lambda_client = self.set_client()
 
     def assume_role(self) -> Dict[str, any]:
         sts = boto3.client("sts")
@@ -59,7 +60,9 @@ class Client:
         return session.client("lambda", self.credentials.region)
 
     def expired(self) -> bool:
-        return self.expiration_time > datetime.now()
+        today_utc = datetime.today().replace(tzinfo=tz.tzutc())
+
+        return self.expiration_time > today_utc
 
 
 class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
@@ -95,14 +98,14 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         self._client = None
 
     @property
-    def client(self) -> Client:
+    def client(self) -> BaseClient:
         if self._client is None:
             self._client = Client(self.credentials)
 
         if self._client.expired():
             self._client = Client(self.credentials)
 
-        return self._client
+        return self._client.lambda_client
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
