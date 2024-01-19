@@ -1,7 +1,8 @@
+import datetime
 import json
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 from uuid import uuid4
 
 import boto3
@@ -10,8 +11,55 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Credentials:
+    access_key: str = None
+    secret_access_key: str = None
+    session_token: str = None
+    role_arn: str = None
+    web_identity_token: str = None
+    web_identity_callable: Callable[..., str] = None
+    role_session_name: str = None
+    region: str = None
+
+
+class Client:
+    def __init__(self, credentials: Credentials) -> None:
+        self.credentials = credentials
+        self.expiration_time = None
+        self.client = self.set_client()
+
+    def assume_role(self) -> Dict[str, any]:
+        sts = boto3.client("sts")
+
+        response = sts.assume_role_with_web_identity(
+            DurationSeconds=900,
+            RoleArn=self.credentials.role_arn,
+            RoleSessionName=self.credentials.role_session_name,
+            WebIdentityToken=self.credentials.web_identity_callable(),
+        )
+
+        self.expiration_time = response["Credentials"]["Expiration"]
+        return response["Credentials"]
+
+    def set_client(self) -> BaseClient:
+        response = self.assume_role()
+
+        session = boto3.Session(
+            aws_access_key_id=response["AccessKeyId"],
+            aws_secret_access_key=response["SecretAccessKey"],
+            aws_session_token=response["SessionToken"],
+        )
+
+        return session.client("lambda", self.credentials.region)
+
+    def expired(self) -> bool:
+        return self.expiration_time > datetime.now()
 
 
 class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
@@ -35,17 +83,26 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
             Client Lambda object
     """
 
-    def __init__(self, app: ASGIApp, arn: str, client: Optional[BaseClient] = None) -> None:
+    def __init__(
+        self, app: ASGIApp, lambda_function: str, credentials: Optional[Credentials] = None
+    ) -> None:
         """
         Initializes the LambdaAuthorizer.
         """
         super().__init__(app, self.dispatch)
-        self.arn = arn
+        self.lambda_function = lambda_function
+        self.credentials = credentials
+        self._client = None
 
-        if client is None:
-            self.client = boto3.client("lambda")
-        else:
-            self.client = client
+    @property
+    def client(self) -> Client:
+        if self._client is None:
+            self._client = Client(self.credentials)
+
+        if self._client.expired():
+            self._client = Client(self.credentials)
+
+        return self._client
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
@@ -96,9 +153,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
         try:
             response = self.client.invoke(
-                FunctionName=self.arn,
-                InvocationType="RequestResponse",
-                LogType="Tail",
+                FunctionName=self.lambda_function,
                 Payload=json.dumps(input_payload),
             )
         except Exception as error:
@@ -115,7 +170,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         event = {
             "type": "REQUEST",
-            "methodArn": f"arn:aws:execute-api:us-east-1:123456789012:/{request.method}/{request.url.path}",  # noqa
+            "methodArn": f"arn:aws:execute-api:::/{request.method}/{request.url.path}",  # noqa
             "resource": path,
             "path": path,
             "httpMethod": request.method,
