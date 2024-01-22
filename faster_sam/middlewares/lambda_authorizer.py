@@ -1,5 +1,4 @@
-from datetime import datetime
-from dateutil import tz
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 from http import HTTPStatus
@@ -30,62 +29,76 @@ class Credentials:
 
 
 class LambdaClient:
-    def __init__(self, credentials: Credentials) -> None:
+    def __init__(
+        self, credentials: Credentials, session_duration: int = 900, expiration_threshold: int = 2
+    ) -> None:
         self.credentials = credentials
-        self.expiration_time = None
-        self.lambda_client = self.set_client()
+        self.session_duration = session_duration
+        self.expiration_threshold = timedelta(seconds=expiration_threshold)
+        self._expires_at = None
 
-    def assume_role(self) -> Dict[str, any]:
+    @property
+    def client(self) -> BaseClient:
+        if self._client is None:
+            self.set_client()
+
+        return self._client  # type: ignore
+
+    @property
+    def expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+
+        now = datetime.now(tz=timezone.utc)
+        remaining = self.expires_at - now
+
+        return remaining > self.expiration_threshold
+
+    def assume_role(self) -> Credentials:
         sts = boto3.client("sts")
 
-        if self.credentials.web_identity_token is None:
+        if callable(self.credentials.web_identity_callable):
+            function = sts.assume_role_with_web_identity
             web_identity = self.credentials.web_identity_callable()
-        else:
+        elif self.credentials.web_identity_token is not None:
+            function = sts.assume_role_with_web_identity
             web_identity = self.credentials.web_identity_token
+        else:
+            raise NotImplementedError()
 
-        try:
-            response = sts.assume_role_with_web_identity(
-                DurationSeconds=900,
-                RoleArn=self.credentials.role_arn,
-                RoleSessionName=self.credentials.role_session_name,
-                WebIdentityToken=web_identity,
-            )
-        except Exception as e:
-            raise RuntimeError(f"Não foi possível assumir a role: {e}")
+        response = function(
+            DurationSeconds=self.session_duration,
+            RoleArn=self.credentials.role_arn,
+            RoleSessionName=self.credentials.role_session_name,
+            WebIdentityToken=web_identity,
+        )
 
-        self.expiration_time = response["Credentials"]["Expiration"]
+        expires = response["Credentials"]["Expiration"]
+        self.expires_at = expires.astimezone(tz=timezone.utc)
 
         return Credentials(
             access_key=response["Credentials"]["AccessKeyId"],
             secret_access_key=response["Credentials"]["SecretAccessKey"],
             session_token=response["Credentials"]["SessionToken"],
+            region=self.credentials.region,
         )
 
-    def set_client(self) -> BaseClient:
-        if (
-            self.credentials.access_key is None
-            and self.credentials.secret_access_key is None
-            and self.credentials.session_token is None
-        ):
-            role_credentials = self.assume_role()
-        else:
-            raise NotImplementedError()
+    def set_client(self) -> None:
+        credentials = self.credentials
 
-        session = boto3.Session(
-            aws_access_key_id=role_credentials.access_key,
-            aws_secret_access_key=role_credentials.secret_access_key,
-            aws_session_token=role_credentials.session_token,
+        if self.credentials.role_arn is not None:
+            credentials = self.assume_role()
+
+        self._client = boto3.client(
+            "lambda",
+            aws_access_key_id=credentials.access_key,
+            aws_secret_access_key=credentials.secret_access_key,
+            aws_session_token=credentials.session_token,
+            region_name=credentials.region,
         )
-
-        return session.client("lambda", self.credentials.region)
-
-    def expired(self) -> bool:
-        today_utc = datetime.today().replace(tzinfo=tz.tzutc())
-
-        return self.expiration_time > today_utc
 
     def refresh(self):
-        self.lambda_client = self.set_client()
+        self.set_client()
 
 
 class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
@@ -110,28 +123,25 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(
-        self,
-        app: ASGIApp,
-        lambda_function: str,
-        credentials: Optional[Credentials] = None,
+        self, app: ASGIApp, lambda_function: str, credentials: Credentials = Credentials()
     ) -> None:
         """
         Initializes the LambdaAuthorizer.
         """
         super().__init__(app, self.dispatch)
         self.lambda_function = lambda_function
+        self._lambda_client = None
         self.credentials = credentials
-        self._client = None
 
     @property
     def client(self) -> BaseClient:
-        if self._client is None:
-            self._client = LambdaClient(self.credentials)
+        if self._lambda_client is None:
+            self._lambda_client = LambdaClient(self.credentials)
 
-        if self._client.expired():
-            self._client.refresh()
+        if self._lambda_client.expired:
+            self._lambda_client.refresh()
 
-        return self._client.lambda_client
+        return self._lambda_client.client
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
