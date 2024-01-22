@@ -43,14 +43,8 @@ class LambdaClient:
         The expiration threshold (in seconds) to check if the credentials are considered expired.
         Defaults to 2 seconds.
 
-    Attributes
+    Runtime Attributes
     ----------
-    credentials : Credentials
-        The AWS credentials used to authenticate with the Lambda service.
-    session_duration : int
-        The duration (in seconds) for which the assumed role credentials should be valid.
-    expiration_threshold : timedelta
-        The expiration threshold to check if the credentials are considered expired.
     _expires_at : Optional[datetime]
         The timestamp when the assumed role credentials expire.
     _client : Optional[BaseClient]
