@@ -55,6 +55,18 @@ class LambdaClient:
         The timestamp when the assumed role credentials expire.
     _client : Optional[BaseClient]
         The AWS Lambda client instance.
+
+
+    e.g
+
+    This example get a lambda client.
+
+    >>> lambda_client = LambdaClient(self.credentials)
+    >>> ...
+    >>> if lambda_Client.expired:
+    >>>    lambda_client.refresh()
+    >>> ...
+    >>> client = lambda_client.client
     """
 
     def __init__(
