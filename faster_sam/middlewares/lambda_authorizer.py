@@ -196,6 +196,19 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         return output_payload
 
     def build_event(self, request: Request) -> Optional[Dict[str, Any]]:
+        """
+        Convert request object to an AWS API Gateway event.
+
+        Parameters
+        ----------
+        request : Request
+            The incoming request.
+
+        Returns
+        -------
+        event: Dict
+            Event in AWS API Gateway format.
+        """
         event = {
             "type": "REQUEST",
             "methodArn": f"arn:aws:execute-api:region:xxxx:/{request.method}/{request.url.path}",  # noqa
