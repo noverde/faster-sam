@@ -127,7 +127,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         """
         event = {
             "type": "REQUEST",
-            "methodArn": f"arn:aws:execute-api:us-east-1:123456789012:/{request.method}/{request.url.path}",  # noqa
+            "methodArn": f"arn:aws:execute-api:region:xxxx:/{request.method}/{request.url.path}",  # noqa
             "resource": request.url.path,
             "path": request.url.path,
             "httpMethod": request.method,
