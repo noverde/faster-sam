@@ -125,18 +125,17 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         event: Dict
             Event in AWS API Gateway format.
         """
-        path = request.url.path
         event = {
             "type": "REQUEST",
             "methodArn": f"arn:aws:execute-api:us-east-1:123456789012:/{request.method}/{request.url.path}",  # noqa
-            "resource": path,
-            "path": path,
+            "resource": request.url.path,
+            "path": request.url.path,
             "httpMethod": request.method,
             "headers": dict(request.headers),
             "queryStringParameters": dict(request.query_params),
             "pathParameters": request.path_params,
             "requestContext": {
-                "path": path,
+                "path": request.url.path,
                 "stage": request.app.version,
                 "requestId": str(uuid4()),
                 "identity": {
@@ -144,9 +143,9 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
                     "sourceIp": getattr(request.client, "host", None),
                 },
                 "httpMethod": request.method,
-                "domainName": "noverde.com",
-                "apiId": "xpl3tuf2r0",
-                "accountId": "",
+                "domainName": request.url.hostname,
+                "apiId": request.scope.get("http_version"),
+                "accountId": "xxxx",
             },
         }
         return event
