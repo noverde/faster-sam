@@ -109,7 +109,7 @@ class LambdaClient:
         now = datetime.now(tz=timezone.utc)
         remaining = self._expires_at - now
 
-        return remaining > self.expiration_threshold
+        return remaining < self.expiration_threshold
 
     def assume_role(self) -> Credentials:
         """

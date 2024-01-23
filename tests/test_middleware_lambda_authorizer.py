@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta, timezone
 import io
 import json
 import unittest
@@ -52,9 +52,7 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
                 "AccessKeyId": "154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
                 "SecretAccessKey": "51fd5g4sdsdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
                 "SessionToken": "sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
-                "Expiration": datetime.datetime(
-                    2024, 1, 18, 15, 20, 17, tzinfo=datetime.timezone.utc
-                ),
+                "Expiration": datetime.now(tz=timezone.utc) + timedelta(minutes=2),
             },
             "SubjectFromWebIdentityToken": "225554488662322215444",
             "AssumedRoleUser": {
@@ -171,9 +169,7 @@ class TestLambdaClient(unittest.TestCase):
                 "AccessKeyId": "154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
                 "SecretAccessKey": "51fd5g4sdsdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
                 "SessionToken": "sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
-                "Expiration": datetime.datetime(
-                    2024, 1, 18, 15, 20, 17, tzinfo=datetime.timezone.utc
-                ),
+                "Expiration": datetime.now(tz=timezone.utc) + timedelta(minutes=2),
             },
             "SubjectFromWebIdentityToken": "225554488662322215444",
             "AssumedRoleUser": {
@@ -230,17 +226,18 @@ class TestLambdaClient(unittest.TestCase):
     def initialize_lambda_client(self, credentials):
         return lambda_authorizer.LambdaClient(credentials)
 
-    def test_assume_role_with_token(self):
-        client = self.initialize_lambda_client(self.credentials_with_web_token)
-        credentials = client.assume_role()
+    def test_assume_role(self):
+        web_token = {
+            "credentials_with_web_token": self.credentials_with_web_token,
+            "credentials_with_web_token_function": self.credentials_with_web_token_function,
+        }
 
-        self.assertEqual(credentials, self.credentials_with_session_token)
+        for use_case, token_type in web_token.items():
+            with self.subTest(use_case=use_case):
+                client = self.initialize_lambda_client(token_type)
+                credentials = client.assume_role()
 
-    def test_assume_role_with_function(self):
-        client = self.initialize_lambda_client(self.credentials_with_web_token_function)
-        credentials = client.assume_role()
-
-        self.assertEqual(credentials, self.credentials_with_session_token)
+                self.assertEqual(credentials, self.credentials_with_session_token)
 
     def test_set_client(self):
         client = self.initialize_lambda_client(self.credentials_with_web_token)
@@ -253,3 +250,16 @@ class TestLambdaClient(unittest.TestCase):
             aws_session_token=self.credentials_with_session_token.session_token,
             region_name=self.credentials_with_web_token.region,
         )
+
+    def test_expired_false(self):
+        client = self.initialize_lambda_client(self.credentials_with_web_token)
+        client.set_client()
+
+        self.assertEqual(client.expired, False)
+
+    def test_expired_true(self):
+        client = self.initialize_lambda_client(self.credentials_with_web_token)
+        client.set_client()
+        client._expires_at = client._expires_at - timedelta(minutes=2)
+
+        self.assertEqual(client.expired, True)
