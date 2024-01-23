@@ -29,12 +29,49 @@ class Credentials:
 
 
 class LambdaClient:
+    """
+    AWS Lambda client for handling session lifecycle.
+
+    Parameters
+    ----------
+    credentials : Credentials
+        The AWS credentials used to authenticate with the Lambda service.
+    session_duration : int, optional
+        The duration (in seconds) for which the assumed role credentials should be valid.
+        Defaults to 900 seconds (15 minutes).
+    expiration_threshold : int, optional
+        The expiration threshold (in seconds) to check if the credentials are considered expired.
+        Defaults to 2 seconds.
+
+    Runtime Attributes
+    ----------
+    _expires_at : Optional[datetime]
+        The timestamp when the assumed role credentials expire.
+    _client : Optional[BaseClient]
+        The AWS Lambda client instance.
+
+
+    e.g
+
+    This example get a lambda client.
+
+    >>> lambda_client = LambdaClient(self.credentials)
+    >>> ...
+    >>> if lambda_Client.expired:
+    >>>    lambda_client.refresh()
+    >>> ...
+    >>> client = lambda_client.client
+    """
+
     def __init__(
         self,
         credentials: Credentials,
         session_duration: int = 900,
         expiration_threshold: int = 2,
     ) -> None:
+        """
+        Initializes the LambdaClient.
+        """
         self.credentials = credentials
         self.session_duration = session_duration
         self.expiration_threshold = timedelta(seconds=expiration_threshold)
@@ -43,6 +80,14 @@ class LambdaClient:
 
     @property
     def client(self) -> BaseClient:
+        """
+        Returns the AWS Lambda client instance, creating one if not already available.
+
+        Returns
+        -------
+        Client
+            The AWS Lambda client instance.
+        """
         if self._client is None:
             self.set_client()
 
@@ -50,7 +95,15 @@ class LambdaClient:
 
     @property
     def expired(self) -> bool:
-        if self._expires_at is None:
+        """
+        Checks if the assumed role credentials are expired.
+
+        Returns
+        -------
+        bool
+            True if the credentials are expired, False otherwise.
+        """
+        if self.expires_at is None:
             return False
 
         now = datetime.now(tz=timezone.utc)
@@ -59,6 +112,15 @@ class LambdaClient:
         return remaining > self.expiration_threshold
 
     def assume_role(self) -> Credentials:
+        """
+        Assumes the specified role using web identity token and returns
+        the assumed role temporary credentials.
+
+        Returns
+        -------
+        Credentials
+            The assumed role temporary credentials.
+        """
         sts = boto3.client("sts")
 
         if callable(self.credentials.web_identity_callable):
@@ -88,6 +150,13 @@ class LambdaClient:
         )
 
     def set_client(self) -> None:
+        """
+        Sets the AWS Lambda client with the provided credentials.
+
+        Returns
+        -------
+        None
+        """
         credentials = self.credentials
 
         if self.credentials.role_arn is not None:
@@ -102,6 +171,14 @@ class LambdaClient:
         )
 
     def refresh(self):
+        """
+        Refreshes the AWS Lambda client by re-setting the credentials if needs
+        and instantiating a new AWS Lambda client.
+
+        Returns
+        -------
+        None
+        """
         self.set_client()
 
 
@@ -142,6 +219,15 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
     @property
     def client(self) -> BaseClient:
+        """
+        Returns the Lambda client instance, creating one if not already available.
+        If the existing client has expired, it will be refreshed before returning.
+
+        Returns
+        -------
+        BaseClient
+            The Lambda client instance.
+        """
         if self._lambda_client is None:
             self._lambda_client = LambdaClient(self.credentials)
 
