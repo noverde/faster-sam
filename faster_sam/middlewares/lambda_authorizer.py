@@ -43,45 +43,31 @@ class LambdaClient:
         The expiration threshold (in seconds) to check if the credentials are considered expired.
         Defaults to 2 seconds.
 
-    Runtime Attributes
-    ----------
-    _expires_at : Optional[datetime]
-        The timestamp when the assumed role credentials expire.
-    _client : Optional[BaseClient]
-        The AWS Lambda client instance.
-
-
     e.g
 
     This example get a lambda client.
 
-    >>> lambda_client = LambdaClient(self.credentials)
-    >>> ...
-    >>> if lambda_Client.expired:
-    >>>    lambda_client.refresh()
-    >>> ...
-    >>> client = lambda_client.client
+    >>> credentials = Credentials()
+    >>> lambda_client = LambdaClient(credentials)
+    >>> lambda_client.client.invoke(FunctionName="my-lambda-function")
     """
 
     def __init__(
-        self,
-        credentials: Credentials,
-        session_duration: int = 900,
-        expiration_threshold: int = 2,
+        self, credentials: Credentials, session_duration: int = 900, expiration_threshold: int = 2
     ) -> None:
         """
         Initializes the LambdaClient.
         """
-        self.credentials = credentials
-        self.session_duration = session_duration
-        self.expiration_threshold = timedelta(seconds=expiration_threshold)
+        self._credentials = credentials
+        self._session_duration = session_duration
+        self._expiration_threshold = timedelta(seconds=expiration_threshold)
         self._expires_at = None
         self._client = None
 
     @property
     def client(self) -> BaseClient:
         """
-        Returns the AWS Lambda client instance, creating one if not already available.
+        Returns the AWS Lambda client instance.
 
         Returns
         -------
@@ -91,17 +77,20 @@ class LambdaClient:
         if self._client is None:
             self.set_client()
 
+        if self.expired:
+            self.refresh()
+
         return self._client  # type: ignore
 
     @property
     def expired(self) -> bool:
         """
-        Checks if the assumed role credentials are expired.
+        Checks if the client session has expired.
 
         Returns
         -------
         bool
-            True if the credentials are expired, False otherwise.
+            True if session has expired, False otherwise.
         """
         if self._expires_at is None:
             return False
@@ -109,12 +98,11 @@ class LambdaClient:
         now = datetime.now(tz=timezone.utc)
         remaining = self._expires_at - now
 
-        return remaining < self.expiration_threshold
+        return remaining < self._expiration_threshold
 
     def assume_role(self) -> Credentials:
         """
-        Assumes the specified role using web identity token and returns
-        the assumed role temporary credentials.
+        Attempt to assume the role defined inside the credentials.
 
         Returns
         -------
@@ -123,19 +111,19 @@ class LambdaClient:
         """
         sts = boto3.client("sts")
 
-        if callable(self.credentials.web_identity_callable):
+        if callable(self._credentials.web_identity_callable):
             function = sts.assume_role_with_web_identity
-            web_identity = self.credentials.web_identity_callable()
-        elif self.credentials.web_identity_token is not None:
+            web_identity = self._credentials.web_identity_callable()
+        elif self._credentials.web_identity_token is not None:
             function = sts.assume_role_with_web_identity
-            web_identity = self.credentials.web_identity_token
+            web_identity = self._credentials.web_identity_token
         else:
             raise NotImplementedError()
 
         response = function(
-            DurationSeconds=self.session_duration,
-            RoleArn=self.credentials.role_arn,
-            RoleSessionName=self.credentials.role_session_name,
+            DurationSeconds=self._session_duration,
+            RoleArn=self._credentials.role_arn,
+            RoleSessionName=self._credentials.role_session_name,
             WebIdentityToken=web_identity,
         )
 
@@ -146,20 +134,16 @@ class LambdaClient:
             access_key=response["Credentials"]["AccessKeyId"],
             secret_access_key=response["Credentials"]["SecretAccessKey"],
             session_token=response["Credentials"]["SessionToken"],
-            region=self.credentials.region,
+            region=self._credentials.region,
         )
 
     def set_client(self) -> None:
         """
         Sets the AWS Lambda client with the provided credentials.
-
-        Returns
-        -------
-        None
         """
-        credentials = self.credentials
+        credentials = self._credentials
 
-        if self.credentials.role_arn is not None:
+        if self._credentials.role_arn is not None:
             credentials = self.assume_role()
 
         self._client = boto3.client(
@@ -170,14 +154,9 @@ class LambdaClient:
             region_name=credentials.region,
         )
 
-    def refresh(self):
+    def refresh(self) -> None:
         """
-        Refreshes the AWS Lambda client by re-setting the credentials if needs
-        and instantiating a new AWS Lambda client.
-
-        Returns
-        -------
-        None
+        Refreshes the client session.
         """
         self.set_client()
 
@@ -191,14 +170,14 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
     This example apply the middleware to authorize an app.
 
     >>> app = FastAPI()
-    >>> app.add_middleware(LambdaAuthorizer, arn="arn:aws:lambda:region:id:function:name")
+    >>> app.add_middleware(LambdaAuthorizer, lambda_name="arn:aws:lambda:region:id:function:name")
 
     Parameters
     ----------
         app : ASGIApp
             Application instance the middleware is being registered to.
-        arn : str
-            The amazon resource name for the Lambda will be invoked.
+        lambda_function : str
+            The Lambda function name or its ARN.
         client: BaseClient
             Client Lambda object
     """
@@ -213,15 +192,14 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         Initializes the LambdaAuthorizer.
         """
         super().__init__(app, self.dispatch)
-        self.lambda_function = lambda_function
+        self._lambda_function = lambda_function
         self._lambda_client = None
-        self.credentials = credentials
+        self._credentials = credentials
 
     @property
     def client(self) -> BaseClient:
         """
-        Returns the Lambda client instance, creating one if not already available.
-        If the existing client has expired, it will be refreshed before returning.
+        Returns the Lambda client instance.
 
         Returns
         -------
@@ -229,16 +207,13 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
             The Lambda client instance.
         """
         if self._lambda_client is None:
-            self._lambda_client = LambdaClient(self.credentials)
-
-        if self._lambda_client.expired:
-            self._lambda_client.refresh()
+            self._lambda_client = LambdaClient(self._credentials)
 
         return self._lambda_client.client
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
-        Authorize or deny a request based on Authorization field.
+        Allow or deny a request based on authorization function rules.
 
         Parameters
         ----------
@@ -256,6 +231,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         payload = self.invoke_lambda(request)
 
         if payload and payload["policyDocument"]["Statement"][0]["Effect"] == "Allow":
+            request.scope["authorization_context"] = payload.get("context")
             return await call_next(request)
 
         content = {"message": "Unauthorized"}
@@ -269,7 +245,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
     def invoke_lambda(self, request: Request) -> Optional[Dict[str, Any]]:
         """
-        Invoke a Lambda using arn from AWS.
+        Invoke an AWS Lambda.
 
         Parameters
         ----------
@@ -285,8 +261,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
         try:
             response = self.client.invoke(
-                FunctionName=self.lambda_function,
-                Payload=json.dumps(input_payload),
+                FunctionName=self._lambda_function, Payload=json.dumps(input_payload)
             )
         except Exception as error:
             logger.exception(error)
@@ -300,7 +275,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
     def build_event(self, request: Request) -> Optional[Dict[str, Any]]:
         """
-        Convert request object to an AWS API Gateway event.
+        Convert request object to an AWS API Gateway request authorizer event.
 
         Parameters
         ----------
@@ -314,7 +289,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         """
         event = {
             "type": "REQUEST",
-            "methodArn": f"arn:aws:execute-api:region:xxxx:/{request.method}/{request.url.path}",  # noqa
+            "methodArn": f"arn:aws:execute-api:region:account-id:/{request.method}/{request.url.path}",  # noqa
             "resource": request.url.path,
             "path": request.url.path,
             "httpMethod": request.method,
@@ -332,7 +307,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
                 "httpMethod": request.method,
                 "domainName": request.url.hostname,
                 "apiId": request.scope.get("http_version"),
-                "accountId": "xxxx",
+                "accountId": "account-id",
             },
         }
         return event
