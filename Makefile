@@ -39,7 +39,7 @@ format:
 	black --line-length=100 --target-version=py312 .
 
 test:
-	coverage run --source=$(PROJECT_PATH) -m unittest
+	coverage run --source=$(PROJECT_PATH) -m unittest -b
 
 coverage: test .coverage
 	coverage report -m --fail-under=90
