@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta, timezone
 import io
 import json
 import unittest
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from unittest import mock
 
