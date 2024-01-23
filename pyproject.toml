@@ -22,4 +22,4 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-AUTH = ["boto3 == 1.34.19"]
+auth = ["boto3 == 1.34.19"]
