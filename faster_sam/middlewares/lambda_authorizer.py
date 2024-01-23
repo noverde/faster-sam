@@ -103,7 +103,7 @@ class LambdaClient:
         bool
             True if the credentials are expired, False otherwise.
         """
-        if self.expires_at is None:
+        if self._expires_at is None:
             return False
 
         now = datetime.now(tz=timezone.utc)
