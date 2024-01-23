@@ -32,6 +32,14 @@ class LambdaClient:
     """
     AWS Lambda client for handling session lifecycle.
 
+    e.g
+
+    This example get a lambda client.
+
+    >>> credentials = Credentials()
+    >>> lambda_client = LambdaClient(credentials)
+    >>> lambda_client.client.invoke(FunctionName="my-lambda-function")
+
     Parameters
     ----------
     credentials : Credentials
@@ -42,14 +50,6 @@ class LambdaClient:
     expiration_threshold : int, optional
         The expiration threshold (in seconds) to check if the credentials are considered expired.
         Defaults to 2 seconds.
-
-    e.g
-
-    This example get a lambda client.
-
-    >>> credentials = Credentials()
-    >>> lambda_client = LambdaClient(credentials)
-    >>> lambda_client.client.invoke(FunctionName="my-lambda-function")
     """
 
     def __init__(
