@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta, timezone
 import json
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Callable, Dict, Optional
 from uuid import uuid4
 
 import boto3
@@ -11,7 +12,6 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
-from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +30,16 @@ class Credentials:
 
 class LambdaClient:
     def __init__(
-        self, credentials: Credentials, session_duration: int = 900, expiration_threshold: int = 2
+        self,
+        credentials: Credentials,
+        session_duration: int = 900,
+        expiration_threshold: int = 2,
     ) -> None:
         self.credentials = credentials
         self.session_duration = session_duration
         self.expiration_threshold = timedelta(seconds=expiration_threshold)
         self._expires_at = None
+        self._client = None
 
     @property
     def client(self) -> BaseClient:
@@ -46,11 +50,11 @@ class LambdaClient:
 
     @property
     def expired(self) -> bool:
-        if self.expires_at is None:
+        if self._expires_at is None:
             return False
 
         now = datetime.now(tz=timezone.utc)
-        remaining = self.expires_at - now
+        remaining = self._expires_at - now
 
         return remaining > self.expiration_threshold
 
@@ -74,7 +78,7 @@ class LambdaClient:
         )
 
         expires = response["Credentials"]["Expiration"]
-        self.expires_at = expires.astimezone(tz=timezone.utc)
+        self._expires_at = expires.astimezone(tz=timezone.utc)
 
         return Credentials(
             access_key=response["Credentials"]["AccessKeyId"],
@@ -123,7 +127,10 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(
-        self, app: ASGIApp, lambda_function: str, credentials: Credentials = Credentials()
+        self,
+        app: ASGIApp,
+        lambda_function: str,
+        credentials: Credentials = Credentials(),
     ) -> None:
         """
         Initializes the LambdaAuthorizer.
