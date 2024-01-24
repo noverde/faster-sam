@@ -1,6 +1,7 @@
 import json
 import logging
-from dataclasses import dataclass, field
+import os
+from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Optional
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Credentials:
-    access_key: Optional[str] = field(default=None)
+    access_key_id: Optional[str] = field(default=None)
     secret_access_key: Optional[str] = field(default=None)
     session_token: Optional[str] = field(default=None)
     role_arn: Optional[str] = field(default=None)
@@ -26,6 +27,20 @@ class Credentials:
     web_identity_callable: Optional[Callable[[], Optional[str]]] = field(default=None)
     role_session_name: Optional[str] = field(default=None)
     region: Optional[str] = field(default=None)
+    profile: Optional[str] = field(default=None)
+
+    def __post_init__(self) -> None:
+        attrs = fields(self)
+
+        for attr in attrs:
+            if getattr(self, attr.name) is not None:
+                return None
+
+        for attr in attrs:
+            if attr.type is not str:
+                continue
+
+            setattr(self, attr.name, os.getenv(f"AWS_{attr.name.upper}"))
 
 
 class LambdaClient:
@@ -131,7 +146,7 @@ class LambdaClient:
         self._expires_at = expires.astimezone(tz=timezone.utc)
 
         return Credentials(
-            access_key=response["Credentials"]["AccessKeyId"],
+            access_key_id=response["Credentials"]["AccessKeyId"],
             secret_access_key=response["Credentials"]["SecretAccessKey"],
             session_token=response["Credentials"]["SessionToken"],
             region=self._credentials.region,
@@ -146,13 +161,15 @@ class LambdaClient:
         if self._credentials.role_arn is not None:
             credentials = self.assume_role()
 
-        self._client = boto3.client(
-            "lambda",
-            aws_access_key_id=credentials.access_key,
+        session = boto3.Session(
+            aws_access_key_id=credentials.access_key_id,
             aws_secret_access_key=credentials.secret_access_key,
             aws_session_token=credentials.session_token,
             region_name=credentials.region,
+            profile_name=credentials.profile,
         )
+
+        self._client = session.client("lambda")
 
     def refresh(self) -> None:
         """
