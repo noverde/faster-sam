@@ -8,6 +8,7 @@ from unittest import mock
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from fastapi import FastAPI, Request, Response
+from requests import Response as RequestResponse
 
 from faster_sam.middlewares import lambda_authorizer
 
@@ -171,6 +172,14 @@ class TestLambdaClient(unittest.TestCase):
         self.lambda_cli = self.aws_session.return_value.client
         self.sts_cli = self.mock_boto.client
 
+        self.requests_patch = mock.patch("faster_sam.web_identity_providers.requests")
+        self.requests_mock = self.requests_patch.start()
+
+        response = RequestResponse()
+        response.status_code = HTTPStatus.OK.value
+        response._content = b"eyJhbGciOiJSUzI1Ni.eyJhdWQiOiJodHRwczov.b25hd3MuY29tIi"
+        self.requests_mock.get.return_value = response
+
         self.aws_response = {
             "Credentials": {
                 "AccessKeyId": "154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
@@ -204,25 +213,26 @@ class TestLambdaClient(unittest.TestCase):
             web_identity_token="eyJhbGciOiJSUzI1Ni.eyJhdWQiOiJodHRwczov.b25hd3MuY29tIi",
             role_arn="arn:aws:iam::22555448866:role/role-to-assume",
             role_session_name="my-role-session-name",
-            region="region1",
+            region="us-east-1",
         )
 
         self.credentials_with_web_token_function = lambda_authorizer.Credentials(
             role_arn="arn:aws:iam::22555448866:role/role-to-assume",
             role_session_name="my-role-session-name",
-            web_identity_callable=lambda: "eyJhbGciOiJSUzI1Ni.eyJhdWQiOiJodHRwczov.b25hd3MuY29tIi",
-            region="region1",
+            web_identity_provider="gcp",
+            region="us-east-1",
         )
 
         self.credentials_with_session_token = lambda_authorizer.Credentials(
             access_key_id="154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
             secret_access_key="51fd5g4sdsdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
             session_token="sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
-            region="region1",
+            region="us-east-1",
         )
 
     def tearDown(self) -> None:
         self.boto_patch.stop()
+        self.requests_patch.stop()
 
     def test_assume_role(self):
         web_token = {

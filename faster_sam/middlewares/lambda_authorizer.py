@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import boto3
@@ -13,6 +13,8 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
+
+from faster_sam import web_identity_providers
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class Credentials:
     session_token: Optional[str] = field(default=None)
     role_arn: Optional[str] = field(default=None)
     web_identity_token: Optional[str] = field(default=None)
-    web_identity_callable: Optional[Callable[[], Optional[str]]] = field(default=None)
+    web_identity_provider: Optional[str] = field(default=None)
     role_session_name: Optional[str] = field(default=None)
     region: Optional[str] = field(default=None)
     profile: Optional[str] = field(default=None)
@@ -37,9 +39,6 @@ class Credentials:
                 return None
 
         for attr in attrs:
-            if attr.type is not str:
-                continue
-
             setattr(self, attr.name, os.getenv(f"AWS_{attr.name.upper}"))
 
 
@@ -126,12 +125,15 @@ class LambdaClient:
         """
         sts = boto3.client("sts")
 
-        if callable(self._credentials.web_identity_callable):
+        if self._credentials.web_identity_provider is not None:
             function = sts.assume_role_with_web_identity
-            web_identity = self._credentials.web_identity_callable()
+            web_identity_provider = web_identity_providers.factory(
+                self._credentials.web_identity_provider
+            )
+            web_identity_token = web_identity_provider.get_token()
         elif self._credentials.web_identity_token is not None:
             function = sts.assume_role_with_web_identity
-            web_identity = self._credentials.web_identity_token
+            web_identity_token = self._credentials.web_identity_token
         else:
             raise NotImplementedError()
 
@@ -139,7 +141,7 @@ class LambdaClient:
             DurationSeconds=self._session_duration,
             RoleArn=self._credentials.role_arn,
             RoleSessionName=self._credentials.role_session_name,
-            WebIdentityToken=web_identity,
+            WebIdentityToken=web_identity_token,
         )
 
         expires = response["Credentials"]["Expiration"]
