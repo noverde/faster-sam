@@ -123,6 +123,7 @@ class LambdaClient:
         Credentials
             The assumed role temporary credentials.
         """
+
         sts = boto3.client("sts")
 
         if self._credentials.web_identity_provider is not None:
@@ -135,7 +136,7 @@ class LambdaClient:
             function = sts.assume_role_with_web_identity
             web_identity_token = self._credentials.web_identity_token
         else:
-            raise NotImplementedError()
+            raise NotImplementedError()  # pragma: no cover
 
         response = function(
             DurationSeconds=self._session_duration,

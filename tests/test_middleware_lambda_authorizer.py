@@ -1,3 +1,4 @@
+import copy
 import io
 import json
 import unittest
@@ -260,6 +261,20 @@ class TestLambdaClient(unittest.TestCase):
         )
         self.lambda_cli.assert_called_with("lambda")
 
+    def test_set_client_with_acsess_key(self):
+        client = lambda_authorizer.LambdaClient(self.credentials_with_session_token)
+        client.set_client()
+
+        self.assertEqual(client.expired, False)
+        self.aws_session.assert_called_with(
+            aws_access_key_id=self.credentials_with_session_token.access_key_id,
+            aws_secret_access_key=self.credentials_with_session_token.secret_access_key,
+            aws_session_token=self.credentials_with_session_token.session_token,
+            region_name=self.credentials_with_web_token.region,
+            profile_name=self.credentials_with_web_token.profile,
+        )
+        self.lambda_cli.assert_called_with("lambda")
+
     def test_expired_false(self):
         client = lambda_authorizer.LambdaClient(self.credentials_with_web_token)
         client.set_client()
@@ -275,3 +290,19 @@ class TestLambdaClient(unittest.TestCase):
         client.set_client()
 
         self.assertEqual(client.expired, True)
+
+    def test_expired_refresh(self):
+        response_1 = copy.deepcopy(self.aws_response)
+        response_1["Credentials"]["Expiration"] = datetime.now(tz=timezone.utc)
+        response_2 = self.aws_response
+
+        self.sts_cli.return_value.assume_role_with_web_identity.side_effect = [
+            response_1,
+            response_2,
+        ]
+
+        client = lambda_authorizer.LambdaClient(self.credentials_with_web_token)
+        client.set_client()
+        client.client
+
+        self.assertEqual(client.expired, False)
