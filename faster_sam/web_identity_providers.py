@@ -40,9 +40,9 @@ class ProviderInterface(ABC):
 
         Parameters
         ----------
-            Returns:
-                token: str or None
-                    The authentication token if available, else None.
+        Returns:
+            token : str or None
+                The authentication token if available, else None.
         """
         pass  # pragma: no cover
 
@@ -50,6 +50,7 @@ class ProviderInterface(ABC):
 class GCPProvider(ProviderInterface):
     """
     Requests identity information from the metadata server.
+
     e.g
 
     This example get a jwt token.
@@ -59,21 +60,21 @@ class GCPProvider(ProviderInterface):
 
     Parameters
     ----------
-        audience : str
-            The unique URI agreed upon by both the instance and the
-            system verifying the instance's identity. For example, the audience
-            could be a URL for the connection between the two systems.
-        format: str
-            The optional parameter that specifies whether the project and
-            instance details are included in the payload. Specify `full` to
-            include this information in the payload or standard to omit the
-            information from the payload. The default value is `standard`.
-        licenses: str
-            An optional parameter that specifies whether license
-            codes for images associated with this instance are included in the
-            payload. Specify TRUE to include this information or FALSE to omit
-            this information from the payload. The default value is FALSE.
-            Has no effect unless format is `full`.
+    audience : str
+        The unique URI agreed upon by both the instance and the
+        system verifying the instance's identity. For example, the audience
+        could be a URL for the connection between the two systems.
+    format : str
+        The optional parameter that specifies whether the project and
+        instance details are included in the payload. Specify `full` to
+        include this information in the payload or standard to omit the
+        information from the payload. The default value is `standard`.
+    licenses : str
+        An optional parameter that specifies whether license
+        codes for images associated with this instance are included in the
+        payload. Specify TRUE to include this information or FALSE to omit
+        this information from the payload. The default value is FALSE.
+        Has no effect unless format is `full`.
 
     """
 
@@ -115,8 +116,8 @@ class GCPProvider(ProviderInterface):
 
         Returns
         ----------
-            token: str or None
-                The authentication token if available, else None.
+        token : str or None
+            The authentication token if available, else None.
         """
 
         response = requests.get(self._url, headers=self._headers)
@@ -136,16 +137,23 @@ def factory(provider: str) -> ProviderInterface:
     This function takes a provider name as input and returns an instance
     of the corresponding authentication provider class.
 
+    e.g
+
+    This example get an instance of provider.
+
+    >>> provider = factory(provider="gcp")
+    >>> token = provider.get_token()
+
     Parameters
     ----------
-        provider : str
-            The name of the authentication provider.
+    provider : str
+        The name of the authentication provider.
 
     Returns:
     ----------
-        provider: ProviderInterface
-            An instance of the authentication provider class
-            corresponding to the specified provider name.
+    provider : ProviderInterface
+        An instance of the authentication provider class
+        corresponding to the specified provider name.
     """
     providers = {Provider.GCP: GCPProvider}
     key = Provider(provider)
