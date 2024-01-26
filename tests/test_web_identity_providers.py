@@ -7,10 +7,25 @@ from requests import Response
 from faster_sam import web_identity_providers
 
 
-class TestLambdaClient(unittest.TestCase):
+@patch.dict(
+    "os.environ",
+    {
+        "WEB_IDENTITY_AUDIENCE": "test",
+        "WEB_IDENTITY_FORMAT": "full",
+        "WEB_IDENTITY_LICENSES": "TRUE",
+    },
+)
+class TestGCPProvider(unittest.TestCase):
     def setUp(self) -> None:
-        self.patch_requests = patch("requests.get")
+        self.patch_requests = patch("faster_sam.web_identity_providers.requests")
         self.mock_requests = self.patch_requests.start()
+
+        self.url = (
+            "http://metadata.google.internal/computemetadata/v1/"
+            "instance/service-accounts/default/identity?"
+            "audience=test&format=full&licenses=True"
+        )
+        self.headers = {"Metadata-Flavor": "Google"}
 
     def tearDown(self) -> None:
         self.patch_requests.stop()
@@ -22,20 +37,22 @@ class TestLambdaClient(unittest.TestCase):
         mock_response.status_code = HTTPStatus.OK.value
         mock_response._content = token.encode()
 
-        self.mock_requests.return_value = mock_response
+        self.mock_requests.get.return_value = mock_response
 
         web_identity_provider = web_identity_providers.factory("gcp")
         web_identity_token = web_identity_provider.get_token()
 
         self.assertEqual(web_identity_token, token)
+        self.mock_requests.get.assert_called_once_with(self.url, headers=self.headers)
 
     def test_get_token_fail(self):
         mock_response = Response()
         mock_response.status_code = HTTPStatus.INTERNAL_SERVER_ERROR.value
 
-        self.mock_requests.return_value = mock_response
+        self.mock_requests.get.return_value = mock_response
 
         web_identity_provider = web_identity_providers.factory("gcp")
         web_identity_token = web_identity_provider.get_token()
 
         self.assertIsNone(web_identity_token)
+        self.mock_requests.get.assert_called_once_with(self.url, headers=self.headers)
