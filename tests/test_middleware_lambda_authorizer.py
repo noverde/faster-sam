@@ -292,17 +292,15 @@ class TestLambdaClient(unittest.TestCase):
         self.assertEqual(client.expired, True)
 
     def test_expired_refresh(self):
-        response_1 = copy.deepcopy(self.aws_response)
-        response_1["Credentials"]["Expiration"] = datetime.now(tz=timezone.utc)
-        response_2 = self.aws_response
+        response = copy.deepcopy(self.aws_response)
+        response["Credentials"]["Expiration"] = datetime.now(tz=timezone.utc)
 
         self.sts_cli.return_value.assume_role_with_web_identity.side_effect = [
-            response_1,
-            response_2,
+            response,
+            self.aws_response,
         ]
 
         client = lambda_authorizer.LambdaClient(self.credentials_with_web_token)
-        client.set_client()
-        client.client
 
+        self.assertIsNotNone(client.client)
         self.assertEqual(client.expired, False)
