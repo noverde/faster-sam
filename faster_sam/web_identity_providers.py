@@ -81,7 +81,7 @@ class GCPProvider(ProviderInterface):
         """
         audience = os.getenv("WEB_IDENTITY_AUDIENCE", "")
         format = os.getenv("WEB_IDENTITY_FORMAT", "standard")
-        licenses = "WEB_IDENTITY_LICENSES" in os.environ
+        licenses = os.getenv("WEB_IDENTITY_LICENSES", "FALSE")
 
         self._url = (
             "http://metadata.google.internal/computemetadata/v1/"
