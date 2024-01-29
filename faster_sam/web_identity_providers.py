@@ -84,7 +84,7 @@ class GCPProvider(ProviderInterface):
         licenses = os.getenv("WEB_IDENTITY_LICENSES", "FALSE")
 
         self._url = (
-            "http://metadata.google.internal/computemetadata/v1/"
+            "http://metadata.google.internal/computeMetadata/v1/"
             "instance/service-accounts/default/identity?"
             f"audience={audience}&format={format}&licenses={licenses}"
         )
