@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 class Provider(Enum):
     """
-    Enumeration of authentication providers.
+    Enumeration of identity providers.
 
     Providers:
-        GCP: Google Cloud Platform authentication provider.
+        GCP: Google Cloud Platform identity provider.
     """
 
     GCP = "gcp"
@@ -22,25 +22,25 @@ class Provider(Enum):
 
 class ProviderInterface(ABC):
     """
-    Interface for authentication providers.
+    Interface for identity providers.
 
-    This abstract base class defines an interface for authentication providers
+    This abstract base class defines an interface for identity providers
     to implement. Subclasses must implement the `get_token` method to provide
-    functionality for retrieving authentication tokens.
+    functionality for retrieving identity tokens.
     """
 
     @abstractmethod
     def get_token(self) -> Optional[str]:
         """
-        Get the authentication token.
+        Get the identity token.
 
         This method should be implemented by subclasses to retrieve the
-        authentication token from the respective authentication provider.
+        identity token from the respective identity provider.
 
         Returns
         -------
         token : str or None
-            The authentication token if available, else None.
+            The identity token if available, else None.
         """
         pass  # pragma: no cover
 
@@ -101,7 +101,7 @@ class GCPProvider(ProviderInterface):
         Returns
         ----------
         token : str or None
-            The authentication token if available, else None.
+            The identity token if available, else None.
         """
 
         response = requests.get(self._url, headers=self._headers)
@@ -116,10 +116,10 @@ class GCPProvider(ProviderInterface):
 
 def factory(provider: str) -> ProviderInterface:
     """
-    Factory function for creating authentication provider instances.
+    Factory function for creating identity provider instances.
 
     This function takes a provider name as input and returns an instance
-    of the corresponding authentication provider class.
+    of the corresponding identity provider class.
 
     e.g
 
@@ -131,12 +131,12 @@ def factory(provider: str) -> ProviderInterface:
     Parameters
     ----------
     provider : str
-        The name of the authentication provider.
+        The name of the identity provider.
 
     Returns
     -------
     provider : ProviderInterface
-        An instance of the authentication provider class
+        An instance of the identity provider class
         corresponding to the specified provider name.
     """
     providers = {Provider.GCP: GCPProvider}
