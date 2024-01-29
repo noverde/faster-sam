@@ -27,6 +27,12 @@ class ProviderInterface(ABC):
     This abstract base class defines an interface for identity providers
     to implement. Subclasses must implement the `get_token` method to provide
     functionality for retrieving identity tokens.
+
+    Environment Variables
+    ---------------------
+    WEB_IDENTITY_AUDIENCE : str
+        The unique URI agreed upon by both the instance and the system
+        verifying the instance's identity.
     """
 
     @abstractmethod
@@ -51,23 +57,23 @@ class GCPProvider(ProviderInterface):
 
     e.g
 
-    This example get a jwt token.
+    This example retrieves an identity token in the JWT format.
 
-    >>> provider = GCPProvider(audience="https://myaudience.com")
+    >>> provider = GCPProvider()
     >>> provider.get_token()
 
     Environment Variables
     ---------------------
-    audience : str
+    WEB_IDENTITY_AUDIENCE : str
         The unique URI agreed upon by both the instance and the
         system verifying the instance's identity. For example, the audience
         could be a URL for the connection between the two systems.
-    format : str
+    WEB_IDENTITY_FORMAT : str
         The optional parameter that specifies whether the project and
         instance details are included in the payload. Specify `full` to
         include this information in the payload or standard to omit the
         information from the payload. The default value is `standard`.
-    licenses : bool
+    WEB_IDENTITY_LICENSES : bool
         An optional parameter that specifies whether license
         codes for images associated with this instance are included in the
         payload. Specify TRUE to include this information or FALSE to omit
@@ -93,10 +99,8 @@ class GCPProvider(ProviderInterface):
 
     def get_token(self) -> Optional[str]:
         """
-        Get a JSON Web Token signed using the RS256 algorithm. The token includes a
-        Google signature and additional information in the payload. You can send
-        this token to other systems and applications so that they can verify the
-        token and confirm that the identity of your instance.
+        Get a JSON Web Token (JWT) signed by Google using the RS256 algorithm
+        containing the identity information of the requester.
 
         Returns
         ----------
