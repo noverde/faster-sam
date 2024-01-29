@@ -73,6 +73,7 @@ async def event_builder(request: Request) -> Dict[str, Any]:
             "path": request.url.path,
             "httpMethod": request.method,
             "protocol": f"HTTP/{request.scope['http_version']}",
+            "authorizer": request.scope.get("authorization_context"),
         },
     }
 

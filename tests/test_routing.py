@@ -25,6 +25,12 @@ def build_request():
             (b"content-type", b"application/json"),
             (b"user-agent", b"python/unittest"),
         ],
+        "authorization_context": {
+            "borrower_id": 1,
+            "cpf": "07491376819",
+            "sid": "e6be99e7-a103-4394-95e8-b5bf1c7294da",
+            "user_uuid": "53d13ce4-f6d6-453e-895e-db02b486d6f7",
+        },
     }
 
     return Request(scope, receive)
@@ -98,6 +104,7 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event.keys()), expected_keys)
+        self.assertIn("authorizer", event["requestContext"])
 
 
 class TestHandler(unittest.IsolatedAsyncioTestCase):
