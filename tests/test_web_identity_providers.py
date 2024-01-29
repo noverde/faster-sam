@@ -23,7 +23,7 @@ class TestGCPProvider(unittest.TestCase):
         self.url = (
             "http://metadata.google.internal/computemetadata/v1/"
             "instance/service-accounts/default/identity?"
-            "audience=test&format=full&licenses=True"
+            "audience=test&format=full&licenses=TRUE"
         )
         self.headers = {"Metadata-Flavor": "Google"}
 
