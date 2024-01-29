@@ -1,3 +1,4 @@
+import copy
 import io
 import json
 import unittest
@@ -8,8 +9,16 @@ from unittest import mock
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from fastapi import FastAPI, Request, Response
+from requests import Response as RequestResponse
 
 from faster_sam.middlewares import lambda_authorizer
+
+
+def call_next_function(response: Response = Response()):
+    async def call_next(_: Request) -> Response:
+        return response
+
+    return call_next
 
 
 def invokation_response(effect: str):
@@ -46,6 +55,9 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.boto_patch = mock.patch("faster_sam.middlewares.lambda_authorizer.boto3")
         self.mock_boto = self.boto_patch.start()
+        self.aws_session = self.mock_boto.Session
+        self.lambda_cli = self.aws_session.return_value.client
+        self.sts_cli = self.mock_boto.client
 
         self.aws_response = {
             "Credentials": {
@@ -74,9 +86,7 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             },
         }
 
-        self.mock_boto.client.return_value.assume_role_with_web_identity.return_value = (
-            self.aws_response
-        )
+        self.sts_cli.return_value.assume_role_with_web_identity.return_value = self.aws_response
 
         app = FastAPI()
 
@@ -112,26 +122,22 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
 
     async def test_middleware_unauthorized(self):
         request = Request(scope=self.scope)
+        self.lambda_cli.return_value.invoke.return_value = invokation_response("Deny")
 
-        mocked_invokation_response = invokation_response("Deny")
-        self.mock_boto.client.return_value.invoke.return_value = mocked_invokation_response
-
-        response = await self.middleware.dispatch(request, lambda x: ...)
+        response = await self.middleware.dispatch(request, call_next_function())
         body = json.loads(response.body)
 
         self.assertEqual(body["message"], "Unauthorized")
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
 
     async def test_middleware_authorized(self):
-        async def call_next(request: Request) -> Response:
-            return Response(
-                content=json.dumps({"message": "Authorized"}), status_code=HTTPStatus.OK.value
-            )
-
+        call_next_response = Response(
+            content=json.dumps({"message": "Authorized"}), status_code=HTTPStatus.OK.value
+        )
+        call_next = call_next_function(call_next_response)
         request = Request(scope=self.scope)
 
-        mocked_invokation_response = invokation_response("Allow")
-        self.mock_boto.client.return_value.invoke.return_value = mocked_invokation_response
+        self.lambda_cli.return_value.invoke.return_value = invokation_response("Allow")
 
         response = await self.middleware.dispatch(request, call_next)
         body = json.loads(response.body)
@@ -141,9 +147,8 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
 
     async def test_middleware_internal_server_error(self):
         request = Request(scope=self.scope)
-        client_lambda = self.mock_boto.client.return_value
 
-        client_lambda.invoke.side_effect = ClientError(
+        self.lambda_cli.return_value.invoke.side_effect = ClientError(
             error_response={
                 "Error": {
                     "Code": "ServiceException",
@@ -153,8 +158,9 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             operation_name="InvokeFunction ",
         )
 
-        response = await self.middleware.dispatch(request, lambda x: ...)
+        response = await self.middleware.dispatch(request, call_next_function())
         body = json.loads(response.body)
+
         self.assertEqual(body["message"], "Something went wrong. Try again")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR.value)
 
@@ -163,6 +169,17 @@ class TestLambdaClient(unittest.TestCase):
     def setUp(self) -> None:
         self.boto_patch = mock.patch("faster_sam.middlewares.lambda_authorizer.boto3")
         self.mock_boto = self.boto_patch.start()
+        self.aws_session = self.mock_boto.Session
+        self.lambda_cli = self.aws_session.return_value.client
+        self.sts_cli = self.mock_boto.client
+
+        self.requests_patch = mock.patch("faster_sam.web_identity_providers.requests")
+        self.requests_mock = self.requests_patch.start()
+
+        response = RequestResponse()
+        response.status_code = HTTPStatus.OK.value
+        response._content = b"eyJhbGciOiJSUzI1Ni.eyJhdWQiOiJodHRwczov.b25hd3MuY29tIi"
+        self.requests_mock.get.return_value = response
 
         self.aws_response = {
             "Credentials": {
@@ -191,40 +208,32 @@ class TestLambdaClient(unittest.TestCase):
             },
         }
 
-        self.mock_boto.client.return_value.assume_role_with_web_identity.return_value = (
-            self.aws_response
-        )
-
-        self.common_credentials = {
-            "role_arn": "arn:aws:iam::22555448866:role/role-to-assume",
-            "role_session_name": "my-role-session-name",
-            "region": "region1",
-        }
+        self.sts_cli.return_value.assume_role_with_web_identity.return_value = self.aws_response
 
         self.credentials_with_web_token = lambda_authorizer.Credentials(
             web_identity_token="eyJhbGciOiJSUzI1Ni.eyJhdWQiOiJodHRwczov.b25hd3MuY29tIi",
-            **self.common_credentials,
+            role_arn="arn:aws:iam::22555448866:role/role-to-assume",
+            role_session_name="my-role-session-name",
+            region="us-east-1",
         )
 
-        def web_identity_callable():
-            return "eyJhbGciOiJSUzI1Ni.eyJhdWQiOiJodHRwczov.b25hd3MuY29tIi"
-
         self.credentials_with_web_token_function = lambda_authorizer.Credentials(
-            web_identity_callable=web_identity_callable, **self.common_credentials
+            role_arn="arn:aws:iam::22555448866:role/role-to-assume",
+            role_session_name="my-role-session-name",
+            web_identity_provider="gcp",
+            region="us-east-1",
         )
 
         self.credentials_with_session_token = lambda_authorizer.Credentials(
-            access_key="154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
+            access_key_id="154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
             secret_access_key="51fd5g4sdsdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
             session_token="sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
-            region="region1",
+            region="us-east-1",
         )
 
     def tearDown(self) -> None:
         self.boto_patch.stop()
-
-    def initialize_lambda_client(self, credentials):
-        return lambda_authorizer.LambdaClient(credentials)
+        self.requests_patch.stop()
 
     def test_assume_role(self):
         web_token = {
@@ -234,32 +243,64 @@ class TestLambdaClient(unittest.TestCase):
 
         for use_case, token_type in web_token.items():
             with self.subTest(use_case=use_case):
-                client = self.initialize_lambda_client(token_type)
+                client = lambda_authorizer.LambdaClient(token_type)
                 credentials = client.assume_role()
 
                 self.assertEqual(credentials, self.credentials_with_session_token)
 
     def test_set_client(self):
-        client = self.initialize_lambda_client(self.credentials_with_web_token)
+        client = lambda_authorizer.LambdaClient(self.credentials_with_web_token)
         client.set_client()
 
-        self.mock_boto.client.assert_called_with(
-            "lambda",
-            aws_access_key_id=self.credentials_with_session_token.access_key,
+        self.aws_session.assert_called_with(
+            aws_access_key_id=self.credentials_with_session_token.access_key_id,
             aws_secret_access_key=self.credentials_with_session_token.secret_access_key,
             aws_session_token=self.credentials_with_session_token.session_token,
             region_name=self.credentials_with_web_token.region,
+            profile_name=self.credentials_with_web_token.profile,
         )
+        self.lambda_cli.assert_called_with("lambda")
+
+    def test_set_client_with_acsess_key(self):
+        client = lambda_authorizer.LambdaClient(self.credentials_with_session_token)
+        client.set_client()
+
+        self.assertEqual(client.expired, False)
+        self.aws_session.assert_called_with(
+            aws_access_key_id=self.credentials_with_session_token.access_key_id,
+            aws_secret_access_key=self.credentials_with_session_token.secret_access_key,
+            aws_session_token=self.credentials_with_session_token.session_token,
+            region_name=self.credentials_with_web_token.region,
+            profile_name=self.credentials_with_web_token.profile,
+        )
+        self.lambda_cli.assert_called_with("lambda")
 
     def test_expired_false(self):
-        client = self.initialize_lambda_client(self.credentials_with_web_token)
+        client = lambda_authorizer.LambdaClient(self.credentials_with_web_token)
         client.set_client()
 
         self.assertEqual(client.expired, False)
 
     def test_expired_true(self):
-        client = self.initialize_lambda_client(self.credentials_with_web_token)
+        response = self.aws_response
+        response["Credentials"]["Expiration"] = datetime.now(tz=timezone.utc)
+        self.sts_cli.assume_role_with_web_identity.return_value = response
+
+        client = lambda_authorizer.LambdaClient(self.credentials_with_web_token)
         client.set_client()
-        client._expires_at = client._expires_at - timedelta(minutes=2)
 
         self.assertEqual(client.expired, True)
+
+    def test_expired_refresh(self):
+        response = copy.deepcopy(self.aws_response)
+        response["Credentials"]["Expiration"] = datetime.now(tz=timezone.utc)
+
+        self.sts_cli.return_value.assume_role_with_web_identity.side_effect = [
+            response,
+            self.aws_response,
+        ]
+
+        client = lambda_authorizer.LambdaClient(self.credentials_with_web_token)
+
+        self.assertIsNotNone(client.client)
+        self.assertEqual(client.expired, False)

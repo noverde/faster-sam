@@ -22,4 +22,4 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-auth = ["boto3"]
+auth = ["boto3", "requests"]
