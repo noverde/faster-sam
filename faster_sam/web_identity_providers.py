@@ -67,7 +67,7 @@ class GCPProvider(ProviderInterface):
         instance details are included in the payload. Specify `full` to
         include this information in the payload or standard to omit the
         information from the payload. The default value is `standard`.
-    WEB_IDENTITY_LICENSES : bool
+    WEB_IDENTITY_LICENSES : str
         An optional parameter that specifies whether license
         codes for images associated with this instance are included in the
         payload. Specify TRUE to include this information or FALSE to omit
