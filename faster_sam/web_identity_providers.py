@@ -27,12 +27,6 @@ class ProviderInterface(ABC):
     This abstract base class defines an interface for identity providers
     to implement. Subclasses must implement the `get_token` method to provide
     functionality for retrieving identity tokens.
-
-    Environment Variables
-    ---------------------
-    WEB_IDENTITY_AUDIENCE : str
-        The unique URI agreed upon by both the instance and the system
-        verifying the instance's identity.
     """
 
     @abstractmethod
