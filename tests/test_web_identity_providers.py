@@ -21,7 +21,7 @@ class TestGCPProvider(unittest.TestCase):
         self.mock_requests = self.patch_requests.start()
 
         self.url = (
-            "http://metadata.google.internal/computemetadata/v1/"
+            "http://metadata.google.internal/computeMetadata/v1/"
             "instance/service-accounts/default/identity?"
             "audience=test&format=full&licenses=TRUE"
         )
