@@ -39,7 +39,7 @@ class Credentials:
                 return None
 
         for attr in attrs:
-            setattr(self, attr.name, os.getenv(f"AWS_{attr.name.upper}"))
+            setattr(self, attr.name, os.getenv(f"AWS_{attr.name.upper()}"))
 
 
 class LambdaClient:

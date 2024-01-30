@@ -1,6 +1,7 @@
 import copy
 import io
 import json
+import os
 import unittest
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
@@ -304,3 +305,37 @@ class TestLambdaClient(unittest.TestCase):
 
         self.assertIsNotNone(client.client)
         self.assertEqual(client.expired, False)
+
+
+@mock.patch.dict(
+    "os.environ",
+    {
+        "AWS_ROLE_ARN": "arn:aws:iam::22555448866:role/role-from-environment",
+        "AWS_WEB_IDENTITY_PROVIDER": "gcp-environment",
+        "AWS_ROLE_SESSION_NAME": "my-role-session-name-environment",
+        "AWS_REGION": "us-east-1-environment",
+    },
+)
+class TestCredentials(unittest.TestCase):
+    def test_load_credentials_from_environment(self):
+        credentials = lambda_authorizer.Credentials()
+
+        self.assertEqual(credentials.role_arn, os.environ["AWS_ROLE_ARN"])
+        self.assertEqual(credentials.web_identity_provider, os.environ["AWS_WEB_IDENTITY_PROVIDER"])
+        self.assertEqual(credentials.role_session_name, os.environ["AWS_ROLE_SESSION_NAME"])
+        self.assertEqual(credentials.region, os.environ["AWS_REGION"])
+
+    def test_credentials(self):
+        credentials = lambda_authorizer.Credentials(
+            role_arn="arn:aws:iam::22555448866:role/role-to-assume",
+            web_identity_provider="gcp",
+            role_session_name="my-role-session-name",
+            region="us-east-1",
+        )
+
+        self.assertNotEqual(credentials.role_arn, os.environ["AWS_ROLE_ARN"])
+        self.assertNotEqual(
+            credentials.web_identity_provider, os.environ["AWS_WEB_IDENTITY_PROVIDER"]
+        )
+        self.assertNotEqual(credentials.role_session_name, os.environ["AWS_ROLE_SESSION_NAME"])
+        self.assertNotEqual(credentials.region, os.environ["AWS_REGION"])
