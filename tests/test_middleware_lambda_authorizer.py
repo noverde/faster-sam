@@ -326,14 +326,13 @@ class TestCredentials(unittest.TestCase):
         self.assertEqual(credentials.region, os.environ["AWS_REGION"])
 
     def test_credentials(self):
-        credentials = lambda_authorizer.Credentials(
-            role_arn="arn:aws:iam::22555448866:role/role-to-assume",
-            web_identity_provider="gcp",
-            role_session_name="my-role-session-name",
-            region="us-east-1",
-        )
+        credential_values = {
+            "role_arn": "arn:aws:iam::22555448866:role/role-to-assume",
+            "web_identity_provider": "gcp",
+            "role_session_name": "my-role-session-name",
+            "region": "us-east-1",
+        }
+        credentials = lambda_authorizer.Credentials(**credential_values)
 
-        self.assertEqual(credentials.role_arn, "arn:aws:iam::22555448866:role/role-to-assume")
-        self.assertEqual(credentials.web_identity_provider, "gcp")
-        self.assertEqual(credentials.role_session_name, "my-role-session-name")
-        self.assertEqual(credentials.region, "us-east-1")
+        for credential, credential_value in credential_values.items():
+            self.assertEqual(getattr(credentials, credential), credential_value)
