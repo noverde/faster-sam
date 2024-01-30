@@ -333,9 +333,7 @@ class TestCredentials(unittest.TestCase):
             region="us-east-1",
         )
 
-        self.assertNotEqual(credentials.role_arn, os.environ["AWS_ROLE_ARN"])
-        self.assertNotEqual(
-            credentials.web_identity_provider, os.environ["AWS_WEB_IDENTITY_PROVIDER"]
-        )
-        self.assertNotEqual(credentials.role_session_name, os.environ["AWS_ROLE_SESSION_NAME"])
-        self.assertNotEqual(credentials.region, os.environ["AWS_REGION"])
+        self.assertEqual(credentials.role_arn, "arn:aws:iam::22555448866:role/role-to-assume")
+        self.assertEqual(credentials.web_identity_provider, "gcp")
+        self.assertEqual(credentials.role_session_name, "my-role-session-name")
+        self.assertEqual(credentials.region, "us-east-1")
