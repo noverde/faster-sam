@@ -11,8 +11,10 @@ from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from fastapi import FastAPI, Request, Response
 from requests import Response as RequestResponse
+from faster_sam.cache.redis import RedisCache
 
 from faster_sam.middlewares import lambda_authorizer
+from tests.test_redis import FakeRedis
 
 
 def call_next_function(response: Response = Response()):
@@ -60,6 +62,10 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.lambda_cli = self.aws_session.return_value.client
         self.sts_cli = self.mock_boto.client
 
+        self.redis_patch = mock.patch("faster_sam.cache.redis.redis")
+        self.redis_mock = self.redis_patch.start()
+        self.redis_mock.Redis.from_url.return_value = FakeRedis()
+
         self.aws_response = {
             "Credentials": {
                 "AccessKeyId": "154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
@@ -100,6 +106,13 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.middleware = lambda_authorizer.LambdaAuthorizerMiddleware(
             app, "arn:aws:lambda:region:account-id:function:function-name", credentials
         )
+
+        self.redis = RedisCache()
+
+        self.middleware_with_cache = lambda_authorizer.LambdaAuthorizerMiddleware(
+            app, "arn:aws:lambda:region:account-id:function:function-name", credentials, self.redis
+        )
+
         self.scope = {
             "type": "http",
             "http_version": "1.1",
@@ -118,8 +131,25 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             ],
         }
 
+        self.authorization = {
+            "principalId": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ",
+            "policyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "execute-api:Invoke",
+                        "Effect": "Deny",
+                        "Resource": ["arn:aws:execute-api:us-east4:xpl3tuf2r0/v1/*/*"],
+                    }
+                ],
+            },
+            "context": {},
+        }
+
     def tearDown(self) -> None:
+        RedisCache()._get_connection().flushdb()
         self.boto_patch.stop()
+        self.redis_patch.stop()
 
     async def test_middleware_unauthorized(self):
         request = Request(scope=self.scope)
@@ -164,6 +194,82 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(body["message"], "Something went wrong. Try again")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR.value)
+
+    async def test_middleware_unauthorized_cached(self):
+        request = Request(scope=self.scope)
+
+        self.redis.set(
+            "eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k", json.dumps(self.authorization)
+        )
+
+        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        body = json.loads(response.body)
+
+        self.assertEqual(body["message"], "Unauthorized")
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
+
+    async def test_middleware_authorized_cached(self):
+        call_next_response = Response(
+            content=json.dumps({"message": "Authorized"}), status_code=HTTPStatus.OK.value
+        )
+        request = Request(scope=self.scope)
+
+        self.authorization["policyDocument"]["Statement"][0]["Effect"] = "Allow"
+
+        self.redis.set(
+            "eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k", json.dumps(self.authorization)
+        )
+
+        response = await self.middleware_with_cache.dispatch(
+            request, call_next_function(call_next_response)
+        )
+
+        body = json.loads(response.body)
+
+        self.assertEqual(body["message"], "Authorized")
+        self.assertEqual(response.status_code, HTTPStatus.OK.value)
+
+    async def test_middleware_unauthorized_cache_not_found(self):
+        request = Request(scope=self.scope)
+
+        self.lambda_cli.return_value.invoke.return_value = invokation_response("Deny")
+
+        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        body = json.loads(response.body)
+
+        self.assertEqual(body["message"], "Unauthorized")
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
+
+    async def test_middleware_unauthorized_cached_without_key(self):
+        self.scope["headers"] = [
+            (b"host", b"localhost:8000"),
+            (b"user-agent", b"curl/7.81.0"),
+            (b"accept", b"*/*"),
+        ]
+        request = Request(scope=self.scope)
+
+        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        body = json.loads(response.body)
+
+        self.assertEqual(body["message"], "Unauthorized")
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
+
+    @mock.patch.dict(os.environ, {"AUTHORIZATION": "my-auth-key"})
+    async def test_middleware_unauthorized_cached_custom_environment_token_name(self):
+        self.scope["headers"] = [
+            (b"host", b"localhost:8000"),
+            (b"user-agent", b"curl/7.81.0"),
+            (b"my-auth-key", b"sdfkjhF2545FFggg"),
+        ]
+        request = Request(scope=self.scope)
+
+        self.redis.set("sdfkjhF2545FFggg", json.dumps(self.authorization))
+
+        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        body = json.loads(response.body)
+
+        self.assertEqual(body["message"], "Unauthorized")
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
 
 
 class TestLambdaClient(unittest.TestCase):
