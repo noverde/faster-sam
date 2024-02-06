@@ -11,8 +11,10 @@ from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from fastapi import FastAPI, Request, Response
 from requests import Response as RequestResponse
+from faster_sam.cache.redis import RedisCache
 
 from faster_sam.middlewares import lambda_authorizer
+from tests.test_redis import FakeRedis
 
 
 def call_next_function(response: Response = Response()):
@@ -60,6 +62,10 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.lambda_cli = self.aws_session.return_value.client
         self.sts_cli = self.mock_boto.client
 
+        self.redis_patch = mock.patch("faster_sam.cache.redis.redis")
+        self.redis_mock = self.redis_patch.start()
+        self.redis_mock.Redis.from_url.return_value = FakeRedis()
+
         self.aws_response = {
             "Credentials": {
                 "AccessKeyId": "154vc8sdffBG45W$#6f$56%W$W%V5$BWVE787Trdg",
@@ -100,6 +106,13 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.middleware = lambda_authorizer.LambdaAuthorizerMiddleware(
             app, "arn:aws:lambda:region:account-id:function:function-name", credentials
         )
+
+        self.redis = RedisCache()
+
+        self.middleware_with_cache = lambda_authorizer.LambdaAuthorizerMiddleware(
+            app, "arn:aws:lambda:region:account-id:function:function-name", credentials, self.redis
+        )
+
         self.scope = {
             "type": "http",
             "http_version": "1.1",
@@ -119,7 +132,9 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         }
 
     def tearDown(self) -> None:
+        RedisCache()._get_connection().flushdb()
         self.boto_patch.stop()
+        self.redis_patch.stop()
 
     async def test_middleware_unauthorized(self):
         request = Request(scope=self.scope)

@@ -254,6 +254,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         if self._cache is None:
             payload = self.invoke_lambda(request)
         else:
+            payload = None
             key = self.get_key(dict(request.headers))
 
             if key is None:
@@ -261,11 +262,17 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
                 status_code = HTTPStatus.UNAUTHORIZED
                 return Response(content=json.dumps(content), status_code=status_code.value)
 
-            payload = self._cache.get(key)
+            cache_response = self._cache.get(key)
+
+            import ipdb
+
+            ipdb.set_trace()
+            if cache_response is not None:
+                payload = json.loads(cache_response)
 
             if payload is None:
                 payload = self.invoke_lambda(request)
-                self._cache.set(key, payload)
+                self._cache.set(key, json.dumps(payload))
 
         if payload and payload["policyDocument"]["Statement"][0]["Effect"] == "Allow":
             request.scope["authorization_context"] = payload.get("context")
