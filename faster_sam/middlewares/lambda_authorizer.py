@@ -264,9 +264,6 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
             cache_response = self._cache.get(key)
 
-            import ipdb
-
-            ipdb.set_trace()
             if cache_response is not None:
                 payload = json.loads(cache_response)
 
