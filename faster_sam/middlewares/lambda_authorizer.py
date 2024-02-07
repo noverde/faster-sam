@@ -15,7 +15,7 @@ from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from faster_sam import web_identity_providers
-from faster_sam.cache.interface import CacheInterface
+from faster_sam.cache.cache_interface import CacheInterface
 
 
 logger = logging.getLogger(__name__)

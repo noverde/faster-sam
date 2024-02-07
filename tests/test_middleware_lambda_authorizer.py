@@ -11,8 +11,8 @@ from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from fastapi import FastAPI, Request, Response
 from requests import Response as RequestResponse
-from faster_sam.cache import redis
-from faster_sam.cache.redis import RedisCache
+from faster_sam.cache import redis_cache
+from faster_sam.cache.redis_cache import RedisCache
 
 from faster_sam.middlewares import lambda_authorizer
 from tests.test_redis import FakeRedis
@@ -57,7 +57,7 @@ def invokation_response(effect: str):
 
 class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
-        redis.CACHE_URL = "redis://127.0.0.1:6379/0"
+        redis_cache.CACHE_URL = "redis://127.0.0.1:6379/0"
 
         self.boto_patch = mock.patch("faster_sam.middlewares.lambda_authorizer.boto3")
         self.mock_boto = self.boto_patch.start()
@@ -65,7 +65,7 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.lambda_cli = self.aws_session.return_value.client
         self.sts_cli = self.mock_boto.client
 
-        self.redis_patch = mock.patch("faster_sam.cache.redis.Redis")
+        self.redis_patch = mock.patch("faster_sam.cache.redis_cache.Redis")
         self.redis_mock = self.redis_patch.start()
         self.redis_mock.from_url.return_value = FakeRedis()
 

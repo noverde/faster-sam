@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 from redis import Redis
-from faster_sam.cache.interface import CacheInterface
+from faster_sam.cache.cache_interface import CacheInterface
 
 
 CACHE_TTL = os.getenv("FASTER_SAM_CACHE_TTL", 900)
