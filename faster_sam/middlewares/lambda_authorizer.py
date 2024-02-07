@@ -356,7 +356,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
     def get_key(self, headers: dict) -> str:
         if "AUTHORIZATION" in os.environ:
             key = os.environ["AUTHORIZATION"]
-            return headers.get(key)
+            return key
 
         headers = {key.lower(): value for key, value in headers.items()}
 
