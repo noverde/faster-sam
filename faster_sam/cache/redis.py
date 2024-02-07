@@ -18,7 +18,7 @@ class RedisCache(CacheInterface):
 
         return self._connection
 
-    def set(self, key: str, value: str, ttl: float = CACHE_TTL):
+    def set(self, key: str, value: str, ttl: int = CACHE_TTL):
         self.connection.set(key, value, ttl)
 
     def get(self, key: str):
