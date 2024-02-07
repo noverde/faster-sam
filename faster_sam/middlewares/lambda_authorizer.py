@@ -207,6 +207,8 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
             The Lambda function name or its ARN.
         client: BaseClient
             Client Lambda object
+        cache: CacheInterface
+            Instance of a cache backend
     """
 
     def __init__(
@@ -354,7 +356,22 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         }
         return event
 
-    def from_cache(self, token: str) -> str:
+    def from_cache(self, token: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve cached payload associated with the provided token from the cache
+        if some cache backend was initiated.
+
+        Parameters
+        ----------
+        token : str
+            The token used as a key to retrieve the associated payload from the cache.
+
+        Returns
+        -------
+        dict or None
+            The authorization payload associated with the provided token if found in the cache,
+            otherwise None.
+        """
         payload = None
 
         if self._cache is not None:
@@ -365,6 +382,21 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
         return payload
 
-    def to_cache(self, token: str, payload: dict) -> None:
+    def to_cache(self, token: str, payload: Optional[Dict[str, Any]]) -> None:
+        """
+        Cache the provided payload associated with the provided token.
+
+        Parameters
+        ----------
+        token : str
+            The token used as a key to store the associated authorization payload in the cache.
+        payload : dict or None
+            The authorization payload to be cached. It should be a dictionary representing
+            the data to be stored or None if some problemn occured in lambda invokation.
+
+        Returns
+        -------
+        None
+        """
         if self._cache is not None:
             self._cache.set(token, json.dumps(payload))
