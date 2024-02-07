@@ -5,7 +5,6 @@ from faster_sam.cache.interface import CacheInterface
 
 class RedisCache(CacheInterface):
     def __init__(self) -> None:
-        self._key = None
         self._connection = None
 
     def _get_connection(self):
