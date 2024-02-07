@@ -180,6 +180,56 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(body["message"], "Something went wrong. Try again")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR.value)
 
+    async def test_middleware_authorized_with_cache(self):
+        call_next_response = Response(
+            content=json.dumps({"message": "Authorized"}), status_code=HTTPStatus.OK.value
+        )
+        call_next = call_next_function(call_next_response)
+        request = Request(scope=self.scope)
+        payload = {
+            "principalId": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ",
+            "policyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "execute-api:Invoke",
+                        "Effect": "Allow",
+                        "Resource": ["arn:aws:execute-api:us-east4:xpl3tuf2r0/v1/*/*"],
+                    }
+                ],
+            },
+            "context": {},
+        }
+        self.redis.set("eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k", json.dumps(payload))
+        response = await self.middleware_with_cache.dispatch(request, call_next)
+        body = json.loads(response.body)
+
+        self.assertEqual(body["message"], "Authorized")
+        self.assertEqual(response.status_code, HTTPStatus.OK.value)
+
+    @mock.patch.dict(
+        "os.environ",
+        {
+            "AUTHORIZATION": "eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k",
+        },
+    )
+    async def test_cache_with_environment_variable(self):
+        await self.test_middleware_authorized_with_cache()
+
+    async def test_middleware_unauthorized_cached_without_key(self):
+        self.scope["headers"] = [
+            (b"host", b"localhost:8000"),
+            (b"user-agent", b"curl/7.81.0"),
+            (b"accept", b"*/*"),
+        ]
+        request = Request(scope=self.scope)
+
+        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        body = json.loads(response.body)
+
+        self.assertEqual(body["message"], "Unauthorized")
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
+
 
 class TestLambdaClient(unittest.TestCase):
     def setUp(self) -> None:
