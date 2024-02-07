@@ -14,7 +14,7 @@ class RedisCache(CacheInterface):
 
         return self._connection
 
-    def set(self, key: str, value: str, ttl: float = os.getenv("CACHE_TTL")):
+    def set(self, key: str, value: str, ttl: float = os.getenv("CACHE_TTL", 900)):
         self._get_connection().set(key, value, ttl)
 
     def get(self, key: str):
