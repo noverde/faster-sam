@@ -20,7 +20,7 @@ from faster_sam.cache.cache_interface import CacheInterface
 
 logger = logging.getLogger(__name__)
 
-AUTH_HEADER = os.getenv("FASTER_SAM_AUTHORIZATION")
+AUTH_HEADER = os.getenv("FASTER_SAM_AUTHORIZATION_HEADER", "")
 
 
 @dataclass
@@ -261,11 +261,9 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         content = {"message": "Unauthorized"}
         status_code = HTTPStatus.UNAUTHORIZED
 
-        headers = dict(request.headers)
-
-        token = headers.get(
+        token = request.headers.get(
             AUTH_HEADER,
-            headers.get("authorization", headers.get("x-api-key")),
+            request.headers.get("authorization", request.headers.get("x-api-key")),
         )
 
         if token is None:

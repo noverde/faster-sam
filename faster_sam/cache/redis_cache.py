@@ -4,8 +4,8 @@ from redis import Redis
 from faster_sam.cache.cache_interface import CacheInterface
 
 
-CACHE_TTL = os.getenv("FASTER_SAM_CACHE_TTL", 900)
-CACHE_URL = os.getenv("FASTER_SAM_CACHE_URL")
+CACHE_TTL = int(os.getenv("FASTER_SAM_CACHE_TTL", 900))
+CACHE_URL = os.getenv("FASTER_SAM_CACHE_URL", "")
 
 
 class RedisCache(CacheInterface):

@@ -13,7 +13,7 @@ class CacheInterface(ABC):
     """
 
     @abstractmethod
-    def set(self, key: Any, value: Any, ttl: Any) -> None:
+    def set(self, key: Any, value: Any, ttl: Any = None) -> None:
         """
         Set a value in the cache.
 
