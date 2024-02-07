@@ -49,3 +49,15 @@ class TestRedis(unittest.TestCase):
 
         self.assertIsNotNone(payload)
         self.assertEqual(payload, "teste")
+
+    def test_cache_not_exists(self):
+        cache = RedisCache()
+        payload = cache.get("1234")
+
+        self.assertIsNone(payload)
+
+    def test_cache_value_invalid_type(self):
+        cache = RedisCache()
+
+        with self.assertRaises(TypeError):
+            cache.set("123", {"key": "value"})
