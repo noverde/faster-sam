@@ -1,20 +1,25 @@
 import os
-import redis
+from typing import Optional
+from redis import Redis
 from faster_sam.cache.interface import CacheInterface
 
 
-class RedisCache(CacheInterface):
-    def __init__(self) -> None:
-        self._connection = None
+CACHE_TTL = os.getenv("FASTER_SAM_CACHE_TTL", 900)
+CACHE_URL = os.getenv("FASTER_SAM_CACHE_URL")
 
-    def _get_connection(self):
-        if not self._connection:
-            self._connection = redis.Redis.from_url(url=os.getenv("CACHE_URL"))
+
+class RedisCache(CacheInterface):
+    _connection: Optional[Redis] = None
+
+    @property
+    def connection(self) -> Redis:
+        if self._connection is None:
+            self._connection = Redis.from_url(url=CACHE_URL)
 
         return self._connection
 
-    def set(self, key: str, value: str, ttl: float = os.getenv("CACHE_TTL", 900)):
-        self._get_connection().set(key, value, ttl)
+    def set(self, key: str, value: str, ttl: float = CACHE_TTL):
+        self.connection.set(key, value, ttl)
 
     def get(self, key: str):
-        return self._get_connection().get(key)
+        return self.connection.get(key)

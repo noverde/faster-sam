@@ -1,5 +1,6 @@
 import unittest
 from unittest import mock
+from faster_sam.cache import redis
 from faster_sam.cache.interface import CacheInterface
 
 from faster_sam.cache.redis import RedisCache
@@ -23,18 +24,20 @@ class FakeRedis(CacheInterface):
 
 class TestRedis(unittest.TestCase):
     def setUp(self) -> None:
-        self.redis_patch = mock.patch("faster_sam.cache.redis.redis")
+        redis.CACHE_URL = "redis://127.0.0.1:6379/0"
+
+        self.redis_patch = mock.patch("faster_sam.cache.redis.Redis")
         self.redis_mock = self.redis_patch.start()
-        self.redis_mock.Redis.from_url.return_value = FakeRedis()
+        self.redis_mock.from_url.return_value = FakeRedis()
         self.key = "1234"
 
     def tearDown(self) -> None:
-        RedisCache()._get_connection().flushdb()
+        RedisCache().connection.flushdb()
         self.redis_patch.stop()
 
     def test_get_connection(self):
         cache = RedisCache()
-        connection = cache._get_connection()
+        connection = cache.connection
 
         self.assertIsNotNone(connection)
         self.assertIsInstance(connection, FakeRedis)

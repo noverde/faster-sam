@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from fastapi import FastAPI, Request, Response
 from requests import Response as RequestResponse
+from faster_sam.cache import redis
 from faster_sam.cache.redis import RedisCache
 
 from faster_sam.middlewares import lambda_authorizer
@@ -56,15 +57,17 @@ def invokation_response(effect: str):
 
 class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
+        redis.CACHE_URL = "redis://127.0.0.1:6379/0"
+
         self.boto_patch = mock.patch("faster_sam.middlewares.lambda_authorizer.boto3")
         self.mock_boto = self.boto_patch.start()
         self.aws_session = self.mock_boto.Session
         self.lambda_cli = self.aws_session.return_value.client
         self.sts_cli = self.mock_boto.client
 
-        self.redis_patch = mock.patch("faster_sam.cache.redis.redis")
+        self.redis_patch = mock.patch("faster_sam.cache.redis.Redis")
         self.redis_mock = self.redis_patch.start()
-        self.redis_mock.Redis.from_url.return_value = FakeRedis()
+        self.redis_mock.from_url.return_value = FakeRedis()
 
         self.aws_response = {
             "Credentials": {
@@ -147,7 +150,7 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         }
 
     def tearDown(self) -> None:
-        RedisCache()._get_connection().flushdb()
+        RedisCache().connection.flushdb()
         self.boto_patch.stop()
         self.redis_patch.stop()
 
@@ -254,8 +257,9 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(body["message"], "Unauthorized")
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
 
-    @mock.patch.dict(os.environ, {"AUTHORIZATION": "my-auth-key"})
     async def test_middleware_unauthorized_cached_custom_environment_token_name(self):
+        lambda_authorizer.AUTH_HEADER = "my-auth-key"
+
         self.scope["headers"] = [
             (b"host", b"localhost:8000"),
             (b"user-agent", b"curl/7.81.0"),
