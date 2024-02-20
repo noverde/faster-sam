@@ -42,12 +42,15 @@ class NodeType(Enum):
         Represents the "AWS::Serverless::Api" node type.
     LAMBDA : str
         Represents the "AWS::Serverless::Function" node type.
+    QUEUES : str
+        Represents the "AWS::SQS::Queue" node type.
     API_EVENT : str
         Represents the "Api" node type.
     """
 
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
+    QUEUES = "AWS::SQS::Queue"
     API_EVENT = "Api"
     SQS_EVENT = "SQS"
 
@@ -171,6 +174,17 @@ class CloudformationTemplate:
         if not hasattr(self, "_gateways"):
             self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
         return self._gateways
+
+    @property
+    def queues(self) -> Dict[str, Any]:
+        """
+        Dict[str, Any]:
+            Dictionary containing SQS Queue resources in the CloudFormation template.
+        """
+
+        if not hasattr(self, "_queues"):
+            self._queues = self.find_nodes(self.template["Resources"], NodeType.QUEUES)
+        return self._queues
 
     def include_files(self):
         """
