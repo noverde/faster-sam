@@ -36,8 +36,16 @@ class TestSAM(unittest.TestCase):
                 self.assertEqual(len(app.routes), 4)
 
                 sam.configure_api(app, gateway)
-
                 self.assertEqual(len(app.routes), 5)
+
+    def test_configure_queues(self):
+        app = FastAPI()
+        sam = SAM("tests/fixtures/templates/example6.yml")
+
+        self.assertEqual(len(app.routes), 4)
+
+        sam.configure_queues(app)
+        self.assertEqual(len(app.routes), 5)
 
     def test_configure_multiple_apis(self):
         app = FastAPI()

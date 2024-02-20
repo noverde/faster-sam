@@ -8,10 +8,24 @@ Globals:
     Timeout: 3
 
 Resources:
+  SaveDatabases:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: save-databases
+      Handler: tests.fixtures.handlers.lambda_handler.save_databases
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Enabled: true
+            Queue:
+              Fn::GetAtt: DatabasesQueue.Arn
+            BatchSize: 1
+
   DatabasesQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: "ops-catalog-databases-queue"
+        QueueName: "databases-queue"
         VisibilityTimeout: 120
         RedrivePolicy:
           deadLetterTargetArn:
@@ -23,4 +37,4 @@ Resources:
     Properties:
       VisibilityTimeout: 120
       MessageRetentionPeriod: 1209600
-      QueueName: "ops-catalog-databases-dlq"
+      QueueName: "databases-dlq"

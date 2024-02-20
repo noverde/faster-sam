@@ -284,7 +284,10 @@ class CloudformationTemplate:
             The constructed Lambda handler path.
         """
 
-        code_uri = self.functions[resource_id]["Properties"]["CodeUri"]
-        handler = self.functions[resource_id]["Properties"]["Handler"]
-        handler_path = f"{code_uri}.{handler}".replace("/", "")
+        handler_path = self.functions[resource_id]["Properties"]["Handler"]
+        code_uri = self.functions[resource_id]["Properties"].get("CodeUri")
+
+        if code_uri:
+            handler_path = f"{code_uri}.{handler_path}".replace("/", "")
+
         return handler_path

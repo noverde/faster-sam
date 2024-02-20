@@ -94,6 +94,7 @@ class SAM:
         app: FastAPI,
     ) -> None:
         """ """
+
         routes = self.lambda_queue_mapper()
 
         self.register_routes(app, routes)
@@ -217,10 +218,12 @@ class SAM:
 
             for event in events.values():
                 handler_path = self.template.lambda_handler(resource_id)
-                queue_arn = event["Properties"].get("Queue", {"Ref": None})["Ref"]
 
-                path = queue_arn
-                method = event["Properties"]["Method"]
+                queue_name = event["Properties"]["Queue"]["Fn::GetAtt"].split(".")[0]
+                queue = self.template.queues[queue_name]
+
+                path = f"/{queue['Properties']['QueueName']}"
+                method = "POST"
                 endpoint = {method: {"handler": handler_path}}
 
                 routes.setdefault(path, {}).update(endpoint)
