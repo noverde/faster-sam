@@ -110,7 +110,7 @@ class TestCloudformationTemplate(unittest.TestCase):
             "DatabasesQueue": {
                 "Type": "AWS::SQS::Queue",
                 "Properties": {
-                    "QueueName": "ops-catalog-databases-queue",
+                    "QueueName": "databases-queue",
                     "VisibilityTimeout": 120,
                     "RedrivePolicy": {
                         "deadLetterTargetArn": {
@@ -125,7 +125,7 @@ class TestCloudformationTemplate(unittest.TestCase):
                 "Properties": {
                     "VisibilityTimeout": 120,
                     "MessageRetentionPeriod": 1209600,
-                    "QueueName": "ops-catalog-databases-dlq",
+                    "QueueName": "databases-dlq",
                 },
             },
         }
