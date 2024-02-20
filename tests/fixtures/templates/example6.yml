@@ -11,7 +11,7 @@ Resources:
   DatabasesQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: "ops-catalog-databases-queue"
+        QueueName: "my-queue"
         VisibilityTimeout: 120
         RedrivePolicy:
           deadLetterTargetArn:
@@ -23,4 +23,4 @@ Resources:
     Properties:
       VisibilityTimeout: 120
       MessageRetentionPeriod: 1209600
-      QueueName: "ops-catalog-databases-dlq"
+      QueueName: "my-queue-dlq"
