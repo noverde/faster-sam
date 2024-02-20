@@ -89,6 +89,15 @@ class SAM:
 
         self.register_routes(app, routes)
 
+    def configure_queues(
+        self,
+        app: FastAPI,
+    ) -> None:
+        """ """
+        routes = self.lambda_queue_mapper()
+
+        self.register_routes(app, routes)
+
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create a route map extracted from the given OpenAPI schema.
@@ -180,6 +189,37 @@ class SAM:
                     continue
 
                 path = event["Properties"]["Path"]
+                method = event["Properties"]["Method"]
+                endpoint = {method: {"handler": handler_path}}
+
+                routes.setdefault(path, {}).update(endpoint)
+
+        return routes
+
+    def lambda_queue_mapper(self) -> Dict[str, Any]:
+        """
+        Generate a route map extracted from the lambda functions schema
+        corresponding to the given gateway id.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing the routes.
+        """
+
+        routes: Dict[str, Any] = {}
+
+        for resource_id, function in self.template.functions.items():
+            if "Events" not in function["Properties"]:
+                continue
+
+            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.SQS_EVENT)
+
+            for event in events.values():
+                handler_path = self.template.lambda_handler(resource_id)
+                queue_arn = event["Properties"].get("Queue", {"Ref": None})["Ref"]
+
+                path = queue_arn
                 method = event["Properties"]["Method"]
                 endpoint = {method: {"handler": handler_path}}
 

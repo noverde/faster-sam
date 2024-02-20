@@ -49,6 +49,7 @@ class NodeType(Enum):
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
     API_EVENT = "Api"
+    SQS_EVENT = "SQS"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
