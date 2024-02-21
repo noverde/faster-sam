@@ -219,8 +219,8 @@ class SAM:
             for event in events.values():
                 handler_path = self.template.lambda_handler(resource_id)
 
-                queue_name = event["Properties"]["Queue"]["Fn::GetAtt"].split(".")[0]
-                queue = self.template.queues[queue_name]
+                resource = event["Properties"]["Queue"]["Fn::GetAtt"].split(".")[0]
+                queue = self.template.queues[resource]
 
                 path = f"/{queue['Properties']['QueueName']}"
                 method = "POST"
