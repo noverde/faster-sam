@@ -42,7 +42,7 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
         body = await request.body()
         body = json.loads(body)
 
-        queue = body["message"]["attributes"]["queue"]
+        queue = body["message"]["attributes"]["endpoint"]
 
         if "/" in queue:
             queue = queue.rsplit("/")[-1]

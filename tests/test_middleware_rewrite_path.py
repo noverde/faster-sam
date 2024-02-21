@@ -11,7 +11,7 @@ class TestRewritePathMiddleware(unittest.IsolatedAsyncioTestCase):
         async def receive():
             return {
                 "type": "http.request",
-                "body": b'{"message":{"attributes":{"queue":"aws/bar"}}}',
+                "body": b'{"message":{"attributes":{"endpoint":"aws/bar"}}}',
             }
 
         app = FastAPI()
