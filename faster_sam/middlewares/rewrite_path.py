@@ -14,16 +14,13 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
     ----------
     app : ASGIApp
         Application instance the middleware is being registered to.
-    path : str
-        The part of the path to be removed from incoming requests.
     """
 
-    def __init__(self, app: ASGIApp, path: str) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         """
         Initializes the RewritePathMiddleware.
         """
         super().__init__(app, self.dispatch)
-        self.path = path
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
