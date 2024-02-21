@@ -46,8 +46,8 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
         body = await request.body()
 
         if not body:
-            content = {"message": "Something went wrong. Try again"}
-            status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+            content = {"message": "Invalid Request"}
+            status_code = HTTPStatus.BAD_REQUEST
             return Response(content=json.dumps(content), status_code=status_code.value)
 
         body = json.loads(body)
