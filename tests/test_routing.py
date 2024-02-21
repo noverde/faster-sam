@@ -100,7 +100,7 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
             "requestContext",
         }
 
-        event = await faster_sam.routing.event_builder(request)
+        event = await faster_sam.routing.event_builder_api(request)
 
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event.keys()), expected_keys)

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from faster_sam.cloudformation import CloudformationTemplate, NodeType
 from faster_sam.openapi import custom_openapi
-from faster_sam.routing import APIRoute
+from faster_sam.routing import APIRoute, QueueRoute
 
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
@@ -87,7 +87,7 @@ class SAM:
             routes = self.openapi_mapper(openapi_schema)
             app.openapi = custom_openapi(app, openapi_schema)
 
-        self.register_routes(app, routes)
+        self.register_routes(app, routes, APIRoute)
 
     def configure_queues(
         self,
@@ -104,7 +104,7 @@ class SAM:
         """
         routes = self.lambda_queue_mapper()
 
-        self.register_routes(app, routes)
+        self.register_routes(app, routes, QueueRoute)
 
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -236,7 +236,7 @@ class SAM:
 
         return routes
 
-    def register_routes(self, app: FastAPI, routes: Dict[str, Any]) -> None:
+    def register_routes(self, app: FastAPI, routes: Dict[str, Any], class_override=None) -> None:
         """
         Registers FastAPI routes based on the provided route map into the
         given FastAPI application.
@@ -255,5 +255,5 @@ class SAM:
                     path,
                     config["handler"],
                     methods=[method],
-                    route_class_override=APIRoute,
+                    route_class_override=class_override,
                 )

@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict
@@ -34,7 +35,7 @@ class ApiGatewayResponse(Response):
         )
 
 
-async def event_builder(request: Request) -> Dict[str, Any]:
+async def event_builder_api(request: Request) -> Dict[str, Any]:
     """
     Builds an event of type aws_proxy from API Gateway.
 
@@ -80,6 +81,31 @@ async def event_builder(request: Request) -> Dict[str, Any]:
     return event
 
 
+async def event_builder_sqs(request):
+    body = await request.body()
+    event = {
+        "Records": [
+            {
+                "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
+                "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
+                "body": body.decode(),
+                "attributes": {
+                    "ApproximateReceiveCount": "1",
+                    "SentTimestamp": "1545082649183",
+                    "SenderId": "AIDAIENQZJOLO23YVJ4VO",
+                    "ApproximateFirstReceiveTimestamp": "1545082649185",
+                },
+                "messageAttributes": {},
+                "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
+                "eventSource": "aws:sqs",
+                "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
+                "awsRegion": "us-east-2",
+            },
+        ]
+    }
+    return event
+
+
 def handler(func: Handler) -> Endpoint:
     """
     Returns a wrapper function.
@@ -100,11 +126,44 @@ def handler(func: Handler) -> Endpoint:
     """
 
     async def wrapper(request: Request) -> Response:
-        event = await event_builder(request)
+        event = await event_builder_api(request)
         result = func(event, None)
         response = ApiGatewayResponse(result)
 
         return response
+
+    return wrapper
+
+
+def sqs_handler(func: Handler) -> Endpoint:
+    """
+    Returns a wrapper function.
+
+    The returning function converts a request object into a AWS proxy event,
+    then the event is passed to the handler function,
+    finally the function result is converted to a response object.
+
+    Parameters
+    ----------
+    func : Handler
+        A callable object.
+
+    Returns
+    -------
+    Endpoint
+        An async function, which accepts a single request argument and return a response.
+    """
+
+    async def wrapper(request: Request) -> Response:
+        event = await event_builder_sqs(request)
+        try:
+            result = func(event, None)
+        except Exception:
+            return Response(
+                content=json.dumps({"Message": "Error processing message"}), status_code=500
+            )
+
+        return Response(content=json.dumps(result))
 
     return wrapper
 
@@ -151,3 +210,27 @@ class APIRoute(routing.APIRoute):
         handler_path = endpoint
         handler_func = import_handler(handler_path)
         super().__init__(path=path, endpoint=handler(handler_func), *args, **kwargs)
+
+
+class QueueRoute(routing.APIRoute):
+    """
+    Extends FastAPI Router class used to describe path operations.
+
+    This custom router class receives the endpoint parameter as a string with
+    the full module path instead of the actual callable.
+    """
+
+    def __init__(self, path: str, endpoint: str, *args, **kwargs):
+        """
+        Initializes the APIRoute object.
+
+        Parameters
+        ----------
+        path : str
+            HTTP route path.
+        endpoint : str
+            Full module path.
+        """
+        handler_path = endpoint
+        handler_func = import_handler(handler_path)
+        super().__init__(path=path, endpoint=sqs_handler(handler_func), *args, **kwargs)
