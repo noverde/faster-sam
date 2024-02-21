@@ -106,6 +106,30 @@ class TestCloudformationTemplate(unittest.TestCase):
             },
         }
 
+        self.queues = {
+            "DatabasesQueue": {
+                "Type": "AWS::SQS::Queue",
+                "Properties": {
+                    "QueueName": "my-queue",
+                    "VisibilityTimeout": 120,
+                    "RedrivePolicy": {
+                        "deadLetterTargetArn": {
+                            "Fn::GetAtt": "DatabasesDLQ.Arn",
+                        },
+                        "maxReceiveCount": 3,
+                    },
+                },
+            },
+            "DatabasesDLQ": {
+                "Type": "AWS::SQS::Queue",
+                "Properties": {
+                    "VisibilityTimeout": 120,
+                    "MessageRetentionPeriod": 1209600,
+                    "QueueName": "my-queue-dlq",
+                },
+            },
+        }
+
         self.template_1 = "tests/fixtures/templates/example1.yml"
 
     def test_load(self):
@@ -145,6 +169,11 @@ class TestCloudformationTemplate(unittest.TestCase):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example2.yml")
 
         self.assertEqual(cloudformation.gateways, self.gateways)
+
+    def test_list_queues(self):
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example6.yml")
+
+        self.assertEqual(cloudformation.queues, self.queues)
 
     def test_find_nodes(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
