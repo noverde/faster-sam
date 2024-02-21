@@ -45,7 +45,7 @@ class TestRewritePathMiddleware(unittest.IsolatedAsyncioTestCase):
 
         response = await middleware.dispatch(request, call_next)
 
-        self.assertEqual(json.loads(response.body), {"message": "Something went wrong. Try again"})
+        self.assertEqual(json.loads(response.body), {"message": "Invalid Request"})
 
     async def test_middleware_rewrite_path_without_post(self):
         app = FastAPI()
