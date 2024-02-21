@@ -89,6 +89,23 @@ class SAM:
 
         self.register_routes(app, routes)
 
+    def configure_queues(
+        self,
+        app: FastAPI,
+    ) -> None:
+        """
+        Configures the FastAPI application with routes based on queues defined
+        in cloudformation template.
+
+        Parameters
+        ----------
+        app : FastAPI
+            The FastAPI application instance to be configured.
+        """
+        routes = self.lambda_queue_mapper()
+
+        self.register_routes(app, routes)
+
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create a route map extracted from the given OpenAPI schema.
@@ -143,6 +160,38 @@ class SAM:
                 resource_id = match.group(1)
                 handler_path = self.template.lambda_handler(resource_id)
                 endpoint = {method: {"handler": handler_path}}
+
+                routes.setdefault(path, {}).update(endpoint)
+
+        return routes
+
+    def lambda_queue_mapper(self) -> Dict[str, Any]:
+        """
+        Generate a route map extracted from the lambda functions that is a queue consumer
+        using the name of the queue as path
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing the routes.
+        """
+
+        routes: Dict[str, Any] = {}
+
+        for resource_id, function in self.template.functions.items():
+            if "Events" not in function["Properties"]:
+                continue
+
+            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.SQS_EVENT)
+
+            for event in events.values():
+                handler_path = self.template.lambda_handler(resource_id)
+
+                resource_arn = event["Properties"]["Queue"]["Fn::GetAtt"]
+                resource_name = resource_arn.replace(".Arn", "")
+                queue_name = self.template.queues[resource_name]["Properties"]["QueueName"]
+
+                path = f"/{queue_name}"
+                endpoint = {"POST": {"handler": handler_path}}
 
                 routes.setdefault(path, {}).update(endpoint)
 
