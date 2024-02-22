@@ -81,13 +81,21 @@ class SQSTrigger(LambdaTriggerInterface):
         body = await self.request.body()
         body = json.loads(body.decode())
 
+        attributes = {
+            "ApproximateReceiveCount": body["deliveryAttempt"],
+            "SentTimestamp": body["message"]["publishTime"],
+            "SenderId": "",
+            "ApproximateFirstReceiveTimestamp": "",
+        }
+        attributes.update(**body["message"]["attributes"])
+
         event = {
             "Records": [
                 {
                     "messageId": body["message"]["messageId"],
                     "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
                     "body": base64.b64decode(body["message"]["data"]).decode("UTF-8"),
-                    "attributes": body["message"]["attributes"],
+                    "attributes": attributes,
                     "messageAttributes": {},
                     "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
                     "eventSource": "aws:sqs",
