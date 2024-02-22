@@ -83,11 +83,13 @@ class SQSTrigger(LambdaTriggerInterface):
 
         attributes = {
             "ApproximateReceiveCount": body["deliveryAttempt"],
-            "SentTimestamp": body["message"]["publishTime"],
+            "SentTimestamp": datetime.timestamp(
+                datetime.fromisoformat(body["message"]["publishTime"])
+            )
+            * 1000.0,
             "SenderId": "",
             "ApproximateFirstReceiveTimestamp": "",
         }
-        attributes.update(**body["message"]["attributes"])
 
         event = {
             "Records": [
@@ -96,7 +98,7 @@ class SQSTrigger(LambdaTriggerInterface):
                     "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
                     "body": base64.b64decode(body["message"]["data"]).decode("UTF-8"),
                     "attributes": attributes,
-                    "messageAttributes": {},
+                    "messageAttributes": body["message"]["attributes"],
                     "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
                     "eventSource": "aws:sqs",
                     "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
