@@ -1,3 +1,4 @@
+import base64
 import json
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
@@ -78,18 +79,15 @@ class SQSTrigger(LambdaTriggerInterface):
 
     async def event_builder(self) -> Dict[str, Any]:
         body = await self.request.body()
+        body = body.decode()
+
         event = {
             "Records": [
                 {
-                    "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
+                    "messageId": body["message"]["messageId"],
                     "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
-                    "body": body.decode(),
-                    "attributes": {
-                        "ApproximateReceiveCount": "1",
-                        "SentTimestamp": "1545082649183",
-                        "SenderId": "AIDAIENQZJOLO23YVJ4VO",
-                        "ApproximateFirstReceiveTimestamp": "1545082649185",
-                    },
+                    "body": base64.b64decode(body["message"]["data"]).decode("UTF-8"),
+                    "attributes": body["message"]["attributes"],
                     "messageAttributes": {},
                     "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
                     "eventSource": "aws:sqs",
