@@ -1,10 +1,14 @@
 import json
+import logging
 from http import HTTPStatus
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp, Message
+
+
+logger = logging.getLogger(__name__)
 
 
 class RewritePathMiddleware(BaseHTTPMiddleware):
@@ -64,6 +68,8 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
             content = {"message": "Invalid Request"}
             status_code = HTTPStatus.BAD_REQUEST
             return Response(content=json.dumps(content), status_code=status_code.value)
+
+        logger.debug(f"Received Body {body}")
 
         body = json.loads(body)
 
