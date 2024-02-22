@@ -3,6 +3,8 @@ import unittest
 from http import HTTPStatus
 
 from fastapi import FastAPI, Request, Response
+from faster_sam.lambda_event import ApiGatewayTrigger
+from faster_sam.responses import ApiGatewayResponse
 
 import faster_sam.routing
 
@@ -70,7 +72,7 @@ class TestApiGatewayResponse(unittest.TestCase):
         }
 
     def test_response_creation(self):
-        response = faster_sam.routing.ApiGatewayResponse(self.data)
+        response = ApiGatewayResponse(self.data)
 
         self.assertEqual(response.status_code, self.data["statusCode"])
         self.assertEqual(response.body.decode(), self.data["body"])
@@ -83,7 +85,7 @@ class TestApiGatewayResponse(unittest.TestCase):
                 del data[attr]
 
                 with self.assertRaises(KeyError):
-                    faster_sam.routing.ApiGatewayResponse(data)
+                    ApiGatewayResponse(data)
 
 
 class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
@@ -118,7 +120,7 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
                 "headers": event["headers"],
             }
 
-        endpoint = faster_sam.routing.handler(echo)
+        endpoint = faster_sam.routing.handler(echo, ApiGatewayTrigger)
         response = await endpoint(request)
 
         self.assertIsInstance(response, Response)

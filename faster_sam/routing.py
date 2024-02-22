@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict
@@ -6,33 +5,12 @@ from uuid import uuid4
 
 from fastapi import Request, Response, routing
 
+from faster_sam.lambda_event import LambdaTriggerInterface, SQSTrigger, ApiGatewayTrigger
+
 logger = logging.getLogger(__name__)
 
 Handler = Callable[[Dict[str, Any], Any], Dict[str, Any]]
 Endpoint = Callable[[Request], Awaitable[Response]]
-
-
-class ApiGatewayResponse(Response):
-    """
-    Represents an API Gateway HTTP response.
-    """
-
-    def __init__(self, data: Dict[str, Any]):
-        """
-        Initializes the ApiGatewayResponse.
-
-        Parameters
-        ----------
-        data : Dict[str, Any]
-            The dictionary containing the response data.
-        """
-
-        super().__init__(
-            content=data["body"],
-            status_code=data["statusCode"],
-            headers=data.get("headers"),
-            media_type=data.get("headers", {}).get("Content-Type"),
-        )
 
 
 async def event_builder_api(request: Request) -> Dict[str, Any]:
@@ -106,7 +84,7 @@ async def event_builder_sqs(request):
     return event
 
 
-def handler(func: Handler) -> Endpoint:
+def handler(func: Handler, TriggerClass: LambdaTriggerInterface) -> Endpoint:
     """
     Returns a wrapper function.
 
@@ -126,46 +104,45 @@ def handler(func: Handler) -> Endpoint:
     """
 
     async def wrapper(request: Request) -> Response:
-        event = await event_builder_api(request)
-        result = func(event, None)
-        response = ApiGatewayResponse(result)
+        caller = TriggerClass(request, endpoint=func)
+        response = await caller.call_endpoint()
 
         return response
 
     return wrapper
 
 
-def sqs_handler(func: Handler) -> Endpoint:
-    """
-    Returns a wrapper function.
+# def sqs_handler(func: Handler) -> Endpoint:
+#     """
+#     Returns a wrapper function.
 
-    The returning function converts a request object into a AWS proxy event,
-    then the event is passed to the handler function,
-    finally the function result is converted to a response object.
+#     The returning function converts a request object into a AWS proxy event,
+#     then the event is passed to the handler function,
+#     finally the function result is converted to a response object.
 
-    Parameters
-    ----------
-    func : Handler
-        A callable object.
+#     Parameters
+#     ----------
+#     func : Handler
+#         A callable object.
 
-    Returns
-    -------
-    Endpoint
-        An async function, which accepts a single request argument and return a response.
-    """
+#     Returns
+#     -------
+#     Endpoint
+#         An async function, which accepts a single request argument and return a response.
+#     """
 
-    async def wrapper(request: Request) -> Response:
-        event = await event_builder_sqs(request)
-        try:
-            result = func(event, None)
-        except Exception:
-            return Response(
-                content=json.dumps({"Message": "Error processing message"}), status_code=500
-            )
+#     async def wrapper(request: Request) -> Response:
+#         event = await event_builder_sqs(request)
+#         try:
+#             result = func(event, None)
+#         except Exception:
+#             return Response(
+#                 content=json.dumps({"Message": "Error processing message"}), status_code=500
+#             )
 
-        return Response(content=json.dumps(result))
+#         return Response(content=json.dumps(result))
 
-    return wrapper
+#     return wrapper
 
 
 def import_handler(path: str) -> Handler:
@@ -209,7 +186,9 @@ class APIRoute(routing.APIRoute):
         """
         handler_path = endpoint
         handler_func = import_handler(handler_path)
-        super().__init__(path=path, endpoint=handler(handler_func), *args, **kwargs)
+        super().__init__(
+            path=path, endpoint=handler(handler_func, ApiGatewayTrigger), *args, **kwargs
+        )
 
 
 class QueueRoute(routing.APIRoute):
@@ -233,4 +212,4 @@ class QueueRoute(routing.APIRoute):
         """
         handler_path = endpoint
         handler_func = import_handler(handler_path)
-        super().__init__(path=path, endpoint=sqs_handler(handler_func), *args, **kwargs)
+        super().__init__(path=path, endpoint=handler(handler_func, SQSTrigger), *args, **kwargs)
