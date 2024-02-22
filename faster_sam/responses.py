@@ -30,7 +30,7 @@ class SQSResponse(Response):
     Represents an API Gateway HTTP response.
     """
 
-    def __init__(self, body, status_code):
+    def __init__(self, content, status_code):
         """
         Initializes the ApiGatewayResponse.
 
@@ -41,6 +41,6 @@ class SQSResponse(Response):
         """
 
         super().__init__(
-            content=body,
+            content=content,
             status_code=status_code,
         )
