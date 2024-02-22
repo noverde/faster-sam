@@ -73,7 +73,7 @@ class SQS(ResourceInterface):
         attributes = {
             "ApproximateReceiveCount": body["deliveryAttempt"],
             "SentTimestamp": datetime.timestamp(
-                datetime.fromisoformat(body["message"]["publishTime"])
+                datetime.strptime(body["message"]["publishTime"], "%Y-%m-%dT%H:%M:%S.%fZ")
             )
             * 1000.0,
             "SenderId": "",
