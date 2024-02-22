@@ -102,7 +102,9 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
             "requestContext",
         }
 
-        event = await faster_sam.routing.event_builder_api(request)
+        api_gateway = ApiGatewayTrigger(request, lambda x: ...)
+
+        event = await api_gateway.event_builder()
 
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event.keys()), expected_keys)
