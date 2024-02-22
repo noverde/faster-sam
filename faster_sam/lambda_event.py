@@ -8,12 +8,14 @@ from uuid import uuid4
 
 from fastapi import Request, Response
 
+KILO_SECONDS = 1000.0
+
 Handler = Callable[[Dict[str, Any], Any], Dict[str, Any]]
 
 
 class CustomResponse(Response):
     """
-    Represents an API Gateway HTTP response.
+    Represents an HTTP response.
     """
 
     def __init__(self, data: Dict[str, Any]):
@@ -75,7 +77,7 @@ class SQS(ResourceInterface):
             "SentTimestamp": datetime.timestamp(
                 datetime.strptime(body["message"]["publishTime"], "%Y-%m-%dT%H:%M:%S.%fZ")
             )
-            * 1000.0,
+            * KILO_SECONDS,
             "SenderId": "",
             "ApproximateFirstReceiveTimestamp": "",
         }
