@@ -10,6 +10,7 @@ from starlette.types import ASGIApp, Message
 class RewritePathMiddleware(BaseHTTPMiddleware):
     """
     Rewrites a specified part of the request path.
+
     Parameters
     ----------
     app : ASGIApp
@@ -23,6 +24,14 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
         super().__init__(app, self.dispatch)
 
     async def set_body(self, request: Request):
+        """
+        Sets the body of the request.
+
+        Parameters
+        ----------
+        request : Request
+            The request object containing the body content.
+        """
         receive_ = await request._receive()
 
         async def receive() -> Message:
@@ -33,12 +42,14 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
         Rewrites a specified part of the request path.
+
         Parameters
         ----------
         request : Request
             The incoming request.
         call_next : RequestResponseEndpoint
-            Next middleware or endpoint on the execution stack
+            Next middleware or endpoint on the execution stack.
+
         Returns
         -------
         Response
