@@ -168,7 +168,8 @@ class SAM:
     def lambda_queue_mapper(self) -> Dict[str, Any]:
         """
         Generate a route map extracted from the lambda functions that is a queue consumer
-        using the name of the queue as path
+        using the name of the queue as path.
+
         Returns
         -------
         Dict[str, Any]
