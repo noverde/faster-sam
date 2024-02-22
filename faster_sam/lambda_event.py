@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
@@ -78,8 +79,9 @@ class SQSTrigger(LambdaTriggerInterface):
         self.func = endpoint
 
     async def event_builder(self) -> Dict[str, Any]:
-        body = await self.request.body()
-        body = json.loads(body.decode())
+        bytes_body = await self.request.body()
+        json_body = bytes_body.decode()
+        body = json.loads(json_body)
 
         attributes = {
             "ApproximateReceiveCount": body["deliveryAttempt"],
@@ -99,7 +101,7 @@ class SQSTrigger(LambdaTriggerInterface):
                     "body": base64.b64decode(body["message"]["data"]).decode("UTF-8"),
                     "attributes": attributes,
                     "messageAttributes": body["message"]["attributes"],
-                    "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
+                    "md5OfBody": hashlib.md5(json_body.encode("utf-8")).hexdigest(),
                     "eventSource": "aws:sqs",
                     "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
                     "awsRegion": "us-east-2",
