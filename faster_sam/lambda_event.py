@@ -79,7 +79,7 @@ class SQSTrigger(LambdaTriggerInterface):
 
     async def event_builder(self) -> Dict[str, Any]:
         body = await self.request.body()
-        body = body.decode()
+        body = json.loads(body.decode())
 
         event = {
             "Records": [
