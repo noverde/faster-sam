@@ -15,7 +15,7 @@ def handler(func: Handler, Resource: ResourceInterface) -> Endpoint:
     """
     Returns a wrapper function.
 
-    The returning function converts a request object into a AWS proxy event,
+    The returning function converts a request object into a event,
     then the event is passed to the handler function,
     finally the function result is converted to a response object.
 
@@ -68,6 +68,7 @@ class APIRoute(routing.APIRoute):
     def __init__(self, path: str, endpoint: str, *args, **kwargs):
         """
         Initializes the APIRoute object.
+
         Parameters
         ----------
         path : str
@@ -89,7 +90,8 @@ class QueueRoute(routing.APIRoute):
 
     def __init__(self, path: str, endpoint: str, *args, **kwargs):
         """
-        Initializes the APIRoute object.
+        Initializes the QueueRoute object.
+
         Parameters
         ----------
         path : str

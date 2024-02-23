@@ -20,7 +20,7 @@ class CustomResponse(Response):
 
     def __init__(self, data: Dict[str, Any]):
         """
-        Initializes the ApiGatewayResponse.
+        Initializes the Custom Response.
 
         Parameters
         ----------
@@ -37,25 +37,79 @@ class CustomResponse(Response):
 
 
 class ResourceInterface(ABC):
+    """
+    Interface for aws resources.
+
+    This abstract base class defines an interface for aws resources
+    to implement. Subclasses must implement the `call_endpoint` and
+    `event_builder` methods to map events.
+    """
+
     @abstractmethod
     def __init__(self, request: Request, endpoint: Handler):
+        """
+        Initializes the Resource Interface.
+
+        Parameters
+        ----------
+        request : Request
+            A request object.
+        endpoint : Handler
+            A callable object.
+        """
         self.request = request
         self.endpoint = endpoint
 
     @abstractmethod
     async def call_endpoint(self) -> Response:
+        """
+        Call event buider and retuns a custom response based
+        on the mapped event.
+
+        Returns
+        -------
+        Response
+            A response object.
+        """
         pass  # pragma: no cover
 
     @abstractmethod
-    async def event_builder(self, request: Request) -> Dict[str, Any]:
+    async def event_builder(self) -> Dict[str, Any]:
+        """
+        Builds an event based on the current request.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The mapped event.
+        """
         pass  # pragma: no cover
 
 
 class SQS(ResourceInterface):
     def __init__(self, request: Request, endpoint: Handler):
+        """
+        Initializes the SQS.
+
+        Parameters
+        ----------
+        request : Request
+            A request object.
+        endpoint : Handler
+            A callable object.
+        """
         super().__init__(request, endpoint)
 
     async def call_endpoint(self) -> Response:
+        """
+        Call event buider and retuns a custom response based
+        on the mapped event.
+
+        Returns
+        -------
+        Response
+            A response object.
+        """
         event = await self.event_builder()
         try:
             result = self.endpoint(event, None)
@@ -68,6 +122,16 @@ class SQS(ResourceInterface):
         return CustomResponse({"body": json.dumps(result), "statusCode": 200})
 
     async def event_builder(self):
+        """
+        Builds an event of type sqs
+
+        It uses the given request object to fill the event details.
+
+        Returns
+        -------
+        Dict[str, Any]
+            An sqs event.
+        """
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
         body = json.loads(json_body)
@@ -102,9 +166,28 @@ class SQS(ResourceInterface):
 
 class ApiGateway(ResourceInterface):
     def __init__(self, request: Request, endpoint: Handler):
+        """
+        Initializes the ApiGateway.
+
+        Parameters
+        ----------
+        request : Request
+            A request object.
+        endpoint : Handler
+            A callable object.
+        """
         super().__init__(request, endpoint)
 
     async def call_endpoint(self) -> Response:
+        """
+        Call event buider and retuns a custom response based
+        on the mapped event.
+
+        Returns
+        -------
+        Response
+            A response object.
+        """
         event = await self.event_builder()
         result = self.endpoint(event, None)
         response = CustomResponse(result)
@@ -116,11 +199,6 @@ class ApiGateway(ResourceInterface):
         Builds an event of type aws_proxy from API Gateway.
 
         It uses the given request object to fill the event details.
-
-        Parameters
-        ----------
-        request : Request
-            A request object.
 
         Returns
         -------
