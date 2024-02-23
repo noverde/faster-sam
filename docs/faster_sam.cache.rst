@@ -19,11 +19,3 @@ faster\_sam.cache.redis\_cache module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: faster_sam.cache
-   :members:
-   :undoc-members:
-   :show-inheritance:

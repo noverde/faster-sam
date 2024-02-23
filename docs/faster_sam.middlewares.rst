@@ -27,11 +27,3 @@ faster\_sam.middlewares.rewrite\_path module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: faster_sam.middlewares
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -5,7 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    faster_sam.cache
    faster_sam.middlewares
@@ -57,14 +57,6 @@ faster\_sam.web\_identity\_providers module
 -------------------------------------------
 
 .. automodule:: faster_sam.web_identity_providers
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: faster_sam
    :members:
    :undoc-members:
    :show-inheritance:
