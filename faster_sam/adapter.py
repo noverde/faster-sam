@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from faster_sam.cloudformation import CloudformationTemplate, NodeType
 from faster_sam.openapi import custom_openapi
-from faster_sam.routing import APIRoute
+from faster_sam.routing import APIRoute, QueueRoute
 
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
@@ -87,7 +87,24 @@ class SAM:
             routes = self.openapi_mapper(openapi_schema)
             app.openapi = custom_openapi(app, openapi_schema)
 
-        self.register_routes(app, routes)
+        self.register_routes(app, routes, APIRoute)
+
+    def configure_queues(
+        self,
+        app: FastAPI,
+    ) -> None:
+        """
+        Configures the FastAPI application with routes based on queues defined
+        in cloudformation template.
+
+        Parameters
+        ----------
+        app : FastAPI
+            The FastAPI application instance to be configured.
+        """
+        routes = self.lambda_queue_mapper()
+
+        self.register_routes(app, routes, QueueRoute)
 
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -148,6 +165,39 @@ class SAM:
 
         return routes
 
+    def lambda_queue_mapper(self) -> Dict[str, Any]:
+        """
+        Generate a route map extracted from the lambda functions that is a queue consumer
+        using the name of the queue as path.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing the routes.
+        """
+
+        routes: Dict[str, Any] = {}
+
+        for resource_id, function in self.template.functions.items():
+            if "Events" not in function["Properties"]:
+                continue
+
+            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.SQS_EVENT)
+
+            for event in events.values():
+                handler_path = self.template.lambda_handler(resource_id)
+
+                resource_arn = event["Properties"]["Queue"]["Fn::GetAtt"]
+                resource_name = resource_arn.replace(".Arn", "")
+                queue_name = self.template.queues[resource_name]["Properties"]["QueueName"]
+
+                path = f"/{queue_name}"
+                endpoint = {"POST": {"handler": handler_path}}
+
+                routes.setdefault(path, {}).update(endpoint)
+
+        return routes
+
     def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
         """
         Generate a route map extracted from the lambda functions schema
@@ -187,7 +237,7 @@ class SAM:
 
         return routes
 
-    def register_routes(self, app: FastAPI, routes: Dict[str, Any]) -> None:
+    def register_routes(self, app: FastAPI, routes: Dict[str, Any], class_override=None) -> None:
         """
         Registers FastAPI routes based on the provided route map into the
         given FastAPI application.
@@ -206,5 +256,5 @@ class SAM:
                     path,
                     config["handler"],
                     methods=[method],
-                    route_class_override=APIRoute,
+                    route_class_override=class_override,
                 )
