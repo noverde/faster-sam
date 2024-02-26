@@ -186,8 +186,11 @@ class SAM:
 
             for event in events.values():
                 handler_path = self.template.lambda_handler(resource_id)
-
                 resource_arn = event["Properties"]["Queue"]["Fn::GetAtt"]
+
+                if isinstance(resource_arn, list):
+                    resource_arn = resource_arn[0]
+
                 resource_name = resource_arn.replace(".Arn", "")
                 queue_name = self.template.queues[resource_name]["Properties"]["QueueName"]
 
