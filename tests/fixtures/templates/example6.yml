@@ -8,6 +8,20 @@ Globals:
     Timeout: 3
 
 Resources:
+  SaveDatabases:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: save-databases
+      Handler: tests.fixtures.handlers.lambda_handler.handler
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Enabled: true
+            Queue:
+              Fn::GetAtt: DatabasesQueue.Arn
+            BatchSize: 1
+
   DatabasesQueue:
       Type: AWS::SQS::Queue
       Properties:

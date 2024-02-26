@@ -52,6 +52,7 @@ class NodeType(Enum):
     LAMBDA = "AWS::Serverless::Function"
     QUEUE = "AWS::SQS::Queue"
     API_EVENT = "Api"
+    SQS_EVENT = "SQS"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -268,22 +269,22 @@ class CloudformationTemplate:
     def lambda_handler(self, resource_id: str) -> str:
         """
         Returns a string representing the full module path for a Lambda Function handler.
-
         The path is built by joining the code URI and the handler attributes on
         the CloudFormation for the given Lambda Function identified by resource_id.
-
         Parameters
         ----------
         resource_id : str
             The id of the Lambda function resource.
-
         Returns
         -------
         str
             The constructed Lambda handler path.
         """
 
-        code_uri = self.functions[resource_id]["Properties"]["CodeUri"]
-        handler = self.functions[resource_id]["Properties"]["Handler"]
-        handler_path = f"{code_uri}.{handler}".replace("/", "")
+        handler_path = self.functions[resource_id]["Properties"]["Handler"]
+        code_uri = self.functions[resource_id]["Properties"].get("CodeUri")
+
+        if code_uri:
+            handler_path = f"{code_uri}.{handler_path}".replace("/", "")
+
         return handler_path
