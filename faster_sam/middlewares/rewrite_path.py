@@ -4,7 +4,7 @@ from http import HTTPStatus
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.types import ASGIApp, Message
+from starlette.types import ASGIApp
 
 
 class RewritePathMiddleware(BaseHTTPMiddleware):
@@ -22,22 +22,6 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
         Initializes the RewritePathMiddleware.
         """
         super().__init__(app, self.dispatch)
-
-    async def set_body(self, request: Request):
-        """
-        Sets the body of the request.
-
-        Parameters
-        ----------
-        request : Request
-            The request object containing the body content.
-        """
-        receive_ = await request._receive()
-
-        async def receive() -> Message:
-            return receive_
-
-        request._receive = receive
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
@@ -57,8 +41,6 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
         """
         if request.method != "POST":
             return await call_next(request)
-
-        await self.set_body(request)
 
         body = await request.body()
 
