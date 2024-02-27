@@ -116,7 +116,7 @@ class SQS(ResourceInterface):
         except Exception:
             return CustomResponse({"body": "Error processing message", "statusCode": 500})
 
-        if "batchItemFailures" in result:
+        if isinstance(result, dict) and "batchItemFailures" in result:
             return CustomResponse({"body": json.dumps(result), "statusCode": 500})
 
         return CustomResponse({"body": json.dumps(result), "statusCode": 200})

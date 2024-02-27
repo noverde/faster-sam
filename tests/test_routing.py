@@ -121,12 +121,19 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
                 "body": event["Records"][0]["body"],
             }
 
-        endpoint = faster_sam.routing.handler(echo, faster_sam.lambda_event.SQS)
-        response = await endpoint(request)
+        cases = {
+            "none_as_return": {"func": lambda event, _: None, "response": "null"},
+            "dict_as_return": {"func": echo, "response": '{"statusCode": 200, "body": "hello"}'},
+        }
 
-        self.assertIsInstance(response, Response)
-        self.assertEqual(response.status_code, HTTPStatus.OK.value)
-        self.assertEqual(response.body.decode(), '{"statusCode": 200, "body": "hello"}')
+        for case, value in cases.items():
+            with self.subTest(case=case):
+                endpoint = faster_sam.routing.handler(value["func"], faster_sam.lambda_event.SQS)
+                response = await endpoint(request)
+
+                self.assertIsInstance(response, Response)
+                self.assertEqual(response.status_code, HTTPStatus.OK.value)
+                self.assertEqual(response.body.decode(), value["response"])
 
     async def test_sqs_handler_exception(self):
         request = build_request_sqs()
