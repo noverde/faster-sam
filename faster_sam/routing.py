@@ -33,6 +33,7 @@ def handler(func: Handler, Resource: ResourceInterface) -> Endpoint:
     async def wrapper(request: Request) -> Response:
         caller = Resource(request, endpoint=func)
         result = await caller.call_endpoint()
+        logger.debug(f"Result: {result}")
         return result
 
     return wrapper

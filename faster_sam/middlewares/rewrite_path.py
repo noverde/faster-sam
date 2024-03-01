@@ -1,10 +1,13 @@
 import json
 from http import HTTPStatus
+import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
+
+logger = logging.getLogger(__name__)
 
 
 class RewritePathMiddleware(BaseHTTPMiddleware):
@@ -50,6 +53,8 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
             return Response(content=json.dumps(content), status_code=status_code.value)
 
         body = json.loads(body)
+
+        logger.debug(f"Received body: {body}")
 
         queue = body["message"]["attributes"]["endpoint"]
 
