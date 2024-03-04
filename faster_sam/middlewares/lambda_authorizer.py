@@ -59,7 +59,7 @@ class LambdaClient:
     >>> lambda_client.client.invoke(FunctionName="my-lambda-function")
 
     Parameters
-    ----------
+    ----------AssumeRoleWithWebIdentity
     credentials : Credentials
         The AWS credentials used to authenticate with the Lambda service.
     session_duration : int, optional
