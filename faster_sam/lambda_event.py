@@ -1,12 +1,15 @@
 import base64
 import hashlib
 import json
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict
 from uuid import uuid4
 
 from fastapi import Request, Response
+
+logger = logging.getLogger(__name__)
 
 KILO_SECONDS = 1000.0
 
@@ -113,7 +116,8 @@ class SQS(ResourceInterface):
         event = await self.event_builder()
         try:
             result = self.endpoint(event, None)
-        except Exception:
+        except Exception as error:
+            logger.exception(error)
             return CustomResponse({"body": "Error processing message", "statusCode": 500})
 
         if isinstance(result, dict) and "batchItemFailures" in result:
