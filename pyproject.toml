@@ -24,3 +24,4 @@ dependencies = [
 [project.optional-dependencies]
 auth = ["boto3", "requests"]
 redis = ["redis"]
+migrate = ["yoyo-migrations", "setuptools"]
