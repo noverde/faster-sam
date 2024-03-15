@@ -46,6 +46,8 @@ class NodeType(Enum):
         Represents the "AWS::SQS::Queue" node type.
     API_EVENT : str
         Represents the "Api" node type.
+    SCHEDULER_EVENT : str
+        Represents the "Schedule" node type.
     """
 
     API_GATEWAY = "AWS::Serverless::Api"

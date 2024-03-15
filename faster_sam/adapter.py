@@ -220,8 +220,8 @@ class SAM:
 
     def lambda_schedule_mapper(self) -> Dict[str, Any]:
         """
-        Generate a route map extracted from the lambda functions that is a queue consumer
-        using the name of the queue as path.
+        Generate a route map extracted from the lambda functions that is a schedule consumer
+        using the name of the function name as path.
 
         Returns
         -------

@@ -171,7 +171,7 @@ class SQS(ResourceInterface):
 class Schedule(ResourceInterface):
     def __init__(self, request: Request, endpoint: Handler):
         """
-        Initializes the SQS.
+        Initializes the Schedule.
 
         Parameters
         ----------
@@ -192,8 +192,9 @@ class Schedule(ResourceInterface):
         Response
             A response object.
         """
+        event = await self.event_builder()
         try:
-            result = self.endpoint(None, None)
+            result = self.endpoint(event, None)
         except Exception as error:
             logger.exception(error)
             return CustomResponse({"body": "Error processing message", "statusCode": 500})
@@ -205,7 +206,7 @@ class Schedule(ResourceInterface):
 
     async def event_builder(self):
         """
-        Builds an event of type sqs
+        Builds an event of type schedule
 
         It uses the given request object to fill the event details.
 
@@ -217,8 +218,8 @@ class Schedule(ResourceInterface):
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
         body = json.loads(json_body)
-        print(body)
-        {
+        logger.debug(body)
+        event = {
             "version": "0",
             "id": str(uuid4()),
             "detail-type": "Scheduled Event",
@@ -230,7 +231,7 @@ class Schedule(ResourceInterface):
             "detail": {},
         }
 
-        return None
+        return event
 
 
 class ApiGateway(ResourceInterface):
