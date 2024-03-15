@@ -225,7 +225,7 @@ class Schedule(ResourceInterface):
             "detail-type": "Scheduled Event",
             "source": "aws.events",
             "account": "",
-            "time": body["publish_time"],
+            "time": body["message"]["publish_time"],
             "region": "us-east-1",
             "resources": [body["subscription"]],
             "detail": {},
