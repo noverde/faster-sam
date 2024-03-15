@@ -215,20 +215,20 @@ class Schedule(ResourceInterface):
         Dict[str, Any]
             An sqs event.
         """
+
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
         body = json.loads(json_body)
-        logger.debug(body)
         event = {
             "version": "0",
             "id": str(uuid4()),
             "detail-type": "Scheduled Event",
             "source": "aws.events",
             "account": "",
-            "time": body["message"]["publish_time"],
+            "time": datetime.now(timezone.utc).strftime(r"%d/%b/%Y:%H:%M:%S %z"),
             "region": "us-east-1",
-            "resources": [body["subscription"]],
-            "detail": {},
+            "resources": [""],
+            "detail": body,
         }
 
         return event

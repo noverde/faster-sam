@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable, Dict
 
 from fastapi import Request, Response, routing
 
-from faster_sam.lambda_event import SQS, ApiGateway, ResourceInterface
+from faster_sam.lambda_event import SQS, ApiGateway, ResourceInterface, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -125,4 +125,4 @@ class ScheduleRoute(routing.APIRoute):
         """
         handler_path = endpoint
         handler_func = import_handler(handler_path)
-        super().__init__(path=path, endpoint=handler(handler_func, ApiGateway), *args, **kwargs)
+        super().__init__(path=path, endpoint=handler(handler_func, Schedule), *args, **kwargs)
