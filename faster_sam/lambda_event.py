@@ -225,9 +225,9 @@ class Schedule(ResourceInterface):
             "detail-type": "Scheduled Event",
             "source": "aws.events",
             "account": "",
-            "time": datetime.now(timezone.utc).strftime(r"%d/%b/%Y:%H:%M:%S %z"),
+            "time": body["publish_time"],
             "region": "us-east-1",
-            "resources": ["arn:aws:events:us-east-1:123456789012:rule/my-scheduled-rule"],
+            "resources": [body["subscription"]],
             "detail": {},
         }
 
