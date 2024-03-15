@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from faster_sam.cloudformation import CloudformationTemplate, NodeType
 from faster_sam.openapi import custom_openapi
-from faster_sam.routing import APIRoute, QueueRoute
+from faster_sam.routing import APIRoute, QueueRoute, ScheduleRoute
 
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
@@ -106,6 +106,23 @@ class SAM:
 
         self.register_routes(app, routes, QueueRoute)
 
+    def configure_schedule(
+        self,
+        app: FastAPI,
+    ) -> None:
+        """
+        Configures the FastAPI application with routes based on schedule defined
+        in cloudformation template.
+
+        Parameters
+        ----------
+        app : FastAPI
+            The FastAPI application instance to be configured.
+        """
+        routes = self.lambda_schedule_mapper()
+
+        self.register_routes(app, routes, ScheduleRoute)
+
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create a route map extracted from the given OpenAPI schema.
@@ -198,6 +215,40 @@ class SAM:
                 endpoint = {"POST": {"handler": handler_path}}
 
                 routes.setdefault(path, {}).update(endpoint)
+
+        return routes
+
+    def lambda_schedule_mapper(self) -> Dict[str, Any]:
+        """
+        Generate a route map extracted from the lambda functions that is a queue consumer
+        using the name of the queue as path.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing the routes.
+        """
+
+        routes: Dict[str, Any] = {}
+
+        for resource_id, function in self.template.functions.items():
+            if "Events" not in function["Properties"]:
+                continue
+
+            events = self.template.find_nodes(
+                function["Properties"]["Events"], NodeType.SCHEDULER_EVENT
+            )
+
+            if not events:
+                continue
+
+            function_name = function["Properties"]["FunctionName"].replace("_", "-")
+            handler_path = self.template.lambda_handler(resource_id)
+
+            path = f"/{function_name}"
+            endpoint = {"POST": {"handler": handler_path}}
+
+            routes.setdefault(path, {}).update(endpoint)
 
         return routes
 

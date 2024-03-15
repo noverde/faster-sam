@@ -53,6 +53,7 @@ class NodeType(Enum):
     QUEUE = "AWS::SQS::Queue"
     API_EVENT = "Api"
     SQS_EVENT = "SQS"
+    SCHEDULER_EVENT = "Schedule"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:

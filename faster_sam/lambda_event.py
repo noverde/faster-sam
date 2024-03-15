@@ -168,6 +168,71 @@ class SQS(ResourceInterface):
         return event
 
 
+class Schedule(ResourceInterface):
+    def __init__(self, request: Request, endpoint: Handler):
+        """
+        Initializes the SQS.
+
+        Parameters
+        ----------
+        request : Request
+            A request object.
+        endpoint : Handler
+            A callable object.
+        """
+        super().__init__(request, endpoint)
+
+    async def call_endpoint(self) -> Response:
+        """
+        Call event buider and retuns a custom response based
+        on the mapped event.
+
+        Returns
+        -------
+        Response
+            A response object.
+        """
+        try:
+            result = self.endpoint(None, None)
+        except Exception as error:
+            logger.exception(error)
+            return CustomResponse({"body": "Error processing message", "statusCode": 500})
+
+        if isinstance(result, dict) and "batchItemFailures" in result:
+            return CustomResponse({"body": json.dumps(result), "statusCode": 500})
+
+        return CustomResponse({"body": json.dumps(result), "statusCode": 200})
+
+    async def event_builder(self):
+        """
+        Builds an event of type sqs
+
+        It uses the given request object to fill the event details.
+
+        Returns
+        -------
+        Dict[str, Any]
+            An sqs event.
+        """
+        bytes_body = await self.request.body()
+        json_body = bytes_body.decode()
+        body = json.loads(json_body)
+        print(body)
+        {
+            "version": "0",
+            "id": str(uuid4()),
+            "detail-type": "Scheduled Event",
+            "source": "aws.events",
+            "account": "",
+            "time": datetime.now(timezone.utc).strftime(r"%d/%b/%Y:%H:%M:%S %z"),
+            "region": "us-east-1",
+            "resources": ["arn:aws:events:us-east-1:123456789012:rule/my-scheduled-rule"],
+            "detail": {},
+        }
+
+        return None
+
+
 class ApiGateway(ResourceInterface):
     def __init__(self, request: Request, endpoint: Handler):
         """
