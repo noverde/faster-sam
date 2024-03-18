@@ -68,6 +68,27 @@ def build_request_sqs():
     return Request(scope, receive)
 
 
+def build_request_schedule():
+
+    async def receive():
+        body = {"x": "y"}
+        return {"type": "http.request", "body": json.dumps(body).encode()}
+
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "root_path": "",
+        "path": "/test",
+        "method": "GET",
+        "query_string": [],
+        "path_params": {},
+        "client": ("127.0.0.1", 80),
+        "app": FastAPI(),
+    }
+
+    return Request(scope, receive)
+
+
 class TestAPIRoute(unittest.TestCase):
     def test_route(self):
         endpoint = "tests.fixtures.handlers.lambda_handler.handler"
@@ -167,3 +188,28 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
             response.body.decode(),
             '{"statusCode": 500, "body": "hello", "batchItemFailures": "foo"}',
         )
+
+    async def test_schedule_handler(self):
+        request = build_request_schedule()
+
+        def echo(event, _):
+            return {
+                "statusCode": HTTPStatus.OK.value,
+                "body": event["detail"],
+            }
+
+        cases = {
+            "none_as_return": {"func": lambda event, _: None, "response": "null"},
+            "dict_as_return": {"func": echo, "response": '{"statusCode": 200, "body": {"x": "y"}}'},
+        }
+
+        for case, value in cases.items():
+            with self.subTest(case=case):
+                endpoint = faster_sam.routing.handler(
+                    value["func"], faster_sam.lambda_event.Schedule
+                )
+                response = await endpoint(request)
+                print(response)
+                self.assertIsInstance(response, Response)
+                self.assertEqual(response.status_code, HTTPStatus.OK.value)
+                self.assertEqual(response.body.decode(), value["response"])

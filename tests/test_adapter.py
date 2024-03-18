@@ -60,6 +60,15 @@ class TestSAM(unittest.TestCase):
         sam.configure_queues(app)
         self.assertEqual(len(app.routes), 5)
 
+    def test_configure_schedule(self):
+        app = FastAPI()
+        sam = SAM("tests/fixtures/templates/example7.yml")
+
+        self.assertEqual(len(app.routes), 4)
+
+        sam.configure_schedule(app)
+        self.assertEqual(len(app.routes), 5)
+
     def test_configure_api_raises_gateway_lookup_error(self):
         error = "^Missing required gateway ID. Found: ApiGateway, ApiGatewayTwo"
 

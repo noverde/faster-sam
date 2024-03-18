@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Sample SAM Template for sam-api
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 3
+
+Resources:
+  PurgeSessions:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: sre-my-schedule
+      CodeUri: tests/
+      Handler: fixtures.handlers.lambda_handler.handler
+      Events:
+        Schedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(*/5 * * * *)
