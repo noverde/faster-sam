@@ -193,4 +193,3 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event.keys()), expected_keys)
-        print(event)

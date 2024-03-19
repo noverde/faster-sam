@@ -209,7 +209,6 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
                     value["func"], faster_sam.lambda_event.Schedule
                 )
                 response = await endpoint(request)
-                print(response)
                 self.assertIsInstance(response, Response)
                 self.assertEqual(response.status_code, HTTPStatus.OK.value)
                 self.assertEqual(response.body.decode(), value["response"])
