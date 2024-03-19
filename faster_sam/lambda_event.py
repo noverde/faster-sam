@@ -210,7 +210,7 @@ class Schedule(ResourceInterface):
         Returns
         -------
         Dict[str, Any]
-            An schedule event.
+            A schedule event.
         """
 
         bytes_body = await self.request.body()
