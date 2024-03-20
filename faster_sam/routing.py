@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable, Dict
 
 from fastapi import Request, Response, routing
 
-from faster_sam.lambda_event import SQS, ApiGateway, ResourceInterface
+from faster_sam.lambda_event import SQS, ApiGateway, ResourceInterface, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -103,3 +103,26 @@ class QueueRoute(routing.APIRoute):
         handler_path = endpoint
         handler_func = import_handler(handler_path)
         super().__init__(path=path, endpoint=handler(handler_func, SQS), *args, **kwargs)
+
+
+class ScheduleRoute(routing.APIRoute):
+    """
+    Extends FastAPI Router class used to describe path operations.
+    This custom router class receives the endpoint parameter as a string with
+    the full module path instead of the actual callable.
+    """
+
+    def __init__(self, path: str, endpoint: str, *args, **kwargs):
+        """
+        Initializes the ScheduleRoute object.
+
+        Parameters
+        ----------
+        path : str
+            HTTP route path.
+        endpoint : str
+            Full module path.
+        """
+        handler_path = endpoint
+        handler_func = import_handler(handler_path)
+        super().__init__(path=path, endpoint=handler(handler_func, Schedule), *args, **kwargs)

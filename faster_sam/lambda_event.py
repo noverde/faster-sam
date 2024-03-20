@@ -168,6 +168,69 @@ class SQS(ResourceInterface):
         return event
 
 
+class Schedule(ResourceInterface):
+    def __init__(self, request: Request, endpoint: Handler):
+        """
+        Initializes the Schedule.
+
+        Parameters
+        ----------
+        request : Request
+            A request object.
+        endpoint : Handler
+            A callable object.
+        """
+        super().__init__(request, endpoint)
+
+    async def call_endpoint(self) -> Response:
+        """
+        Call event buider and retuns a custom response based
+        on the mapped event.
+
+        Returns
+        -------
+        Response
+            A response object.
+        """
+        event = await self.event_builder()
+        try:
+            result = self.endpoint(event, None)
+        except Exception as error:
+            logger.exception(error)
+            return CustomResponse({"body": "Error executing schedule function", "statusCode": 500})
+
+        return CustomResponse({"body": json.dumps(result), "statusCode": 200})
+
+    async def event_builder(self):
+        """
+        Builds an event of type schedule
+
+        It uses the given request object to fill the event details.
+
+        Returns
+        -------
+        Dict[str, Any]
+            An schedule event.
+        """
+
+        bytes_body = await self.request.body()
+        json_body = bytes_body.decode()
+        body = json.loads(json_body)
+        event = {
+            "version": "0",
+            "id": str(uuid4()),
+            "detail-type": "Scheduled Event",
+            "source": "aws.events",
+            "account": "",
+            "time": datetime.now(timezone.utc).strftime(r"%d/%b/%Y:%H:%M:%S %z"),
+            "region": "us-east-1",
+            "resources": [""],
+            "detail": body,
+        }
+
+        return event
+
+
 class ApiGateway(ResourceInterface):
     def __init__(self, request: Request, endpoint: Handler):
         """
