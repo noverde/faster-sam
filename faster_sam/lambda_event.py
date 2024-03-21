@@ -6,8 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict
 from uuid import uuid4
-
-from fastapi import Request, Response
+from fastapi import BackgroundTasks, Request, Response
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +35,7 @@ class CustomResponse(Response):
             status_code=data["statusCode"],
             headers=data.get("headers"),
             media_type=data.get("headers", {}).get("Content-Type"),
+            background=data.get("background_tasks"),
         )
 
 
@@ -193,13 +193,18 @@ class Schedule(ResourceInterface):
             A response object.
         """
         event = await self.event_builder()
-        try:
-            result = self.endpoint(event, None)
-        except Exception as error:
-            logger.exception(error)
-            return CustomResponse({"body": "Error executing schedule function", "statusCode": 500})
 
-        return CustomResponse({"body": json.dumps(result), "statusCode": 200})
+        tasks = BackgroundTasks()
+
+        tasks.add_task(self.endpoint, event, None)
+
+        return CustomResponse(
+            {
+                "body": json.dumps({"message": "send for processing"}),
+                "statusCode": 202,
+                "background_tasks": tasks,
+            }
+        )
 
     async def event_builder(self):
         """
