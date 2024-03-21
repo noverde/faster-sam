@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Any, Dict, Optional
 
@@ -89,7 +90,6 @@ class SAM:
             app.openapi = custom_openapi(app, openapi_schema)
 
         self.register_routes(app, routes, APIRoute)
-        Envs(self.template)
 
     def configure_queues(
         self,
@@ -314,3 +314,15 @@ class SAM:
                     methods=[method],
                     route_class_override=class_override,
                 )
+
+    def load_envs(self):
+        env = Envs(self.template)
+        queues = {}
+
+        for env_key, env_value in env.envs.items():
+            env.set_queue_envs(env_key, env_value, queues)
+            env.filter_envs(env_key, env_value)
+            env.mapper_variables(env_key, env_value)
+
+        for env_key, env_value in env.envs.items():
+            os.environ[env_key] = env_value

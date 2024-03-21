@@ -23,7 +23,6 @@ class Envs:
     def __init__(self, template: CloudformationTemplate) -> None:
         self._template = template
         self.envs = {**self.local_envs, **self.global_envs}
-        self.load_envs()
 
     @property
     def global_envs(self) -> Dict[str, Any]:
@@ -46,14 +45,6 @@ class Envs:
 
             return self._local_envs
         return self._local_envs
-
-    def load_envs(self):
-        self.set_queue_envs(self.get_queues())
-        self.filter_envs()
-        self.mapper_variables()
-
-        for env_key, env_value in self.envs.items():
-            os.environ[env_key] = env_value
 
     def mapper_variables(self):
         env_mapper = self._template["Mappings"]["Environments"][ENVIRONMENT]
