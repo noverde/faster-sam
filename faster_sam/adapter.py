@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 from fastapi import FastAPI
 
 from faster_sam.cloudformation import CloudformationTemplate, NodeType
+from faster_sam.envs import Envs
 from faster_sam.openapi import custom_openapi
 from faster_sam.routing import APIRoute, QueueRoute, ScheduleRoute
 
@@ -88,6 +89,7 @@ class SAM:
             app.openapi = custom_openapi(app, openapi_schema)
 
         self.register_routes(app, routes, APIRoute)
+        Envs(self.template)
 
     def configure_queues(
         self,
