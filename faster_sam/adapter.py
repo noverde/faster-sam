@@ -43,6 +43,11 @@ class SAM:
         """
 
         self.template = CloudformationTemplate(template_path)
+        self.load_envs()
+
+    def load_envs(self):
+        for env_key, value in self.template.envs_vars.items():
+            os.environ[env_key] = value
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
         """
@@ -314,15 +319,3 @@ class SAM:
                     methods=[method],
                     route_class_override=class_override,
                 )
-
-    def load_envs(self):
-        env = Envs(self.template)
-        queues = {}
-
-        for env_key, env_value in env.envs.items():
-            env.set_queue_envs(env_key, env_value, queues)
-            env.filter_envs(env_key, env_value)
-            env.mapper_variables(env_key, env_value)
-
-        for env_key, env_value in env.envs.items():
-            os.environ[env_key] = env_value

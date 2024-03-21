@@ -1,4 +1,5 @@
 from enum import Enum
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -6,7 +7,9 @@ import yaml
 
 PREFIX = "Fn::"
 WITHOUT_PREFIX = ("Ref", "Condition")
-
+ENVIRONMENT = os.environ["ENVIRONMENT"]
+APP_NAME = os.environ["APP_NAME"]
+PROJECT_ID = os.environ["PROJECT_ID"]
 
 class CFTemplateNotFound(FileNotFoundError):
     """Raised when the CloudFormation template file cannot be found."""
@@ -166,7 +169,7 @@ class CloudformationTemplate:
         if not hasattr(self, "_functions"):
             self._functions = self.find_nodes(self.template["Resources"], NodeType.LAMBDA)
         return self._functions
-
+ 
     @property
     def gateways(self) -> Dict[str, Any]:
         """
@@ -187,8 +190,14 @@ class CloudformationTemplate:
 
         if not hasattr(self, "_queues"):
             self._queues = self.find_nodes(self.template["Resources"], NodeType.QUEUE)
-        return self._queues
-
+        return self._queues    
+    
+    @property
+    def envs_vars(self) -> Dict[str, Any]:
+        if not hasattr(self, "_envs_vars"):
+            self._envs_vars = self.find_env_vars()
+        return self._envs_vars
+    
     def include_files(self):
         """
         Load external files specified in the CloudFormation template like OpenAPI schema.
@@ -268,7 +277,46 @@ class CloudformationTemplate:
                 nodes[key] = node
 
         return nodes
+    
+    def set_queue_env(self, env_value) -> str:
+        if not self.queues:
+            return {}
 
+        for queue_key, queue_value in self.queues.items():
+            if queue_key in env_value["Ref"]:
+                return f"project/{PROJECT_ID}/topics/{APP_NAME}:{queue_value["Properties"].get("QueueName", {})}"
+
+    def map_env(self, env_value) -> str:
+        map = self.template["Mappings"]["Environments"][ENVIRONMENT]
+
+        for map_key, map_value in map.items():
+            if map_key == env_value["Fn::FindInMap"][2]:
+                return map_value
+            
+    def filter_env(self, env_value) -> str:
+        if isinstance(env_value, Dict):
+            return ""
+        elif "parameters" in env_value or "secrets" in env_value:
+            return ""
+        
+        return env_value
+
+    def find_env_vars(self) -> Dict[str, Any]:
+        envs = {}
+
+        for env_key, value in self.template["Variables"].items():
+            if "Ref" in value:
+                env_value = self.set_queue_env(value)
+            elif "Fn::FindInMap":
+                env_value = self.map_env(value)
+            else:
+                env_value = self.filter_env(value)
+           
+            if env_value:
+                envs[env_key] = env_value
+
+        return envs
+                    
     def lambda_handler(self, resource_id: str) -> str:
         """
         Returns a string representing the full module path for a Lambda Function handler.
