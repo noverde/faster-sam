@@ -32,7 +32,7 @@ Resources:
   DefaultPriorityQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: "platform-notifications-default-queue"
+      QueueName: "default-queue"
       VisibilityTimeout: 50
       RedrivePolicy:
         deadLetterTargetArn:
@@ -43,8 +43,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Environment:
-          Variables:
-              ELASTIC_APM_SEND_STRATEGY: background
+        Variables:
+          ELASTIC_APM_SEND_STRATEGY: background
       CodeUri: tests/
       Handler: fixtures.handlers.lambda_handler.handler
       Runtime: python3.11

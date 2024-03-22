@@ -130,7 +130,15 @@ class TestCloudformationTemplate(unittest.TestCase):
             },
         }
 
-        self.environments = [{}, {"LOG_LEVEL": "DEBUG"}]
+        self.environments = [
+            {},
+            {
+                "LOG_LEVEL": "DEBUG",
+                "DEFAULT_QUEUE": "project/dotz-noverde-dev/topics/test:default-queue",
+                "ELASTIC_APM_SERVICE_NAME": "platform",
+                "ELASTIC_APM_SEND_STRATEGY": "background",
+            },
+        ]
 
         self.template_1 = "tests/fixtures/templates/example1.yml"
 
@@ -178,7 +186,7 @@ class TestCloudformationTemplate(unittest.TestCase):
         self.assertEqual(cloudformation.queues, self.queues)
 
     def test_list_environment(self):
-        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(7, 8))
+        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(7, 9))
 
         for template, environment in zip(templates, self.environments):
             with self.subTest(template=template, environment=environment):

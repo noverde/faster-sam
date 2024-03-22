@@ -280,12 +280,14 @@ class CloudformationTemplate:
 
     def set_queue_env(self, env_value) -> str:
         if not self.queues:
-            return {}
+            return ""
 
         for queue_key, queue_value in self.queues.items():
             if queue_key in env_value["Ref"]:
                 queue_name = queue_value["Properties"].get("QueueName", {})
                 return f"project/{PROJECT_ID}/topics/{APP_NAME}:{queue_name}"
+
+        return ""
 
     def map_env(self, env_value) -> str:
         map = self.template["Mappings"]["Environments"][ENVIRONMENT]
@@ -294,37 +296,49 @@ class CloudformationTemplate:
             if map_key == env_value["Fn::FindInMap"][2]:
                 return map_value
 
+        return ""
+
     def filter_env(self, env_value) -> str:
-        if isinstance(env_value, Dict):
+        if env_value is None or isinstance(env_value, dict):
             return ""
-        elif "parameters" in env_value or "secrets" in env_value:
+
+        if "parameters" in env_value or "secrets" in env_value:
             return ""
 
         return env_value
 
     def find_env_vars(self) -> Dict[str, Any]:
-        envs = {}
-
-        globals = self.template["Globals"]["Function"]
-        if "Environment" in globals and globals["Environment"].get("Variables"):
-            envs.update(globals["Environment"]["Variables"])
+        globals = {}
+        if "Environment" in self.template["Globals"]["Function"] and self.template["Globals"][
+            "Function"
+        ]["Environment"].get("Variables"):
+            globals = self.template["Globals"]["Function"]["Environment"]["Variables"]
 
         locals = {}
         for function in self.functions.values():
-            if "Environment" in function and locals["Environment"].get("Variables"):
+            if "Environment" in function["Properties"] and function["Properties"][
+                "Environment"
+            ].get("Variables"):
                 locals.update(function["Properties"]["Environment"]["Variables"])
 
-        envs.update(locals)
+        envs = {**globals, **locals}
+
+        mapped_envs = {}
 
         for env_key, value in envs.items():
             if "Ref" in value:
-                value = self.filter_env(self.set_queue_env(value))
-            if "Fn::FindInMap" in value:
-                value = self.filter_env(self.map_env(value))
+                env_value = self.set_queue_env(value)
+            elif "Fn::FindInMap" in value:
+                env_value = self.map_env(value)
+            else:
+                env_value = value
 
-            envs[env_key] = value
+            env_value = self.filter_env(env_value)
 
-        return envs
+            if env_value:
+                mapped_envs[env_key] = env_value
+
+        return mapped_envs
 
     def lambda_handler(self, resource_id: str) -> str:
         """
