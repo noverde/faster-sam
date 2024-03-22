@@ -130,6 +130,8 @@ class TestCloudformationTemplate(unittest.TestCase):
             },
         }
 
+        self.environments = [{}, {"LOG_LEVEL": "DEBUG"}]
+
         self.template_1 = "tests/fixtures/templates/example1.yml"
 
     def test_load(self):
@@ -174,6 +176,14 @@ class TestCloudformationTemplate(unittest.TestCase):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example6.yml")
 
         self.assertEqual(cloudformation.queues, self.queues)
+
+    def test_list_environment(self):
+        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(7, 8))
+
+        for template, environment in zip(templates, self.environments):
+            with self.subTest(template=template, environment=environment):
+                cloudformation = CloudformationTemplate(template)
+                self.assertEqual(cloudformation.environment, environment)
 
     def test_find_nodes(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")

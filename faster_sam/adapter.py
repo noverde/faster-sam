@@ -5,7 +5,6 @@ from typing import Any, Dict, Optional
 from fastapi import FastAPI
 
 from faster_sam.cloudformation import CloudformationTemplate, NodeType
-from faster_sam.envs import Envs
 from faster_sam.openapi import custom_openapi
 from faster_sam.routing import APIRoute, QueueRoute, ScheduleRoute
 
@@ -46,7 +45,7 @@ class SAM:
         self.load_envs()
 
     def load_envs(self):
-        for env_key, value in self.template.envs_vars.items():
+        for env_key, value in self.template.environment.items():
             os.environ[env_key] = value
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
