@@ -148,13 +148,16 @@ class CloudformationTemplate:
         Dictionary representing the loaded CloudFormation template.
     """
 
-    def __init__(self, template_path: Optional[str] = None) -> None:
+    def __init__(
+        self, template_path: Optional[str] = None, parameters: Optional[Dict[str, str]] = None
+    ) -> None:
         """
         Initializes the CloudFormationTemplate object.
         """
 
         self.template = self.load(template_path)
         self.include_files()
+        self.set_parameters(parameters)
 
     @property
     def functions(self) -> Dict[str, Any]:
@@ -204,6 +207,16 @@ class CloudformationTemplate:
                 swagger = yaml.safe_load(fp)
 
             gateway["Properties"]["DefinitionBody"] = swagger
+
+    def set_parameters(self, parameters: Optional[Dict[str, str]]) -> None:
+        if "Parameters" not in self.template:
+            return None
+
+        params = parameters or {}
+
+        for name, value in params.items():
+            if name in self.template["Parameters"]:
+                self.template["Parameters"][name]["Default"] = value
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         """
