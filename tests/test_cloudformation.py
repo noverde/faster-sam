@@ -130,16 +130,6 @@ class TestCloudformationTemplate(unittest.TestCase):
             },
         }
 
-        self.environments = [
-            {},
-            {
-                "LOG_LEVEL": "DEBUG",
-                "DEFAULT_QUEUE": "project/dotz-noverde-dev/topics/test:default-queue",
-                "ELASTIC_APM_SERVICE_NAME": "platform",
-                "ELASTIC_APM_SEND_STRATEGY": "background",
-            },
-        ]
-
         self.template_1 = "tests/fixtures/templates/example1.yml"
 
     def test_load(self):
