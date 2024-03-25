@@ -1,3 +1,4 @@
+import base64
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -6,9 +7,6 @@ import yaml
 
 PREFIX = "Fn::"
 WITHOUT_PREFIX = ("Ref", "Condition")
-ENVIRONMENT = "development"
-APP_NAME = "test"
-PROJECT_ID = "dotz-noverde-dev"
 
 
 class CFTemplateNotFound(FileNotFoundError):
@@ -151,13 +149,18 @@ class CloudformationTemplate:
         Dictionary representing the loaded CloudFormation template.
     """
 
-    def __init__(self, template_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        template_path: Optional[str] = None,
+        parameters: Optional[Dict[str, str]] = None,
+    ) -> None:
         """
         Initializes the CloudFormationTemplate object.
         """
 
         self.template = self.load(template_path)
         self.include_files()
+        self.set_parameters(parameters)
 
     @property
     def functions(self) -> Dict[str, Any]:
@@ -195,7 +198,7 @@ class CloudformationTemplate:
     @property
     def environment(self) -> Dict[str, Any]:
         if not hasattr(self, "_environment"):
-            self._environment = self.find_env_vars()
+            self._environment = self.find_environment()
         return self._environment
 
     def include_files(self):
@@ -213,6 +216,16 @@ class CloudformationTemplate:
                 swagger = yaml.safe_load(fp)
 
             gateway["Properties"]["DefinitionBody"] = swagger
+
+    def set_parameters(self, parameters: Optional[Dict[str, str]]) -> None:
+        if "Parameters" not in self.template:
+            return None
+
+        params = parameters or {}
+
+        for name, value in params.items():
+            if name in self.template["Parameters"]:
+                self.template["Parameters"][name]["Default"] = value
 
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -278,67 +291,29 @@ class CloudformationTemplate:
 
         return nodes
 
-    def set_queue_env(self, env_value) -> str:
-        if not self.queues:
-            return ""
+    def find_environment(self) -> Dict[str, Any]:
+        variables = {}
 
-        for queue_key, queue_value in self.queues.items():
-            if queue_key in env_value["Ref"]:
-                queue_name = queue_value["Properties"].get("QueueName", {})
-                return f"project/{PROJECT_ID}/topics/{APP_NAME}:{queue_name}"
+        if "Variables" in self.template.get("Globals", {}).get("Function", {}).get(
+            "Environment", {}
+        ):
+            variables.update(self.template["Globals"]["Function"]["Environment"]["Variables"])
 
-        return ""
-
-    def map_env(self, env_value) -> str:
-        map = self.template["Mappings"]["Environments"][ENVIRONMENT]
-
-        for map_key, map_value in map.items():
-            if map_key == env_value["Fn::FindInMap"][2]:
-                return map_value
-
-        return ""
-
-    def filter_env(self, env_value) -> str:
-        if env_value is None or isinstance(env_value, dict):
-            return ""
-
-        if "parameters" in env_value or "secrets" in env_value:
-            return ""
-
-        return env_value
-
-    def find_env_vars(self) -> Dict[str, Any]:
-        globals = {}
-        if "Environment" in self.template["Globals"]["Function"] and self.template["Globals"][
-            "Function"
-        ]["Environment"].get("Variables"):
-            globals = self.template["Globals"]["Function"]["Environment"]["Variables"]
-
-        locals = {}
         for function in self.functions.values():
-            if "Environment" in function["Properties"] and function["Properties"][
-                "Environment"
-            ].get("Variables"):
-                locals.update(function["Properties"]["Environment"]["Variables"])
+            if "Variables" in function.get("Properties", {}).get("Environment", {}):
+                variables.update(function["Properties"]["Environment"]["Variables"])
 
-        envs = {**globals, **locals}
+        environment = {}
 
-        mapped_envs = {}
-
-        for env_key, value in envs.items():
-            if "Ref" in value:
-                env_value = self.set_queue_env(value)
-            elif "Fn::FindInMap" in value:
-                env_value = self.map_env(value)
+        for key, val in variables.items():
+            if isinstance(val, (str, int, float)):
+                environment[key] = val
             else:
-                env_value = value
+                value = IntrinsicFunctions.eval(val, self.template)
+                if value is not None:
+                    environment[key] = value
 
-            env_value = self.filter_env(env_value)
-
-            if env_value:
-                mapped_envs[env_key] = env_value
-
-        return mapped_envs
+        return environment
 
     def lambda_handler(self, resource_id: str) -> str:
         """
@@ -362,3 +337,73 @@ class CloudformationTemplate:
             handler_path = f"{code_uri}.{handler_path}".replace("/", "")
 
         return handler_path
+
+
+class IntrinsicFunctions:
+    @staticmethod
+    def eval(function: Dict[str, Any], template: Dict[str, Any]) -> Any:
+        not_implemented_error = "{} intrinsinc function not implemented"
+        not_implemented_functions = (
+            "Fn::Cidr",
+            "Fn::And",
+            "Fn::Equals",
+            "Fn::If",
+            "Fn::Not",
+            "Fn::Or",
+            "Fn::ForEach" "Fn::GetAtt",
+            "Fn::GetAZs",
+            "Fn::ImportValue",
+            "Fn::Join",
+            "Fn::Length",
+            "Fn::Select",
+            "Fn::Split",
+            "Fn::Sub",
+            "Fn::ToJsonString",
+            "Fn::Transform",
+        )
+
+        fun, val = list(function.items())[0]
+
+        if fun in not_implemented_functions:
+            raise NotImplementedError(not_implemented_error.format(fun))
+
+        if "Fn::Base64" == fun:
+            return IntrinsicFunctions.base64(val)
+
+        if "Fn::FindInMap" == fun:
+            return IntrinsicFunctions.find_in_map(val, template)
+
+        if "Ref" == fun:
+            return IntrinsicFunctions.ref(val, template)
+
+        return None
+
+    @staticmethod
+    def base64(value: str) -> str:
+        return base64.b64encode(value.encode()).decode()
+
+    @staticmethod
+    def find_in_map(value: List[Any], template: Dict[str, Any]) -> Any:
+        map_name, top_level_key, second_level_key = value
+
+        if map_name not in template.get("Mappings", {}):
+            return None
+
+        if isinstance(top_level_key, dict):
+            top_level_key = IntrinsicFunctions.eval(top_level_key, template)
+
+            if top_level_key is None:
+                return None
+
+        if top_level_key not in template["Mappings"][map_name]:
+            return None
+
+        return template["Mappings"][map_name][top_level_key].get(second_level_key)
+
+    @staticmethod
+    def ref(value: str, template: Dict[str, Any]) -> Optional[str]:
+        if value in template.get("Parameters", {}):
+            resource = template["Parameters"][value]
+            return resource.get("Default")
+
+        return None

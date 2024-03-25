@@ -186,12 +186,28 @@ class TestCloudformationTemplate(unittest.TestCase):
         self.assertEqual(cloudformation.queues, self.queues)
 
     def test_list_environment(self):
-        templates = (f"tests/fixtures/templates/example{i}.yml" for i in range(7, 9))
+        scenarios = {
+            "tests/fixtures/templates/example1.yml": {},
+            "tests/fixtures/templates/example2.yml": {
+                "ENVIRONMENT": "development",
+                "LOG_LEVEL": "DEBUG",
+            },
+            "tests/fixtures/templates/example3.yml": {
+                "ENVIRONMENT": "development",
+                "LOG_LEVEL": "DEBUG",
+            },
+            "tests/fixtures/templates/example4.yml": {
+                "ENVIRONMENT": "development",
+                "LOG_LEVEL": "DEBUG",
+            },
+        }
 
-        for template, environment in zip(templates, self.environments):
-            with self.subTest(template=template, environment=environment):
-                cloudformation = CloudformationTemplate(template)
-                self.assertEqual(cloudformation.environment, environment)
+        for template, expected in scenarios.items():
+            with self.subTest(template=template, expected=expected):
+                cloudformation = CloudformationTemplate(
+                    template, parameters={"Environment": "development"}
+                )
+                self.assertEqual(cloudformation.environment, expected)
 
     def test_find_nodes(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")

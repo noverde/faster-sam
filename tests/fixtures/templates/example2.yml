@@ -8,7 +8,6 @@ Description: >
 Parameters:
   Environment:
     Type: String
-    Default: development
 
 Mappings:
   Environments:
