@@ -307,13 +307,14 @@ class CloudformationTemplate:
 
     def find_environment(self) -> Dict[str, Any]:
         """
-        Reads the CloudFormation template to extract environment variables defined at 
-        both global and function levels.
+        Reads the CloudFormation template to extract environment variables
+        defined at both global and function levels.
 
         Returns
         -------
         Dict[str, Any]
-            Dictionary containing environment variables in the CloudFormation template.
+            Dictionary containing environment variables in the
+            CloudFormation template.
         """
         variables = {}
 
@@ -363,8 +364,33 @@ class CloudformationTemplate:
 
 
 class IntrinsicFunctions:
+    """
+    Resolve intrinsic functions in CloudFormation
+    """
+
     @staticmethod
     def eval(function: Dict[str, Any], template: Dict[str, Any]) -> Any:
+        """
+        Try to resolve an intrinsic function.
+
+        Parameters
+        ----------
+        function : Dict[str, Any]
+            The intrinsic function and its arguments.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Any
+            The result of the intrinsic function, or None if it cannot access
+            the value.
+
+        Raises
+        ------
+        NotImplementedError
+            If the intrinsic function is not implemented.
+        """
         not_implemented_error = "{} intrinsinc function not implemented"
         not_implemented_functions = (
             "Fn::Cidr",
@@ -403,10 +429,39 @@ class IntrinsicFunctions:
 
     @staticmethod
     def base64(value: str) -> str:
+        """
+        Encode a string to base64.
+
+        Parameters
+        ----------
+        value : str
+            The string to be encoded to base64.
+
+        Returns
+        -------
+        str
+            The base64-encoded string.
+        """
         return base64.b64encode(value.encode()).decode()
 
     @staticmethod
     def find_in_map(value: List[Any], template: Dict[str, Any]) -> Any:
+        """
+        Gets a value from a mapping declared in the CloudFormation
+        template.
+
+        Parameters
+        ----------
+        value : List[Any]
+            List containing the map name, top-level key, and second-level key.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Any
+            The value from the map, or None if the map or keys are not found.
+        """
         map_name, top_level_key, second_level_key = value
 
         if map_name not in template.get("Mappings", {}):
@@ -425,6 +480,21 @@ class IntrinsicFunctions:
 
     @staticmethod
     def ref(value: str, template: Dict[str, Any]) -> Optional[str]:
+        """
+        Gets a referenced value from a CloudFormation.
+
+        Parameters
+        ----------
+        value : str
+            The name of the referenced value to retrieve.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The referenced value, or None if the reference is not found.
+        """
         if value in template.get("Parameters", {}):
             resource = template["Parameters"][value]
             return resource.get("Default")
