@@ -52,7 +52,8 @@ class SAM:
         Loads environment variables from CloudFormationTemplate.
         """
         for key, value in self.template.environment.items():
-            os.environ[key] = value
+            if not os.environ.get(key, {}) == value:
+                os.environ[key] = value
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
         """
@@ -100,6 +101,7 @@ class SAM:
             app.openapi = custom_openapi(app, openapi_schema)
 
         self.register_routes(app, routes, APIRoute)
+        self.load_environment()
 
     def configure_queues(
         self,
@@ -117,6 +119,7 @@ class SAM:
         routes = self.lambda_queue_mapper()
 
         self.register_routes(app, routes, QueueRoute)
+        self.load_environment()
 
     def configure_schedule(
         self,
@@ -134,6 +137,7 @@ class SAM:
         routes = self.lambda_schedule_mapper()
 
         self.register_routes(app, routes, ScheduleRoute)
+        self.load_environment()
 
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
