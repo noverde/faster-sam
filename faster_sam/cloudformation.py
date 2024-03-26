@@ -197,6 +197,11 @@ class CloudformationTemplate:
 
     @property
     def environment(self) -> Dict[str, Any]:
+        """
+        Dict[str, Any]:
+            Dictionary containing environment variables in the CloudFormation template.
+        """
+
         if not hasattr(self, "_environment"):
             self._environment = self.find_environment()
         return self._environment
@@ -301,6 +306,15 @@ class CloudformationTemplate:
         return nodes
 
     def find_environment(self) -> Dict[str, Any]:
+        """
+        Reads the CloudFormation template to extract environment variables defined at 
+        both global and function levels.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing environment variables in the CloudFormation template.
+        """
         variables = {}
 
         if "Variables" in self.template.get("Globals", {}).get("Function", {}).get(
