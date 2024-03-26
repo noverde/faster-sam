@@ -35,7 +35,7 @@ class SAM:
     template : CloudformationTemplate
         Instance of CloudformationTemplate based on the provided template_path.
     parameters : Optional[Dict[str, str]]
-        Dictionary representing parameters name and default value for CloudFormation deploy.
+        Dictionary representing parameters name and default value for CloudFormation deployment.
     """
 
     def __init__(
