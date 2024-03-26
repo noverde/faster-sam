@@ -142,7 +142,7 @@ class CloudformationTemplate:
     template_path : Optional[str]
         Path to the CloudFormation template file.
     parameters : Optional[Dict[str, str]]
-        Dictionary with parameters name and default value.
+        Dictionary representing parameters name and default value.
 
     Attributes
     ----------
