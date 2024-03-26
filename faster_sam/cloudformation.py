@@ -1,3 +1,4 @@
+import base64
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -194,6 +195,17 @@ class CloudformationTemplate:
             self._queues = self.find_nodes(self.template["Resources"], NodeType.QUEUE)
         return self._queues
 
+    @property
+    def environment(self) -> Dict[str, Any]:
+        """
+        Dict[str, Any]:
+            Dictionary containing environment variables in the CloudFormation template.
+        """
+
+        if not hasattr(self, "_environment"):
+            self._environment = self.find_environment()
+        return self._environment
+
     def include_files(self):
         """
         Load external files specified in the CloudFormation template like OpenAPI schema.
@@ -293,6 +305,40 @@ class CloudformationTemplate:
 
         return nodes
 
+    def find_environment(self) -> Dict[str, Any]:
+        """
+        Reads the CloudFormation template to extract environment variables
+        defined at both global and function levels.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing environment variables in the
+            CloudFormation template.
+        """
+        variables = (
+            self.template.get("Globals", {})
+            .get("Function", {})
+            .get("Environment", {})
+            .get("Variables", {})
+        )
+
+        for function in self.functions.values():
+            if "Variables" in function.get("Properties", {}).get("Environment", {}):
+                variables.update(function["Properties"]["Environment"]["Variables"])
+
+        environment = {}
+
+        for key, val in variables.items():
+            if isinstance(val, (str, int, float)):
+                environment[key] = val
+            else:
+                value = IntrinsicFunctions.eval(val, self.template)
+                if value is not None:
+                    environment[key] = value
+
+        return environment
+
     def lambda_handler(self, resource_id: str) -> str:
         """
         Returns a string representing the full module path for a Lambda Function handler.
@@ -315,3 +361,125 @@ class CloudformationTemplate:
             handler_path = f"{code_uri}.{handler_path}".replace("/", "")
 
         return handler_path
+
+
+class IntrinsicFunctions:
+    """
+    Resolve intrinsic functions in CloudFormation
+    """
+
+    @staticmethod
+    def eval(function: Dict[str, Any], template: Dict[str, Any]) -> Any:
+        """
+        Try to resolve an intrinsic function.
+
+        Parameters
+        ----------
+        function : Dict[str, Any]
+            The intrinsic function and its arguments.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Any
+            The result of the intrinsic function, or None if it cannot access
+            the value.
+
+        Raises
+        ------
+        NotImplementedError
+            If the intrinsic function is not implemented.
+        """
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref")
+
+        fun, val = list(function.items())[0]
+
+        if fun not in implemented:
+            raise NotImplementedError(f"{fun} intrinsic function not implemented")
+
+        if "Fn::Base64" == fun:
+            return IntrinsicFunctions.base64(val)
+
+        if "Fn::FindInMap" == fun:
+            return IntrinsicFunctions.find_in_map(val, template)
+
+        if "Ref" == fun:
+            return IntrinsicFunctions.ref(val, template)
+
+        return None
+
+    @staticmethod
+    def base64(value: str) -> str:
+        """
+        Encode a string to base64.
+
+        Parameters
+        ----------
+        value : str
+            The string to be encoded to base64.
+
+        Returns
+        -------
+        str
+            The base64-encoded string.
+        """
+        return base64.b64encode(value.encode()).decode()
+
+    @staticmethod
+    def find_in_map(value: List[Any], template: Dict[str, Any]) -> Any:
+        """
+        Gets a value from a mapping declared in the CloudFormation
+        template.
+
+        Parameters
+        ----------
+        value : List[Any]
+            List containing the map name, top-level key, and second-level key.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Any
+            The value from the map, or None if the map or keys are not found.
+        """
+        map_name, top_level_key, second_level_key = value
+
+        if map_name not in template.get("Mappings", {}):
+            return None
+
+        if isinstance(top_level_key, dict):
+            top_level_key = IntrinsicFunctions.eval(top_level_key, template)
+
+            if top_level_key is None:
+                return None
+
+        if top_level_key not in template["Mappings"][map_name]:
+            return None
+
+        return template["Mappings"][map_name][top_level_key].get(second_level_key)
+
+    @staticmethod
+    def ref(value: str, template: Dict[str, Any]) -> Optional[str]:
+        """
+        Gets a referenced value from the CloudFormation template.
+
+        Parameters
+        ----------
+        value : str
+            The name of the referenced value to retrieve.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The referenced value, or None if the reference is not found.
+        """
+        if value in template.get("Parameters", {}):
+            resource = template["Parameters"][value]
+            return resource.get("Default")
+        # NOTE: this is a partial implementation
+
+        return None
