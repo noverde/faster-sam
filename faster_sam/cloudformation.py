@@ -141,6 +141,8 @@ class CloudformationTemplate:
     ----------
     template_path : Optional[str]
         Path to the CloudFormation template file.
+    parameters : Optional[Dict[str, str]]
+        Dictionary with parameters name and default value.
 
     Attributes
     ----------
@@ -209,6 +211,10 @@ class CloudformationTemplate:
             gateway["Properties"]["DefinitionBody"] = swagger
 
     def set_parameters(self, parameters: Optional[Dict[str, str]]) -> None:
+        """
+        Set the default value of parameters in the CloudFormation template.
+        """
+
         if "Parameters" not in self.template:
             return None
 
