@@ -481,7 +481,7 @@ class IntrinsicFunctions:
     @staticmethod
     def ref(value: str, template: Dict[str, Any]) -> Optional[str]:
         """
-        Gets a referenced value from a CloudFormation.
+        Gets a referenced value from the CloudFormation template.
 
         Parameters
         ----------
