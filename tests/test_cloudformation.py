@@ -153,6 +153,15 @@ class TestCloudformationTemplate(unittest.TestCase):
 
                 self.assertIsInstance(cloudformation.template, dict)
 
+    def test_load_with_params(self):
+        cloudformation = CloudformationTemplate(
+            "tests/fixtures/templates/example2.yml", {"Environment": "development"}
+        )
+
+        self.assertEqual(
+            cloudformation.template["Parameters"]["Environment"]["Default"], "development"
+        )
+
     def test_load_raises_exception(self):
         template = "unknown.yml"
         regex = f"^{template}$"

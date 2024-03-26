@@ -198,17 +198,8 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
                 "body": event["detail"],
             }
 
-        cases = {
-            "none_as_return": {"func": lambda event, _: None, "response": "null"},
-            "dict_as_return": {"func": echo, "response": '{"statusCode": 200, "body": {"x": "y"}}'},
-        }
-
-        for case, value in cases.items():
-            with self.subTest(case=case):
-                endpoint = faster_sam.routing.handler(
-                    value["func"], faster_sam.lambda_event.Schedule
-                )
-                response = await endpoint(request)
-                self.assertIsInstance(response, Response)
-                self.assertEqual(response.status_code, HTTPStatus.OK.value)
-                self.assertEqual(response.body.decode(), value["response"])
+        endpoint = faster_sam.routing.handler(echo, faster_sam.lambda_event.Schedule)
+        response = await endpoint(request)
+        self.assertIsInstance(response, Response)
+        self.assertEqual(response.status_code, HTTPStatus.ACCEPTED.value)
+        self.assertEqual(response.body.decode(), '{"message": "send for processing"}')
