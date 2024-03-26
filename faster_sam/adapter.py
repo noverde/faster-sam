@@ -27,7 +27,7 @@ class SAM:
     Parameters
     ----------
     template_path : Optional[str]
-        Path to the CloudFormation template file..
+        Path to the CloudFormation template file.
 
     Attributes
     ----------
