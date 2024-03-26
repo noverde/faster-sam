@@ -1,4 +1,3 @@
-import os
 import re
 from typing import Any, Dict, Optional
 
@@ -36,17 +35,14 @@ class SAM:
         Instance of CloudformationTemplate based on the provided template_path.
     """
 
-    def __init__(self, template_path: Optional[str] = None) -> None:
+    def __init__(
+        self, template_path: Optional[str] = None, parameters: Optional[Dict[str, str]] = None
+    ) -> None:
         """
         Initializes the SAM object.
         """
 
-        self.template = CloudformationTemplate(template_path)
-        self.load_envs()
-
-    def load_envs(self):
-        for env_key, value in self.template.environment.items():
-            os.environ[env_key] = value
+        self.template = CloudformationTemplate(template_path, parameters)
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
         """
