@@ -52,7 +52,7 @@ class SAM:
         Loads environment variables from CloudFormationTemplate.
         """
         for key, value in self.template.environment.items():
-            if not os.environ.get(key):
+            if key not in os.environ:
                 os.environ[key] = value
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
