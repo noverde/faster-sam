@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from fastapi import FastAPI
@@ -24,6 +25,15 @@ class TestSAM(unittest.TestCase):
 
                 self.assertIsInstance(sam, SAM)
                 self.assertIsInstance(sam.template, CloudformationTemplate)
+
+    def test_environment_initialization(self):
+        SAM(
+            "tests/fixtures/templates/example2.yml",
+            parameters={"Environment": "development"},
+        )
+
+        self.assertEqual(os.environ.get("ENVIRONMENT"), "development")
+        self.assertEqual(os.environ.get("LOG_LEVEL"), "DEBUG")
 
     def test_configure_api(self):
         gateways = (None, None, "ApiGateway", "ApiGatewayTwo", None)
