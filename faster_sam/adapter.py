@@ -28,6 +28,8 @@ class SAM:
     ----------
     template_path : Optional[str]
         Path to the CloudFormation template file.
+    parameters : Optional[Dict[str, str]]
+        Dictionary representing parameters name and default value.
 
     Attributes
     ----------
