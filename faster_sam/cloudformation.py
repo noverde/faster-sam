@@ -213,6 +213,11 @@ class CloudformationTemplate:
     def set_parameters(self, parameters: Optional[Dict[str, str]]) -> None:
         """
         Set the default value of parameters in the CloudFormation template.
+        
+        Parameters
+        ----------
+        parameters : Optional[Dict[str, str]]
+            Dictionary representing parameters name and default value.
         """
 
         if "Parameters" not in self.template:
