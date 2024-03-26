@@ -27,9 +27,7 @@ class SAM:
     Parameters
     ----------
     template_path : Optional[str]
-        Path to the CloudFormation template file.
-    parameters : Optional[Dict[str, str]]
-        Dictionary representing parameters name and default value.
+        Path to the CloudFormation template file..
 
     Attributes
     ----------
@@ -37,14 +35,12 @@ class SAM:
         Instance of CloudformationTemplate based on the provided template_path.
     """
 
-    def __init__(
-        self, template_path: Optional[str] = None, parameters: Optional[Dict[str, str]] = None
-    ) -> None:
+    def __init__(self, template_path: Optional[str] = None) -> None:
         """
         Initializes the SAM object.
         """
 
-        self.template = CloudformationTemplate(template_path, parameters)
+        self.template = CloudformationTemplate(template_path)
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
         """

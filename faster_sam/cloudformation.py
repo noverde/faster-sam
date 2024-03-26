@@ -316,12 +316,12 @@ class CloudformationTemplate:
             Dictionary containing environment variables in the
             CloudFormation template.
         """
-        variables = {}
-
-        if "Variables" in self.template.get("Globals", {}).get("Function", {}).get(
-            "Environment", {}
-        ):
-            variables.update(self.template["Globals"]["Function"]["Environment"]["Variables"])
+        variables = (
+            self.template.get("Globals", {})
+            .get("Function", {})
+            .get("Environment", {})
+            .get("Variables", {})
+        )
 
         for function in self.functions.values():
             if "Variables" in function.get("Properties", {}).get("Environment", {}):
@@ -391,30 +391,12 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        not_implemented_error = "{} intrinsinc function not implemented"
-        not_implemented_functions = (
-            "Fn::Cidr",
-            "Fn::And",
-            "Fn::Equals",
-            "Fn::If",
-            "Fn::Not",
-            "Fn::Or",
-            "Fn::ForEach" "Fn::GetAtt",
-            "Fn::GetAZs",
-            "Fn::ImportValue",
-            "Fn::Join",
-            "Fn::Length",
-            "Fn::Select",
-            "Fn::Split",
-            "Fn::Sub",
-            "Fn::ToJsonString",
-            "Fn::Transform",
-        )
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref")
 
         fun, val = list(function.items())[0]
 
-        if fun in not_implemented_functions:
-            raise NotImplementedError(not_implemented_error.format(fun))
+        if fun not in implemented:
+            raise NotImplementedError(f"{fun} intrinsic function not implemented")
 
         if "Fn::Base64" == fun:
             return IntrinsicFunctions.base64(val)
@@ -498,5 +480,6 @@ class IntrinsicFunctions:
         if value in template.get("Parameters", {}):
             resource = template["Parameters"][value]
             return resource.get("Default")
+        # NOTE: this is a partial implementation
 
         return None
