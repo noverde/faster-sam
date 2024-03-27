@@ -1,5 +1,6 @@
 import base64
 from enum import Enum
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -7,6 +8,8 @@ import yaml
 
 PREFIX = "Fn::"
 WITHOUT_PREFIX = ("Ref", "Condition")
+
+logger = logging.getLogger(__name__)
 
 
 class CFTemplateNotFound(FileNotFoundError):
@@ -396,7 +399,7 @@ class IntrinsicFunctions:
         fun, val = list(function.items())[0]
 
         if fun not in implemented:
-            raise NotImplementedError(f"{fun} intrinsic function not implemented")
+            logging.warning(f"{fun} intrinsic function not implemented")
 
         if "Fn::Base64" == fun:
             return IntrinsicFunctions.base64(val)
