@@ -338,7 +338,7 @@ class CloudformationTemplate:
             else:
                 value = IntrinsicFunctions.eval(val, self.template)
                 if value is not None:
-                    environment[key] = value
+                    environment[key] = str(value)
 
         return environment
 
