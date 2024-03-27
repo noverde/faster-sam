@@ -1,6 +1,6 @@
 project = "Faster SAM"
 author = "Dotz"
-release = "0.7.2"
+release = "0.11.0"
 
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
 
