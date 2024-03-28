@@ -508,7 +508,7 @@ class IntrinsicFunctions:
 
         Returns
         -------
-        Any
+        Optional[str]
             The value of atribute name, or None if the keys are not found.
         """
         logical_name, attribute_name = value
@@ -537,6 +537,22 @@ class IntrinsicFunctions:
 
     @staticmethod
     def join(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Joins elements in a list with a specified delimiter.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A list containing two elements: the delimiter as the first element,
+            and the values to join as the second element.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The joined string if successful; otherwise, None.
+        """
         delimiter, values = value
 
         if len(values) < 2:
