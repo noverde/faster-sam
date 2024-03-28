@@ -394,7 +394,7 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref")
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt")
 
         fun, val = list(function.items())[0]
 
@@ -409,6 +409,9 @@ class IntrinsicFunctions:
 
         if "Fn::GetAtt" == fun:
             return IntrinsicFunctions.get_att(val, template)
+
+        if "Fn::Join" == fun:
+            return IntrinsicFunctions.join(val, template)
 
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
@@ -531,3 +534,21 @@ class IntrinsicFunctions:
                 return None
 
         return function_value
+
+    @staticmethod
+    def join(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        delimiter, values = value
+
+        if len(values) < 2:
+            return None
+
+        for i in range(len(values)):
+            if isinstance(values[i], dict):
+                evaluated_value = IntrinsicFunctions.eval(values[i], template)
+
+                if evaluated_value is None:
+                    return None
+
+                values[i] = evaluated_value
+
+        return delimiter.join(value[1])
