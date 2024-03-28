@@ -8,6 +8,9 @@ Description: >
 Parameters:
   Environment:
     Type: String
+  Handler:
+    type: String
+    Default: handler
 
 Mappings:
   Environments:
@@ -33,6 +36,8 @@ Globals:
             - LogLevel
         SENDER_ACCOUNT: 
           Fn::GetAtt: [ HelloWorldFunction, CodeUri ]
+        HANDLER: 
+          Fn::Join: ["." , [fixtures, handlers, lambda_handler, !Ref Handler] ]
 
 Resources:
   ApiGateway:
