@@ -394,7 +394,7 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt")
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join")
 
         fun, val = list(function.items())[0]
 
