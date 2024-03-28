@@ -407,6 +407,9 @@ class IntrinsicFunctions:
         if "Fn::FindInMap" == fun:
             return IntrinsicFunctions.find_in_map(val, template)
 
+        if "Fn::GetAtt" == fun:
+            return IntrinsicFunctions.get_att(val, template)
+
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
 
@@ -486,3 +489,45 @@ class IntrinsicFunctions:
         # NOTE: this is a partial implementation
 
         return None
+
+    @staticmethod
+    def get_att(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Gets the value of an attribute from a CloudFormation template based on a list
+        of logical name and attribute name.
+
+        Parameters
+        ----------
+        value : List[Any]
+            List containing the logical name and attribute name
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Any
+            The value of atribute name, or None if the keys are not found.
+        """
+        logical_name, attribute_name = value
+
+        if logical_name not in template["Resources"]:
+            return None
+
+        if isinstance(attribute_name, dict):
+            attribute_name = IntrinsicFunctions.eval(attribute_name, template)
+
+            if attribute_name is None:
+                return None
+
+        if attribute_name not in template["Resources"][logical_name]["Properties"]:
+            return None
+
+        function_value = template["Resources"][logical_name]["Properties"][attribute_name]
+
+        if isinstance(function_value, dict):
+            function_value = IntrinsicFunctions.eval(function_value, template)
+
+            if function_value is None:
+                return None
+
+        return function_value
