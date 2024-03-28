@@ -201,6 +201,7 @@ class TestCloudformationTemplate(unittest.TestCase):
             "tests/fixtures/templates/example4.yml": {
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
+                "HANDLER": "handler2",
             },
         }
 
