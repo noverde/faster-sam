@@ -9,6 +9,12 @@ Parameters:
   Environment:
     Type: String
     Default: development
+  StageName:
+    Type: String
+    Default: v1
+  AttributeName:
+    Type: String
+    Default: StageName
 
 Mappings:
   Environments:
@@ -29,7 +35,8 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       Name: sam-api
-      StageName: v1
+      StageName: 
+        Ref: StageName
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
@@ -63,3 +70,5 @@ Resources:
               - Environments
               - Ref: Environment
               - LogLevel
+          STAGE_NAME: 
+            Fn::GetAtt: [ ApiGateway, !Ref AttributeName ]
