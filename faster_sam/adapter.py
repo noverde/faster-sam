@@ -53,7 +53,7 @@ class SAM:
         """
         for key, value in self.template.environment.items():
             if key not in os.environ:
-                os.environ[key] = str(value)
+                os.environ[key] = value
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
         """
