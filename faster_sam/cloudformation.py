@@ -394,7 +394,7 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref")
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt")
 
         fun, val = list(function.items())[0]
 
@@ -505,7 +505,7 @@ class IntrinsicFunctions:
 
         Returns
         -------
-        Any
+        Optional[str]
             The value of atribute name, or None if the keys are not found.
         """
         logical_name, attribute_name = value
