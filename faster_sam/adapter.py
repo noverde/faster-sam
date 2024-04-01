@@ -299,9 +299,7 @@ class SAM:
             if "Events" not in function["Properties"]:
                 continue
 
-            events = self.template.find_nodes(
-                function["Properties"]["Events"], NodeType.S3_EVENT
-            )
+            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.S3_EVENT)
 
             if not events:
                 continue

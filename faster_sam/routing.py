@@ -127,6 +127,7 @@ class ScheduleRoute(routing.APIRoute):
         handler_func = import_handler(handler_path)
         super().__init__(path=path, endpoint=handler(handler_func, Schedule), *args, **kwargs)
 
+
 class S3Route(routing.APIRoute):
     """
     Extends FastAPI Router class used to describe path operations.

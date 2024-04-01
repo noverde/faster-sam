@@ -235,6 +235,7 @@ class Schedule(ResourceInterface):
 
         return event
 
+
 class S3(ResourceInterface):
     def __init__(self, request: Request, endpoint: Handler):
         """
