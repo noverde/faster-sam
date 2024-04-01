@@ -394,10 +394,19 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join", "Fn::Select", "Fn::Split")
+        implemented = (
+            "Fn::Base64",
+            "Fn::FindInMap",
+            "Ref",
+            "Fn::GetAtt",
+            "Fn::Join",
+            "Fn::Select",
+            "Fn::Split",
+        )
 
         if isinstance(function, list):
             import ipdb
+
             ipdb.set_trace()
         fun, val = list(function.items())[0]
 
@@ -418,7 +427,7 @@ class IntrinsicFunctions:
 
         if "Fn::Select" == fun:
             return IntrinsicFunctions.select(val, template)
-        
+
         if "Fn::Split" == fun:
             return IntrinsicFunctions.split(val, template)
 
@@ -610,7 +619,7 @@ class IntrinsicFunctions:
 
             if values is None:
                 return None
-            
+
         result = []
 
         for i in range(len(values)):
@@ -634,7 +643,7 @@ class IntrinsicFunctions:
         Parameters
         ----------
         value : List[Any]
-            A tuple containing the delimiter as its first element, followed 
+            A tuple containing the delimiter as its first element, followed
             by a list of values to split.
         template : Dict[str, Any]
             A dictionary representing the CloudFormation template.
@@ -646,7 +655,7 @@ class IntrinsicFunctions:
             or None if any of the evaluated values are None.
         """
         delimiter, value = value
-        
+
         result = []
 
         if isinstance(value, dict):
@@ -656,7 +665,7 @@ class IntrinsicFunctions:
                 return None
 
         split_parts = value.split(delimiter)
-        
+
         for part in split_parts:
             result.append(part)
 
