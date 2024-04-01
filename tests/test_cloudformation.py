@@ -197,6 +197,7 @@ class TestCloudformationTemplate(unittest.TestCase):
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
                 "STAGE_NAME": "v1",
+                "SENDER_ACCOUNT": "dotz@gmail.com",
             },
             "tests/fixtures/templates/example4.yml": {
                 "ENVIRONMENT": "development",

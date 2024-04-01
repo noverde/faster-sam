@@ -72,3 +72,5 @@ Resources:
               - LogLevel
           STAGE_NAME: 
             Fn::GetAtt: [ ApiGateway, !Ref AttributeName ]
+          SENDER_ACCOUNT:
+            Fn::Select: [ 1, !Split ["|", "dev@gmail|dotz@gmail.com"]]

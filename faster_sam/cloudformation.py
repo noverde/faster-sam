@@ -394,8 +394,11 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join", "Fn::Select")
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join", "Fn::Select", "Fn::Split")
 
+        if isinstance(function, list):
+            import ipdb
+            ipdb.set_trace()
         fun, val = list(function.items())[0]
 
         if fun not in implemented:
@@ -415,6 +418,9 @@ class IntrinsicFunctions:
 
         if "Fn::Select" == fun:
             return IntrinsicFunctions.select(val, template)
+        
+        if "Fn::Split" == fun:
+            return IntrinsicFunctions.split(val, template)
 
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
@@ -604,7 +610,7 @@ class IntrinsicFunctions:
 
             if values is None:
                 return None
-
+            
         result = []
 
         for i in range(len(values)):
@@ -619,3 +625,39 @@ class IntrinsicFunctions:
                 result.append(values[i])
 
         return result[int(index)]
+
+    @staticmethod
+    def split(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Splits a list of values using a specified delimiter.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A tuple containing the delimiter as its first element, followed 
+            by a list of values to split.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            A list of strings resulting from splitting using the delimiter.
+            or None if any of the evaluated values are None.
+        """
+        delimiter, value = value
+        
+        result = []
+
+        if isinstance(value, dict):
+            value = IntrinsicFunctions.eval(value, template)
+
+            if value is None:
+                return None
+
+        split_parts = value.split(delimiter)
+        
+        for part in split_parts:
+            result.append(part)
+
+        return result
