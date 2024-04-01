@@ -52,6 +52,8 @@ class NodeType(Enum):
         Represents the "Api" node type.
     SCHEDULER_EVENT : str
         Represents the "Schedule" node type.
+    S3_EVENT : str
+        Represents the "S3" node type.
     """
 
     API_GATEWAY = "AWS::Serverless::Api"
@@ -60,6 +62,7 @@ class NodeType(Enum):
     API_EVENT = "Api"
     SQS_EVENT = "SQS"
     SCHEDULER_EVENT = "Schedule"
+    S3_EVENT = "S3"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
