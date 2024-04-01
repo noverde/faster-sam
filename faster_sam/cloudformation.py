@@ -412,7 +412,7 @@ class IntrinsicFunctions:
 
         if "Fn::Join" == fun:
             return IntrinsicFunctions.join(val, template)
-        
+
         if "Fn::Select" == fun:
             return IntrinsicFunctions.select(val, template)
 
@@ -599,6 +599,14 @@ class IntrinsicFunctions:
             if index is None:
                 return None
 
+        if isinstance(values, dict):
+            values = IntrinsicFunctions.eval(values, template)
+
+            if values is None:
+                return None
+
+        result = []
+
         for i in range(len(values)):
             if isinstance(values[i], dict):
                 evaluated_value = IntrinsicFunctions.eval(values[i], template)
@@ -606,6 +614,8 @@ class IntrinsicFunctions:
                 if evaluated_value is None:
                     return None
 
-                values[i] = evaluated_value
+                result.append(evaluated_value)
+            else:
+                result.append(values[i])
 
-        return values[index]
+        return result[int(index)]
