@@ -290,9 +290,7 @@ class S3(ResourceInterface):
 
         logger.warning(f"URL: {self.request.url}")
 
-        bytes_header = await self.request.headers()
-        json_header = bytes_header.decode()
-        header = json.loads(json_header)
+        header = json.loads(await self.request.headers)
 
         logger.warning(f"Headers: {header}")
 
