@@ -286,7 +286,20 @@ class S3(ResourceInterface):
             An trigger event.
         """
 
-        logger.warning(self.request)
+        logger.warning(f"Method: {self.request.method}")
+
+        logger.warning(f"URL: {self.request.url}")
+
+        logger.warning("Headers:")
+        for name, value in self.request.headers.items():
+            logger.warning(f"\t{name}: {value}")
+
+        logger.warning("Query Parameters:")
+        for name, value in self.request.query_params.items():
+            logger.warning(f"\t{name}: {value}")
+
+        if self.request.headers.get("content-type") == "application/json":
+            logger.warning(f"JSON Body: {self.request.json()}")
 
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
