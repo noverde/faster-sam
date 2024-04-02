@@ -289,11 +289,27 @@ class S3(ResourceInterface):
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
         body = json.loads(json_body)
-        
+
         logger.debug(body)
         print(body)
-        
-        event = {}
+
+        event = {
+            "Records": [
+                {
+                    "eventSource": "aws:s3",
+                    "awsRegion": "us-east-1",
+                    "eventName": "ObjectCreated:Put",
+                    "s3": {
+                        "bucket": {
+                            "name": "",
+                        },
+                        "object": {
+                            "key": "",
+                        },
+                    },
+                }
+            ]
+        }
 
         return event
 
