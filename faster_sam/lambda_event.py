@@ -290,9 +290,11 @@ class S3(ResourceInterface):
 
         logger.warning(f"URL: {self.request.url}")
 
-        logger.warning("Headers:")
-        for name, value in self.request.headers.items():
-            logger.warning(f"\t{name}: {value}")
+        bytes_header = await self.request.headers()
+        json_header = bytes_header.decode()
+        header = json.loads(json_header)
+
+        logger.warning(f"Headers: {header}")
 
         logger.warning("Query Parameters:")
         for name, value in self.request.query_params.items():
@@ -311,15 +313,32 @@ class S3(ResourceInterface):
         event = {
             "Records": [
                 {
+                    "eventVersion": "2.0",
                     "eventSource": "aws:s3",
                     "awsRegion": "us-east-1",
-                    "eventName": "ObjectCreated:Put",
+                    "eventTime": self.request.headers["ce-time"],
+                    "eventName": self.request.headers["ce-type"],  # vai dá ruim
+                    "userIdentity": {"principalId": self.request.headers["ce-id"]},
+                    "requestParameters": {
+                        "sourceIPAddress": self.request.headers["x-forwarded-for"]
+                    },
+                    "responseElements": {
+                        "x-amz-request-id": "EXAMPLE123456789",
+                        "x-amz-id-2": "EXAMPLE123/",
+                    },
                     "s3": {
+                        "s3SchemaVersion": "1.0",
+                        "configurationId": "testConfigRule",
                         "bucket": {
-                            "name": "",
+                            "name": self.request.headers["ce-bucket"],
+                            "ownerIdentity": {"principalId": "EXAMPLE"},
+                            "arn": "arn:aws:s3:::example-bucket",
                         },
                         "object": {
-                            "key": "",
+                            "key": body["id"],
+                            "size": body["size"],
+                            "eTag": body["etag"],
+                            "sequencer": "0A1B2C3D4E5F678901",
                         },
                     },
                 }
