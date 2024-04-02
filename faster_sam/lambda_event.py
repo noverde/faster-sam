@@ -290,9 +290,9 @@ class S3(ResourceInterface):
 
         logger.warning(f"URL: {self.request.url}")
 
-        header = json.loads(self.request.headers)
-
-        logger.warning(f"Headers: {header}")
+        headers_dict = dict(self.request.headers.items())
+        headers_json = json.dumps(headers_dict, indent=4)
+        logger.warning(f"Headers: {headers_json}")
 
         logger.warning("Query Parameters:")
         for name, value in self.request.query_params.items():
