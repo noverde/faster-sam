@@ -308,12 +308,21 @@ class S3(ResourceInterface):
 
         logger.warning(body)
 
+        logger.debug(
+            self.request.headers["ce-source"]
+            .get("resource", {})
+            .get("labels", {})
+            .get("location", {})
+        )
+
         event = {
             "Records": [
                 {
                     "eventVersion": "2.0",
                     "eventSource": "aws:s3",
-                    "awsRegion": "us-east-1",
+                    "awsRegion": self.request.headers["ce-source"]["resource"]["labels"][
+                        "location"
+                    ],
                     "eventTime": self.request.headers["ce-time"],
                     "eventName": self.request.headers["ce-type"],  # vai dá ruim
                     "userIdentity": {"principalId": self.request.headers["ce-id"]},
