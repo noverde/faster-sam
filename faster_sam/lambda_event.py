@@ -299,14 +299,14 @@ class S3(ResourceInterface):
             logger.warning(f"\t{name}: {value}")
 
         if self.request.headers.get("content-type") == "application/json":
-            logger.warning(f"JSON Body: {self.request.json()}")
+            json_body = await self.request.json()
+            logger.warning(f"JSON Body: {json_body}")
 
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
         body = json.loads(json_body)
 
-        logger.debug(body)
-        print(body)
+        logger.warning(body)
 
         event = {
             "Records": [
