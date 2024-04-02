@@ -296,7 +296,7 @@ class S3(ResourceInterface):
                     "eventSource": "aws:s3",
                     "awsRegion": "us-east-1",
                     "eventName": "ObjectCreated:Put",
-                    "s3": body
+                    "s3": body,
                 }
             ]
         }
