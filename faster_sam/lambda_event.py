@@ -286,6 +286,8 @@ class S3(ResourceInterface):
             An trigger event.
         """
 
+        logger.warning(self.request)
+
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
         body = json.loads(json_body)
