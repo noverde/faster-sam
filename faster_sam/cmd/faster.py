@@ -1,54 +1,76 @@
 import argparse
 import json
-from typing import Any, Optional
+from typing import Any
 
 from faster_sam.cloudformation import CloudformationTemplate
 
 
-def display(title: str, message: str) -> None:
-    print(title)
-    print("=" * len(title))
-    print("\n" + message)
+def dict_to_text(value: dict) -> str:
+    output = []
+
+    for key, val in value.items():
+        if isinstance(val, dict):
+            formatted_val = f"\n    {dict_to_text(val)}"
+        else:
+            formatted_val = str(val)
+
+        output.append(f"{key}: {formatted_val}")
+
+    return "\n".join(output)
 
 
-def output(format: Optional[str], value: Any) -> Any:
-    if format is None:
-        return str(value)
+def output(value: Any, format: str = "text") -> Any:
+    if format == "text":
+        return dict_to_text(value)
 
     if format == "json":
-        return json.dumps(value, indent=4)
+        return json.dumps(value)
 
 
 def resources(args) -> None:
+    cf = CloudformationTemplate()
+
+    resources = {
+        "s3": cf.buckets,
+    }
+
     if args.list:
-        template = CloudformationTemplate()
-        resources = {}
+        if args.type is None:
+            result = output(cf.template["Resources"], args.output)
+        else:
+            result = output(resources[args.type], args.output)
 
-        if args.type == "s3":
-            resources = template.buckets
-
-        result = output(args.output, resources)
-
-        title = f"\nList of Resources ({args.type})"
-        display(title, result)
+        print(result)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Faster CLI tool.")
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Faster SAM CLI tool.")
     subparsers = parser.add_subparsers(
         title="subcommand", dest="subcommand", help="Subcommand to execute."
     )
 
     resources_parser = subparsers.add_parser("resources", help="Perform operations on resources.")
 
-    resources_parser.add_argument("list", help="List resources.")
-    resources_parser.add_argument("--type", help="Specify the type of resource.")
-    resources_parser.add_argument("--output", help="Specify the output format.")
+    resources_parser.add_argument("list", help="List resources.", choices=["list"], type=str)
+    resources_parser.add_argument(
+        "-t",
+        "--type",
+        help="Specify the type of resource. Accepted values: 's3'.",
+        choices=["s3"],
+        type=str,
+    )
+    resources_parser.add_argument(
+        "-o",
+        "--output",
+        help="Specify the output format. Accepted values: 'text', 'json'. Default: 'text'.",
+        default="text",
+        choices=["text", "json"],
+        type=str,
+    )
 
     args = parser.parse_args()
 
-    if args.subcommand == "resources":
-        resources(args)
+    resources(args)
 
 
 if __name__ == "__main__":
