@@ -48,6 +48,8 @@ class NodeType(Enum):
         Represents the "AWS::Serverless::Function" node type.
     QUEUE : str
         Represents the "AWS::SQS::Queue" node type.
+    BUCKET : str
+        Represents the "AWS::S3::Bucket" node type.
     API_EVENT : str
         Represents the "Api" node type.
     SCHEDULER_EVENT : str

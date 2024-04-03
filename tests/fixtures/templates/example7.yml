@@ -20,8 +20,8 @@ Resources:
           Properties:
             Schedule: cron(*/5 * * * *)
 
-  PlatformBucket:
+  TestBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     Properties:
-      BucketName: "dotz-noverde"
+      BucketName: "test-bucket"
