@@ -48,6 +48,8 @@ class NodeType(Enum):
         Represents the "AWS::Serverless::Function" node type.
     QUEUE : str
         Represents the "AWS::SQS::Queue" node type.
+    BUCKET : str
+        Represents the "AWS::S3::Bucket" node type.
     API_EVENT : str
         Represents the "Api" node type.
     SCHEDULER_EVENT : str
@@ -57,6 +59,7 @@ class NodeType(Enum):
     API_GATEWAY = "AWS::Serverless::Api"
     LAMBDA = "AWS::Serverless::Function"
     QUEUE = "AWS::SQS::Queue"
+    BUCKET = "AWS::S3::Bucket"
     API_EVENT = "Api"
     SQS_EVENT = "SQS"
     SCHEDULER_EVENT = "Schedule"
@@ -197,6 +200,17 @@ class CloudformationTemplate:
         if not hasattr(self, "_queues"):
             self._queues = self.find_nodes(self.template["Resources"], NodeType.QUEUE)
         return self._queues
+
+    @property
+    def buckets(self) -> Dict[str, Any]:
+        """
+        Dict[str, Any]:
+            Dictionary containing buckets resources in the CloudFormation template.
+        """
+
+        if not hasattr(self, "_buckets"):
+            self._buckets = self.find_nodes(self.template["Resources"], NodeType.BUCKET)
+        return self._buckets
 
     @property
     def environment(self) -> Dict[str, Any]:
