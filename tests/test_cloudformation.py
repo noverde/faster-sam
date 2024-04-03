@@ -184,6 +184,19 @@ class TestCloudformationTemplate(unittest.TestCase):
 
         self.assertEqual(cloudformation.queues, self.queues)
 
+    def test_list_buckets(self):
+        buckets = {
+            "TestBucket": {
+                "Type": "AWS::S3::Bucket",
+                "DeletionPolicy": "Retain",
+                "Properties": {"BucketName": "test-bucket"},
+            }
+        }
+
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example7.yml")
+
+        self.assertEqual(cloudformation.buckets, buckets)
+
     def test_list_environment(self):
         scenarios = {
             "tests/fixtures/templates/example1.yml": {},
