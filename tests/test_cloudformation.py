@@ -186,10 +186,10 @@ class TestCloudformationTemplate(unittest.TestCase):
 
     def test_list_buckets(self):
         buckets = {
-            "PlatformBucket": {
+            "TestBucket": {
                 "Type": "AWS::S3::Bucket",
                 "DeletionPolicy": "Retain",
-                "Properties": {"BucketName": "dotz-noverde"},
+                "Properties": {"BucketName": "test-bucket"},
             }
         }
 
