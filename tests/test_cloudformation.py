@@ -130,6 +130,14 @@ class TestCloudformationTemplate(unittest.TestCase):
             },
         }
 
+        self.buckets = {
+            "PlatformBucket": {
+                "Type": "AWS::S3::Bucket",
+                "DeletionPolicy": "Retain",
+                "Properties": {"BucketName": "dotz-noverde"},
+            }
+        }
+
         self.template_1 = "tests/fixtures/templates/example1.yml"
 
     def test_load(self):
@@ -183,6 +191,11 @@ class TestCloudformationTemplate(unittest.TestCase):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example6.yml")
 
         self.assertEqual(cloudformation.queues, self.queues)
+
+    def test_list_buckets(self):
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example7.yml")
+
+        self.assertEqual(cloudformation.buckets, self.buckets)
 
     def test_list_environment(self):
         scenarios = {
