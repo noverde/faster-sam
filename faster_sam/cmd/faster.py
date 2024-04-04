@@ -1,27 +1,14 @@
 import argparse
 import json
+import yaml
 from typing import Any
 
 from faster_sam.cloudformation import CloudformationTemplate
 
 
-def dict_to_text(value: dict) -> str:
-    output = []
-
-    for key, val in value.items():
-        if isinstance(val, dict):
-            formatted_val = f"\n    {dict_to_text(val)}"
-        else:
-            formatted_val = str(val)
-
-        output.append(f"{key}: {formatted_val}")
-
-    return "\n".join(output)
-
-
 def output(value: Any, format: str = "text") -> Any:
     if format == "text":
-        return dict_to_text(value)
+        return yaml.dump(value, sort_keys=False)
 
     if format == "json":
         return json.dumps(value)
