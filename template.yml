@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Imports API
+
+Parameters:
+  Environment:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: NoverdeEnvironment
+  PrivateSubnets:
+    Type: AWS::SSM::Parameter::Value<List<String>>
+    Default: PrivateSubnets
+  PrivateSecurityGroups:
+    Type: AWS::SSM::Parameter::Value<List<String>>
+    Default: PrivateSecurityGroups
+  PublicIPAddresses:
+    Type: AWS::SSM::Parameter::Value<List<String>>
+    Default: PublicIPAddresses
+  ElasticAPMSecretToken:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: ElasticAPMSecretToken
+
+Mappings:
+  Environments:
+    development:
+      LogLevel: DEBUG
+      NoverdeApiUrl: "https://api.dev.noverde.com.br"
+      ImportsUrl: imports.api.dev.noverde.net
+      HostedZone: Z08633272A906ELTJHYC8
+      APMEnv: dev
+      ElasticAPMUrl: http://elastic.dev.noverde.net:8200
+    staging:
+      LogLevel: DEBUG
+      NoverdeApiUrl: "https://api.stg.noverde.com.br"
+      ImportsUrl: imports.api.stg.noverde.net
+      HostedZone: Z0836346WCBF1SQZ80JB
+      APMEnv: uat
+      ElasticAPMUrl: http://elastic.stg.noverde.net:8200
+    production:
+      LogLevel: ERROR
+      NoverdeApiUrl: "https://api.noverde.com.br"
+      ImportsUrl: imports.api.noverde.net
+      HostedZone: Z090600735Y233SCF3D4V
+      APMEnv: production
+      ElasticAPMUrl: http://elastic.noverde.net:8200
+
+Globals:
+  Function:
+    Runtime: python3.8
+    Timeout: 30
+    MemorySize: 256
+    Layers:
+      - arn:aws:lambda:us-east-1:267093732750:layer:elastic-apm-extension-ver-1-3-0-x86_64:1
+      - Ref: PlatformImportsDepLayer
+    VpcConfig:
+      SecurityGroupIds:
+        Ref: PrivateSecurityGroups
+      SubnetIds:
+        Ref: PrivateSubnets
+    Environment:
+      Variables:
+        ENVIRONMENT:
+          Ref: Environment
+        LOG_LEVEL:
+          Fn::FindInMap:
+            - Environments
+            - Ref: Environment
+            - LogLevel
+        NOVERDE_API_URL:
+          Fn::FindInMap:
+            - Environments
+            - Ref: Environment
+            - NoverdeApiUrl
+        DATABASE_URL: "parameters:///platform-imports/database_url"
+        IMPORTS_BUCKET: !Sub "platform-imports-bucket-${AWS::AccountId}"
+        ELASTIC_APM_SERVICE_NAME: platform-imports
+        ELASTIC_APM_SEND_STRATEGY: background
+        ELASTIC_APM_SERVER_TIMEOUT: 1s
+        ELASTIC_APM_SECRET_TOKEN:
+          Ref: ElasticAPMSecretToken
+        ELASTIC_APM_LAMBDA_APM_SERVER:
+          Fn::FindInMap:
+            - Environments
+            - Ref: Environment
+            - ElasticAPMUrl
+        ELASTIC_APM_ENVIRONMENT:
+          Fn::FindInMap:
+            - Environments
+            - Ref: Environment
+            - APMEnv
+
+Resources:
+  ImportFileInitialProcess:
+    Type: AWS::Serverless::s3
+    Properties:
+      FunctionName: platform-imports-import-file-initial-process
+      CodeUri: src
+      Handler: handlers.handler
+      Policies:
+        - Fn::Sub: arn:aws:iam::${AWS::AccountId}:policy/NoverdeBaseLambdaPolicy
+        - Fn::Sub: arn:aws:iam::${AWS::AccountId}:policy/NoverdeS3ManipulatePolicy
+      Events:
+        S3Event:
+            Type: S3
+            Properties:
+              Bucket: !Ref PlatformImportsBucket
+              Events: s3:ObjectCreated:*
+              Filter:
+                S3Key:
+                  Rules:
+                    - Name: suffix
+                      Value: ".csv"
+  
+  TestBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: "test-bucket"

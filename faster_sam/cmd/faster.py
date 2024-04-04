@@ -21,7 +21,7 @@ def resources(args) -> None:
         "s3": cf.buckets,
     }
 
-    if args.list:
+    if "list" in args:
         if args.type is None:
             result = output(cf.template["Resources"], args.output)
         else:
@@ -30,10 +30,17 @@ def resources(args) -> None:
         print(result)
 
 
+def dispatch(args) -> None:
+    mapper = {"resources": resources}
+
+    mapper[args.subcommand](args)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Faster SAM CLI tool.")
+
     subparsers = parser.add_subparsers(
-        title="subcommand", dest="subcommand", help="Subcommand to execute."
+        title="subcommand", dest="subcommand", help="Subcommand to execute.", required=True
     )
 
     resources_parser = subparsers.add_parser("resources", help="Perform operations on resources.")
@@ -57,7 +64,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    resources(args)
+    dispatch(args)
 
 
 if __name__ == "__main__":
