@@ -1,71 +1,63 @@
 import argparse
 import json
+from enum import Enum
+
 import yaml
-from typing import Any
 
 from faster_sam.cloudformation import CloudformationTemplate
 
 
-def output(value: Any, format: str = "text") -> Any:
-    if format == "text":
-        return yaml.dump(value, sort_keys=False)
-
-    if format == "json":
-        return json.dumps(value)
+class OutputFormat(Enum):
+    JSON = "json"
+    TEXT = "text"
 
 
-def resources(args) -> None:
-    cf = CloudformationTemplate()
-
-    resources = {
-        "s3": cf.buckets,
-    }
-
-    if "list" in args:
-        if args.type is None:
-            result = output(cf.template["Resources"], args.output)
-        else:
-            result = output(resources[args.type], args.output)
-
-        print(result)
+formatters = {
+    OutputFormat.JSON: json.dumps,
+    OutputFormat.TEXT: lambda v: yaml.dump(v, sort_keys=False),
+}
 
 
-def dispatch(args) -> None:
-    mapper = {"resources": resources}
+def resource_list(args: argparse.Namespace) -> None:
+    cf = CloudformationTemplate(args.file)
+    resources = cf.template["Resources"]
 
-    mapper[args.subcommand](args)
+    if args.type is not None:
+        resources = getattr(cf, args.type)
+
+    if resources:
+        formatter = formatters[OutputFormat(args.output)]
+        print(formatter(resources))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Faster SAM CLI tool.")
+    subparser = parser.add_subparsers(title="Subcommands", required=True)
 
-    subparsers = parser.add_subparsers(
-        title="subcommand", dest="subcommand", help="Subcommand to execute.", required=True
+    rsc_parser = subparser.add_parser("resources", help="resource commands.")
+    rsc_subparser = rsc_parser.add_subparsers(required=True)
+
+    rsc_list_parser = rsc_subparser.add_parser("list", help="list resources.")
+    rsc_list_parser.set_defaults(func=resource_list)
+    rsc_list_parser.add_argument(
+        "-f",
+        "--file",
+        default="template.yml",
+        help="path to the CloudFormation template file. default: %(default)s.",
     )
-
-    resources_parser = subparsers.add_parser("resources", help="Perform operations on resources.")
-
-    resources_parser.add_argument("list", help="List resources.", choices=["list"], type=str)
-    resources_parser.add_argument(
+    rsc_list_parser.add_argument(
         "-t",
         "--type",
-        help="Specify the type of resource. Accepted values: 's3'.",
-        choices=["s3"],
-        type=str,
+        choices=["buckets", "functions", "gateways", "queues"],
+        help="filter by resource type. accepted values: %(choices)s.",
     )
-    resources_parser.add_argument(
+    rsc_list_parser.add_argument(
         "-o",
         "--output",
-        help="Specify the output format. Accepted values: 'text', 'json'. Default: 'text'.",
-        default="text",
-        choices=["text", "json"],
-        type=str,
+        choices=[e.value for e in OutputFormat],
+        default=OutputFormat.TEXT.value,
+        help="output format. accepted values: %(choices)s. default: %(default)s.",
     )
 
     args = parser.parse_args()
-
-    dispatch(args)
-
-
-if __name__ == "__main__":
-    main()
+    args.func(args)
