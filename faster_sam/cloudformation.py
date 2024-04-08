@@ -213,6 +213,23 @@ class CloudformationTemplate:
         return self._buckets
 
     @property
+    def s3_events(self) -> Dict[str, Any]:
+        """
+        Dict[str, Any]:
+            Dictionary containing Lambda functions resources with s3 events in
+            the CloudFormation template.
+        """
+
+        if not hasattr(self, "_s3_events"):
+            self._s3_events = {}
+
+            for key, value in self.functions.items():
+                if value["Properties"].get("Events", {}).get("S3Event", {}):
+                    self._s3_events[key] = value
+
+        return self._s3_events
+
+    @property
     def environment(self) -> Dict[str, Any]:
         """
         Dict[str, Any]:

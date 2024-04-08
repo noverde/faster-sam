@@ -197,6 +197,34 @@ class TestCloudformationTemplate(unittest.TestCase):
 
         self.assertEqual(cloudformation.buckets, buckets)
 
+    def test_s3_events(self):
+        s3_events = {
+            "EventS3": {
+                "Type": "AWS::Serverless::Function",
+                "Properties": {
+                    "FunctionName": "function",
+                    "CodeUri": "tests/",
+                    "Handler": "fixtures.handlers.lambda_handler.handler",
+                    "Events": {
+                        "S3Event": {
+                            "Type": "S3",
+                            "Properties": {
+                                "Bucket": "Buckets",
+                                "Events": "s3:ObjectCreated:*",
+                                "Filter": {
+                                    "S3Key": {"Rules": [{"Name": "suffix", "Value": ".csv"}]}
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        }
+
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example7.yml")
+
+        self.assertEqual(cloudformation.s3_events, s3_events)
+
     def test_list_environment(self):
         scenarios = {
             "tests/fixtures/templates/example1.yml": {},

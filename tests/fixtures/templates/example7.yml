@@ -25,3 +25,21 @@ Resources:
     DeletionPolicy: Retain
     Properties:
       BucketName: "test-bucket"
+
+  EventS3:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: function
+      CodeUri: tests/
+      Handler: fixtures.handlers.lambda_handler.handler
+      Events:
+        S3Event:
+            Type: S3
+            Properties:
+              Bucket: Buckets
+              Events: s3:ObjectCreated:*
+              Filter:
+                S3Key:
+                  Rules:
+                    - Name: suffix
+                      Value: ".csv"
