@@ -1,8 +1,8 @@
 import base64
-from enum import Enum
 import logging
+from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
@@ -36,33 +36,45 @@ class CFLoader(yaml.SafeLoader):
     pass
 
 
-class NodeType(Enum):
+class ResourceType(Enum):
     """
-    Enum representing different types of CloudFormation nodes.
+    Enum representing different types of AWS resources.
 
     Attributes
     ----------
-    API_GATEWAY : str
+    API : str
         Represents the "AWS::Serverless::Api" node type.
-    LAMBDA : str
+    FUNCTION : str
         Represents the "AWS::Serverless::Function" node type.
     QUEUE : str
         Represents the "AWS::SQS::Queue" node type.
     BUCKET : str
         Represents the "AWS::S3::Bucket" node type.
-    API_EVENT : str
+    """
+
+    API = "AWS::Serverless::Api"
+    FUNCTION = "AWS::Serverless::Function"
+    QUEUE = "AWS::SQS::Queue"
+    BUCKET = "AWS::S3::Bucket"
+
+
+class EventType(Enum):
+    """
+    Enum representing different types of AWS resource events.
+
+    Attributes
+    ----------
+    API : str
         Represents the "Api" node type.
-    SCHEDULER_EVENT : str
+    SQS : str
+        Represents the "SQS" node type.
+    SCHEDULER : str
         Represents the "Schedule" node type.
     """
 
-    API_GATEWAY = "AWS::Serverless::Api"
-    LAMBDA = "AWS::Serverless::Function"
-    QUEUE = "AWS::SQS::Queue"
-    BUCKET = "AWS::S3::Bucket"
-    API_EVENT = "Api"
-    SQS_EVENT = "SQS"
-    SCHEDULER_EVENT = "Schedule"
+    API = "Api"
+    SQS = "SQS"
+    SCHEDULER = "Schedule"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -158,7 +170,9 @@ class CloudformationTemplate:
     """
 
     def __init__(
-        self, template_path: Optional[str] = None, parameters: Optional[Dict[str, str]] = None
+        self,
+        template_path: Optional[str] = None,
+        parameters: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Initializes the CloudFormationTemplate object.
@@ -176,7 +190,7 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_functions"):
-            self._functions = self.find_nodes(self.template["Resources"], NodeType.LAMBDA)
+            self._functions = self.find_nodes(self.template["Resources"], ResourceType.FUNCTION)
         return self._functions
 
     @property
@@ -187,7 +201,7 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_gateways"):
-            self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
+            self._gateways = self.find_nodes(self.template["Resources"], ResourceType.API)
         return self._gateways
 
     @property
@@ -198,7 +212,7 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_queues"):
-            self._queues = self.find_nodes(self.template["Resources"], NodeType.QUEUE)
+            self._queues = self.find_nodes(self.template["Resources"], ResourceType.QUEUE)
         return self._queues
 
     @property
@@ -209,7 +223,7 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_buckets"):
-            self._buckets = self.find_nodes(self.template["Resources"], NodeType.BUCKET)
+            self._buckets = self.find_nodes(self.template["Resources"], ResourceType.BUCKET)
         return self._buckets
 
     @property
@@ -297,7 +311,9 @@ class CloudformationTemplate:
         with path.open() as fp:
             return yaml.load(fp, CFLoader)
 
-    def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> Dict[str, Any]:
+    def find_nodes(
+        self, tree: Dict[str, Any], node_type: Union[ResourceType, EventType]
+    ) -> Dict[str, Any]:
         """
         Finds nodes of a specific type in the CloudFormation template.
 
