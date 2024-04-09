@@ -159,7 +159,8 @@ class TestCloudformationTemplate(unittest.TestCase):
         )
 
         self.assertEqual(
-            cloudformation.template["Parameters"]["Environment"]["Default"], "development"
+            cloudformation.template["Parameters"]["Environment"]["Default"],
+            "development",
         )
 
     def test_load_raises_exception(self):
@@ -224,7 +225,7 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_find_nodes(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
         tree = cloudformation.template
-        nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
+        nodes = cloudformation.find_nodes(tree["Resources"], cf.ResourceType.FUNCTION)
 
         self.assertEqual(nodes, self.functions)
 
