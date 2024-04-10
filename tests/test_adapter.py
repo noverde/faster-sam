@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from fastapi import FastAPI
@@ -24,6 +25,15 @@ class TestSAM(unittest.TestCase):
 
                 self.assertIsInstance(sam, SAM)
                 self.assertIsInstance(sam.template, CloudformationTemplate)
+
+    def test_environment_initialization(self):
+        SAM(
+            "tests/fixtures/templates/example2.yml",
+            parameters={"Environment": "development"},
+        )
+
+        self.assertEqual(os.environ.get("ENVIRONMENT"), "development")
+        self.assertEqual(os.environ.get("LOG_LEVEL"), "DEBUG")
 
     def test_configure_api(self):
         gateways = (None, None, "ApiGateway", "ApiGatewayTwo", None)
@@ -58,6 +68,15 @@ class TestSAM(unittest.TestCase):
         self.assertEqual(len(app.routes), 4)
 
         sam.configure_queues(app)
+        self.assertEqual(len(app.routes), 5)
+
+    def test_configure_schedule(self):
+        app = FastAPI()
+        sam = SAM("tests/fixtures/templates/example7.yml")
+
+        self.assertEqual(len(app.routes), 4)
+
+        sam.configure_schedule(app)
         self.assertEqual(len(app.routes), 5)
 
     def test_configure_api_raises_gateway_lookup_error(self):

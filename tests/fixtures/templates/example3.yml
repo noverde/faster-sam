@@ -23,15 +23,6 @@ Globals:
   Function:
     Runtime: python3.11
     Timeout: 3
-    Environment:
-      Variables:
-        ENVIRONMENT:
-          Ref: Environment
-        LOG_LEVEL:
-          Fn::FindInMap:
-            - Environments
-            - Ref: Environment
-            - LogLevel
 
 Resources:
   ApiGateway:
@@ -63,3 +54,12 @@ Resources:
     Properties:
       CodeUri: tests/
       Handler: fixtures.handlers.lambda_handler.handler
+      Environment:
+        Variables:
+          ENVIRONMENT:
+            Ref: Environment
+          LOG_LEVEL:
+            Fn::FindInMap:
+              - Environments
+              - Ref: Environment
+              - LogLevel

@@ -1,12 +1,14 @@
 import base64
 import hashlib
 import json
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict
 from uuid import uuid4
+from fastapi import BackgroundTasks, Request, Response
 
-from fastapi import Request, Response
+logger = logging.getLogger(__name__)
 
 KILO_SECONDS = 1000.0
 
@@ -33,6 +35,7 @@ class CustomResponse(Response):
             status_code=data["statusCode"],
             headers=data.get("headers"),
             media_type=data.get("headers", {}).get("Content-Type"),
+            background=data.get("background_tasks"),
         )
 
 
@@ -113,7 +116,8 @@ class SQS(ResourceInterface):
         event = await self.event_builder()
         try:
             result = self.endpoint(event, None)
-        except Exception:
+        except Exception as error:
+            logger.exception(error)
             return CustomResponse({"body": "Error processing message", "statusCode": 500})
 
         if isinstance(result, dict) and "batchItemFailures" in result:
@@ -161,6 +165,74 @@ class SQS(ResourceInterface):
                 },
             ]
         }
+        return event
+
+
+class Schedule(ResourceInterface):
+    def __init__(self, request: Request, endpoint: Handler):
+        """
+        Initializes the Schedule.
+
+        Parameters
+        ----------
+        request : Request
+            A request object.
+        endpoint : Handler
+            A callable object.
+        """
+        super().__init__(request, endpoint)
+
+    async def call_endpoint(self) -> Response:
+        """
+        Call event buider and retuns a custom response based
+        on the mapped event.
+
+        Returns
+        -------
+        Response
+            A response object.
+        """
+        event = await self.event_builder()
+
+        tasks = BackgroundTasks()
+
+        tasks.add_task(self.endpoint, event, None)
+
+        return CustomResponse(
+            {
+                "body": json.dumps({"message": "send for processing"}),
+                "statusCode": 202,
+                "background_tasks": tasks,
+            }
+        )
+
+    async def event_builder(self):
+        """
+        Builds an event of type schedule
+
+        It uses the given request object to fill the event details.
+
+        Returns
+        -------
+        Dict[str, Any]
+            An schedule event.
+        """
+
+        bytes_body = await self.request.body()
+        json_body = bytes_body.decode()
+        body = json.loads(json_body)
+        event = {
+            "version": "0",
+            "id": str(uuid4()),
+            "detail-type": "Scheduled Event",
+            "source": "aws.events",
+            "account": "",
+            "time": datetime.now(timezone.utc).strftime(r"%d/%b/%Y:%H:%M:%S %z"),
+            "region": "us-east-1",
+            "resources": [""],
+            "detail": body,
+        }
+
         return event
 
 
