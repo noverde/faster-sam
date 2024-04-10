@@ -324,3 +324,23 @@ class TestFunction(unittest.TestCase):
         for event in instance.filtered_events(cf.EventType.API).values():
             with self.subTest(event=event):
                 self.assertEqual(event.type, cf.EventType.API)
+
+
+class TestApiEvent(unittest.TestCase):
+    def test_api_event(self):
+        resource_id = "TestApi"
+        resource = {
+            "Type": "Api",
+            "Properties": {
+                "RestApiId": {"Ref": "ApiGateway"},
+                "Path": "/test",
+                "Method": "get",
+            },
+        }
+
+        instance = cf.ApiEvent(resource_id, resource)
+
+        self.assertEqual(instance.rest_api_id, "ApiGateway")
+        self.assertEqual(instance.path, "/test")
+        self.assertEqual(instance.method, "get")
+        self.assertEqual(instance.type, cf.EventType.API)
