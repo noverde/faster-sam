@@ -324,3 +324,28 @@ class TestFunction(unittest.TestCase):
         for event in instance.filtered_events(cf.EventType.API).values():
             with self.subTest(event=event):
                 self.assertEqual(event.type, cf.EventType.API)
+
+
+class TestGateway(unittest.TestCase):
+    def test_gateway(self):
+        resource_id = "ApiGateway"
+        resource = {
+            "Type": "AWS::Serverless::Api",
+            "Properties": {
+                "Name": "api",
+                "StageName": "v1",
+                "DefinitionBody": {
+                    "Fn::Transform": {
+                        "Name": "AWS::Include",
+                        "Parameters": {
+                            "Location": "./swagger.yml",
+                        },
+                    },
+                },
+            },
+        }
+
+        instance = cf.Gateway(resource_id, resource)
+
+        self.assertEqual(instance.name, "api")
+        self.assertEqual(instance.stage, "v1")

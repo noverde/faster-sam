@@ -235,6 +235,16 @@ class Function(Resource):
         return events
 
 
+class Gateway(Resource):
+    @property
+    def name(self) -> str:
+        return self.resource["Properties"]["Name"]
+
+    @property
+    def stage(self) -> str:
+        return self.resource["Properties"]["StageName"]
+
+
 class CloudformationTemplate:
     """
     Represents an AWS CloudFormation template and provides methods for
