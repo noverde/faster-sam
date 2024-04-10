@@ -349,3 +349,23 @@ class TestGateway(unittest.TestCase):
 
         self.assertEqual(instance.name, "api")
         self.assertEqual(instance.stage, "v1")
+
+
+class TestApiEvent(unittest.TestCase):
+    def test_api_event(self):
+        resource_id = "TestApi"
+        resource = {
+            "Type": "Api",
+            "Properties": {
+                "RestApiId": {"Ref": "ApiGateway"},
+                "Path": "/test",
+                "Method": "get",
+            },
+        }
+
+        instance = cf.ApiEvent(resource_id, resource)
+
+        self.assertEqual(instance.rest_api_id, "ApiGateway")
+        self.assertEqual(instance.path, "/test")
+        self.assertEqual(instance.method, "get")
+        self.assertEqual(instance.type, cf.EventType.API)

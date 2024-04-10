@@ -164,7 +164,29 @@ class EventSource(Resource):
 
     @classmethod
     def from_resource(cls, resource_id: str, resource: Dict[str, Any]) -> "EventSource":
+        if resource["Type"] == EventType.API.value:
+            return ApiEvent(resource_id, resource)
+
         return cls(resource_id, resource)
+
+
+class ApiEvent(EventSource):
+    @property
+    def path(self):
+        return self.resource["Properties"]["Path"]
+
+    @property
+    def method(self):
+        return self.resource["Properties"]["Method"]
+
+    @property
+    def rest_api_id(self):
+        resource_id = self.resource["Properties"]["RestApiId"]
+
+        if isinstance(resource_id, dict):
+            resource_id = resource_id["Ref"]
+
+        return resource_id
 
 
 class Function(Resource):
@@ -285,6 +307,7 @@ class CloudformationTemplate:
 
         if not hasattr(self, "_functions"):
             self._functions = self.find_nodes(self.template["Resources"], ResourceType.FUNCTION)
+
         return self._functions
 
     @property
@@ -329,6 +352,7 @@ class CloudformationTemplate:
 
         if not hasattr(self, "_environment"):
             self._environment = self.find_environment()
+
         return self._environment
 
     def include_files(self):
@@ -471,10 +495,12 @@ class CloudformationTemplate:
         Returns a string representing the full module path for a Lambda Function handler.
         The path is built by joining the code URI and the handler attributes on
         the CloudFormation for the given Lambda Function identified by resource_id.
+
         Parameters
         ----------
         resource_id : str
             The id of the Lambda function resource.
+
         Returns
         -------
         str
