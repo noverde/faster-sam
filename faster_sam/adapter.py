@@ -1,11 +1,12 @@
+import os
 import re
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 
-from faster_sam.cloudformation import CloudformationTemplate, NodeType
+from faster_sam.cloudformation import CloudformationTemplate, EventType
 from faster_sam.openapi import custom_openapi
-from faster_sam.routing import APIRoute, QueueRoute
+from faster_sam.routing import APIRoute, QueueRoute, ScheduleRoute
 
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
@@ -33,14 +34,28 @@ class SAM:
     ----------
     template : CloudformationTemplate
         Instance of CloudformationTemplate based on the provided template_path.
+    parameters : Optional[Dict[str, str]]
+        Dictionary representing parameters name and default value for CloudFormation deployment.
     """
 
-    def __init__(self, template_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        template_path: Optional[str] = None,
+        parameters: Optional[Dict[str, str]] = None,
+    ) -> None:
         """
         Initializes the SAM object.
         """
+        self.template = CloudformationTemplate(template_path, parameters)
+        self.load_environment()
 
-        self.template = CloudformationTemplate(template_path)
+    def load_environment(self) -> None:
+        """
+        Loads environment variables from CloudFormationTemplate.
+        """
+        for key, value in self.template.environment.items():
+            if key not in os.environ:
+                os.environ[key] = value
 
     def configure_api(self, app: FastAPI, gateway_id: Optional[str] = None) -> None:
         """
@@ -105,6 +120,23 @@ class SAM:
         routes = self.lambda_queue_mapper()
 
         self.register_routes(app, routes, QueueRoute)
+
+    def configure_schedule(
+        self,
+        app: FastAPI,
+    ) -> None:
+        """
+        Configures the FastAPI application with routes based on schedule defined
+        in cloudformation template.
+
+        Parameters
+        ----------
+        app : FastAPI
+            The FastAPI application instance to be configured.
+        """
+        routes = self.lambda_schedule_mapper()
+
+        self.register_routes(app, routes, ScheduleRoute)
 
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -182,7 +214,7 @@ class SAM:
             if "Events" not in function["Properties"]:
                 continue
 
-            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.SQS_EVENT)
+            events = self.template.find_nodes(function["Properties"]["Events"], EventType.SQS)
 
             for event in events.values():
                 handler_path = self.template.lambda_handler(resource_id)
@@ -198,6 +230,38 @@ class SAM:
                 endpoint = {"POST": {"handler": handler_path}}
 
                 routes.setdefault(path, {}).update(endpoint)
+
+        return routes
+
+    def lambda_schedule_mapper(self) -> Dict[str, Any]:
+        """
+        Generate a route map extracted from the lambda functions that is a schedule consumer
+        using the name of the function name as path.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing the routes.
+        """
+
+        routes: Dict[str, Any] = {}
+
+        for resource_id, function in self.template.functions.items():
+            if "Events" not in function["Properties"]:
+                continue
+
+            events = self.template.find_nodes(function["Properties"]["Events"], EventType.SCHEDULER)
+
+            if not events:
+                continue
+
+            function_name = function["Properties"]["FunctionName"].replace("_", "-")
+            handler_path = self.template.lambda_handler(resource_id)
+
+            path = f"/{function_name}"
+            endpoint = {"POST": {"handler": handler_path}}
+
+            routes.setdefault(path, {}).update(endpoint)
 
         return routes
 
@@ -224,7 +288,7 @@ class SAM:
                 continue
 
             handler_path = self.template.lambda_handler(resource_id)
-            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API_EVENT)
+            events = self.template.find_nodes(function["Properties"]["Events"], EventType.API)
 
             for event in events.values():
                 rest_api_id = event["Properties"].get("RestApiId", {"Ref": None})["Ref"]

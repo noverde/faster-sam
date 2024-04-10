@@ -69,6 +69,27 @@ def build_request_sqs():
     return Request(scope, receive)
 
 
+def build_request_schedule():
+
+    async def receive():
+        body = {}
+        return {"type": "http.request", "body": json.dumps(body).encode()}
+
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "root_path": "",
+        "path": "/test",
+        "method": "GET",
+        "query_string": [],
+        "path_params": {},
+        "client": ("127.0.0.1", 80),
+        "app": FastAPI(),
+    }
+
+    return Request(scope, receive)
+
+
 class TestCustomResponse(unittest.TestCase):
     def setUp(self):
         self.data = {
@@ -146,3 +167,29 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event["Records"][0].keys()), expected_key)
+
+    async def test_event_builder_schedule(self):
+        request = build_request_schedule()
+        expected_keys = {
+            "version",
+            "id",
+            "detail-type",
+            "source",
+            "account",
+            "time",
+            "region",
+            "resources",
+            "detail",
+        }
+
+        module_name = "tests.fixtures.handlers.lambda_handler"
+        handler_name = "handler"
+        handler_path = f"{module_name}.{handler_name}"
+        handler = faster_sam.routing.import_handler(handler_path)
+
+        schedule = faster_sam.lambda_event.Schedule(request, handler)
+
+        event = await schedule.event_builder()
+
+        self.assertIsInstance(event, dict)
+        self.assertEqual(set(event.keys()), expected_keys)

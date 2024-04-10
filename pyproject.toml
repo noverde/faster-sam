@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "faster-sam"
-version = "0.7.1"
+version = "0.11.0"
 description = "An adapter to enable running APIs built with AWS SAM applications using FastAPI."
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
@@ -24,3 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 auth = ["boto3", "requests"]
 redis = ["redis"]
+migrate = ["yoyo-migrations", "setuptools"]
+
+[project.scripts]
+faster = "faster_sam.cmd.faster:main"

@@ -1,10 +1,13 @@
 import json
 from http import HTTPStatus
+import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.types import ASGIApp, Message
+from starlette.types import ASGIApp
+
+logger = logging.getLogger(__name__)
 
 
 class RewritePathMiddleware(BaseHTTPMiddleware):
@@ -22,22 +25,6 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
         Initializes the RewritePathMiddleware.
         """
         super().__init__(app, self.dispatch)
-
-    async def set_body(self, request: Request):
-        """
-        Sets the body of the request.
-
-        Parameters
-        ----------
-        request : Request
-            The request object containing the body content.
-        """
-        receive_ = await request._receive()
-
-        async def receive() -> Message:
-            return receive_
-
-        request._receive = receive
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
@@ -58,8 +45,6 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
         if request.method != "POST":
             return await call_next(request)
 
-        await self.set_body(request)
-
         body = await request.body()
 
         if not body:
@@ -68,6 +53,8 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
             return Response(content=json.dumps(content), status_code=status_code.value)
 
         body = json.loads(body)
+
+        logger.debug(f"Received body: {body}")
 
         queue = body["message"]["attributes"]["endpoint"]
 
