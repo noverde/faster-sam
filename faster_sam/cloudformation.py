@@ -257,6 +257,24 @@ class Function(Resource):
         return events
 
 
+class Queue(Resource):
+    @property
+    def name(self) -> str:
+        return self.resource["Properties"]["QueueName"]
+
+    @property
+    def visibility_timeout(self) -> int:
+        return self.resource["Properties"]["VisibilityTimeout"]
+
+    @property
+    def message_retention_period(self) -> int:
+        return self.resource["Properties"]["MessageRetentionPeriod"]
+
+    @property
+    def redrive_policy(self) -> Dict[str, Any]:
+        return self.resource["Properties"]["RedrivePolicy"]
+
+
 class CloudformationTemplate:
     """
     Represents an AWS CloudFormation template and provides methods for

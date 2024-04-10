@@ -344,3 +344,33 @@ class TestApiEvent(unittest.TestCase):
         self.assertEqual(instance.path, "/test")
         self.assertEqual(instance.method, "get")
         self.assertEqual(instance.type, cf.EventType.API)
+
+
+class TestQueue(unittest.TestCase):
+    def test_queue(self):
+        resource_id = "TestQueue"
+        resource = {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "QueueName": "test-queue",
+                "VisibilityTimeout": 120,
+                "MessageRetentionPeriod": 1209600,
+                "RedrivePolicy": {
+                    "deadLetterTargetArn": "arn:aws:sqs:us-west-2:012345678901:test-queue",
+                    "maxReceiveCount": 3,
+                },
+            },
+        }
+
+        instance = cf.Queue(resource_id, resource)
+
+        self.assertEqual(instance.name, "test-queue")
+        self.assertEqual(instance.visibility_timeout, 120)
+        self.assertEqual(instance.message_retention_period, 1209600)
+        self.assertEqual(
+            instance.redrive_policy,
+            {
+                "deadLetterTargetArn": "arn:aws:sqs:us-west-2:012345678901:test-queue",
+                "maxReceiveCount": 3,
+            },
+        )
