@@ -1,8 +1,8 @@
 import base64
-from enum import Enum
 import logging
+from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
@@ -36,33 +36,45 @@ class CFLoader(yaml.SafeLoader):
     pass
 
 
-class NodeType(Enum):
+class ResourceType(Enum):
     """
-    Enum representing different types of CloudFormation nodes.
+    Enum representing different types of AWS resources.
 
     Attributes
     ----------
-    API_GATEWAY : str
+    API : str
         Represents the "AWS::Serverless::Api" node type.
-    LAMBDA : str
+    FUNCTION : str
         Represents the "AWS::Serverless::Function" node type.
     QUEUE : str
         Represents the "AWS::SQS::Queue" node type.
     BUCKET : str
         Represents the "AWS::S3::Bucket" node type.
-    API_EVENT : str
+    """
+
+    API = "AWS::Serverless::Api"
+    FUNCTION = "AWS::Serverless::Function"
+    QUEUE = "AWS::SQS::Queue"
+    BUCKET = "AWS::S3::Bucket"
+
+
+class EventType(Enum):
+    """
+    Enum representing different types of AWS resource events.
+
+    Attributes
+    ----------
+    API : str
         Represents the "Api" node type.
-    SCHEDULER_EVENT : str
+    SQS : str
+        Represents the "SQS" node type.
+    SCHEDULER : str
         Represents the "Schedule" node type.
     """
 
-    API_GATEWAY = "AWS::Serverless::Api"
-    LAMBDA = "AWS::Serverless::Function"
-    QUEUE = "AWS::SQS::Queue"
-    BUCKET = "AWS::S3::Bucket"
-    API_EVENT = "Api"
-    SQS_EVENT = "SQS"
-    SCHEDULER_EVENT = "Schedule"
+    API = "Api"
+    SQS = "SQS"
+    SCHEDULER = "Schedule"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -139,6 +151,112 @@ def construct_getatt(node: yaml.nodes.Node) -> List[Any]:
 CFLoader.add_multi_constructor("!", multi_constructor)
 
 
+class Resource:
+    def __init__(self, resource_id: str, resource: Dict[str, Any]) -> None:
+        self.id = resource_id
+        self.resource = resource
+
+
+class EventSource(Resource):
+    @property
+    def type(self) -> EventType:
+        return EventType(self.resource["Type"])
+
+    @classmethod
+    def from_resource(cls, resource_id: str, resource: Dict[str, Any]) -> "EventSource":
+        if resource["Type"] == EventType.API.value:
+            return ApiEvent(resource_id, resource)
+
+        return cls(resource_id, resource)
+
+
+class ApiEvent(EventSource):
+    @property
+    def path(self):
+        return self.resource["Properties"]["Path"]
+
+    @property
+    def method(self):
+        return self.resource["Properties"]["Method"]
+
+    @property
+    def rest_api_id(self):
+        resource_id = self.resource["Properties"]["RestApiId"]
+
+        if isinstance(resource_id, dict):
+            resource_id = resource_id["Ref"]
+
+        return resource_id
+
+
+class Function(Resource):
+    @property
+    def name(self) -> str:
+        return self.resource["Properties"]["FunctionName"]
+
+    @property
+    def handler(self) -> str:
+        """
+        Returns a string representing the full module path for a Lambda Function handler.
+        The path is built by joining the code URI and the handler attributes on
+        the CloudFormation for the given Lambda Function identified by resource_id.
+
+        Returns
+        -------
+        str
+            The constructed Lambda handler path.
+        """
+
+        if not hasattr(self, "_handler"):
+            handler_path = self.resource["Properties"]["Handler"]
+            code_uri = self.resource["Properties"].get("CodeUri")
+
+            if code_uri:
+                handler_path = f"{code_uri}.{handler_path}".replace("/", "")
+
+            self._handler = handler_path
+
+        return self._handler
+
+    @property
+    def environment(self) -> Dict[str, Union[str, Dict[str, Any]]]:
+        """
+        Returns a dictionary containing the environment variables for the Lambda Function.
+
+        Returns
+        -------
+        Dict[str, str]
+            The environment variables for the Lambda Function.
+        """
+
+        if not hasattr(self, "_environment"):
+            self._environment = (
+                self.resource["Properties"].get("Environment", {}).get("Variables", {})
+            )
+
+        return self._environment
+
+    @property
+    def events(self) -> Dict[str, EventSource]:
+        if not hasattr(self, "_events"):
+            self._events = {}
+            events = self.resource["Properties"].get("Events", {})
+
+            for resource_id, resource in events.items():
+                self._events[resource_id] = EventSource.from_resource(resource_id, resource)
+
+        return self._events
+
+    def filtered_events(self, event_type: EventType) -> Dict[str, EventSource]:
+        events = {}
+
+        for id, event in self.events.items():
+            if event.type == event_type:
+                events[id] = event
+
+        return events
+
+
 class CloudformationTemplate:
     """
     Represents an AWS CloudFormation template and provides methods for
@@ -158,7 +276,9 @@ class CloudformationTemplate:
     """
 
     def __init__(
-        self, template_path: Optional[str] = None, parameters: Optional[Dict[str, str]] = None
+        self,
+        template_path: Optional[str] = None,
+        parameters: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Initializes the CloudFormationTemplate object.
@@ -176,7 +296,8 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_functions"):
-            self._functions = self.find_nodes(self.template["Resources"], NodeType.LAMBDA)
+            self._functions = self.find_nodes(self.template["Resources"], ResourceType.FUNCTION)
+
         return self._functions
 
     @property
@@ -187,7 +308,7 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_gateways"):
-            self._gateways = self.find_nodes(self.template["Resources"], NodeType.API_GATEWAY)
+            self._gateways = self.find_nodes(self.template["Resources"], ResourceType.API)
         return self._gateways
 
     @property
@@ -198,7 +319,7 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_queues"):
-            self._queues = self.find_nodes(self.template["Resources"], NodeType.QUEUE)
+            self._queues = self.find_nodes(self.template["Resources"], ResourceType.QUEUE)
         return self._queues
 
     @property
@@ -209,7 +330,7 @@ class CloudformationTemplate:
         """
 
         if not hasattr(self, "_buckets"):
-            self._buckets = self.find_nodes(self.template["Resources"], NodeType.BUCKET)
+            self._buckets = self.find_nodes(self.template["Resources"], ResourceType.BUCKET)
         return self._buckets
 
     @property
@@ -221,6 +342,7 @@ class CloudformationTemplate:
 
         if not hasattr(self, "_environment"):
             self._environment = self.find_environment()
+
         return self._environment
 
     def include_files(self):
@@ -297,7 +419,9 @@ class CloudformationTemplate:
         with path.open() as fp:
             return yaml.load(fp, CFLoader)
 
-    def find_nodes(self, tree: Dict[str, Any], node_type: NodeType) -> Dict[str, Any]:
+    def find_nodes(
+        self, tree: Dict[str, Any], node_type: Union[ResourceType, EventType]
+    ) -> Dict[str, Any]:
         """
         Finds nodes of a specific type in the CloudFormation template.
 
@@ -361,10 +485,12 @@ class CloudformationTemplate:
         Returns a string representing the full module path for a Lambda Function handler.
         The path is built by joining the code URI and the handler attributes on
         the CloudFormation for the given Lambda Function identified by resource_id.
+
         Parameters
         ----------
         resource_id : str
             The id of the Lambda function resource.
+
         Returns
         -------
         str

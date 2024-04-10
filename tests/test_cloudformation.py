@@ -159,7 +159,8 @@ class TestCloudformationTemplate(unittest.TestCase):
         )
 
         self.assertEqual(
-            cloudformation.template["Parameters"]["Environment"]["Default"], "development"
+            cloudformation.template["Parameters"]["Environment"]["Default"],
+            "development",
         )
 
     def test_load_raises_exception(self):
@@ -224,7 +225,7 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_find_nodes(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
         tree = cloudformation.template
-        nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
+        nodes = cloudformation.find_nodes(tree["Resources"], cf.ResourceType.FUNCTION)
 
         self.assertEqual(nodes, self.functions)
 
@@ -254,3 +255,92 @@ class TestCloudformationTemplate(unittest.TestCase):
             with self.subTest(**function["Properties"]):
                 handler_path = cloudformation.lambda_handler(key)
                 self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")
+
+
+class TestResource(unittest.TestCase):
+    def test_resource(self):
+        resource_id = "Test"
+        resource = {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {"FunctionName": "test"},
+        }
+
+        instance = cf.Resource(resource_id, resource)
+
+        self.assertEqual(instance.id, resource_id)
+        self.assertEqual(instance.resource, resource)
+
+
+class TestEventSource(unittest.TestCase):
+    def test_event_source(self):
+        resource_id = "TestApi"
+        resource = {
+            "Type": "Api",
+            "Properties": {"Path": "/test", "Method": "get"},
+        }
+
+        instance = cf.EventSource.from_resource(resource_id, resource)
+
+        self.assertEqual(instance.type, cf.EventType.API)
+
+
+class TestFunction(unittest.TestCase):
+    def setUp(self):
+        self.event_id = "TestApi"
+        self.event = {
+            "Type": "Api",
+            "Properties": {"Path": "/test", "Method": "get"},
+        }
+
+        self.resource_id = "TestFunction"
+        self.resource = {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {
+                "FunctionName": "test",
+                "CodeUri": "src/",
+                "Handler": "lambda_handler.handler",
+                "Environment": {"Variables": {"ENVIRONMENT": "development"}},
+                "Events": {
+                    self.event_id: self.event,
+                    "TestSQS": {
+                        "Type": "SQS",
+                        "Properties": {"Queue": "arn:aws:sqs:us-west-2:012345678901:test-queue"},
+                    },
+                },
+            },
+        }
+
+    def test_function(self):
+        instance = cf.Function(self.resource_id, self.resource)
+
+        self.assertEqual(instance.name, "test")
+        self.assertEqual(instance.handler, "src.lambda_handler.handler")
+        self.assertEqual(instance.environment, {"ENVIRONMENT": "development"})
+        self.assertEqual(instance.events[self.event_id].type, cf.EventType.API)
+
+    def test_filtered_events(self):
+        instance = cf.Function(self.resource_id, self.resource)
+
+        for event in instance.filtered_events(cf.EventType.API).values():
+            with self.subTest(event=event):
+                self.assertEqual(event.type, cf.EventType.API)
+
+
+class TestApiEvent(unittest.TestCase):
+    def test_api_event(self):
+        resource_id = "TestApi"
+        resource = {
+            "Type": "Api",
+            "Properties": {
+                "RestApiId": {"Ref": "ApiGateway"},
+                "Path": "/test",
+                "Method": "get",
+            },
+        }
+
+        instance = cf.ApiEvent(resource_id, resource)
+
+        self.assertEqual(instance.rest_api_id, "ApiGateway")
+        self.assertEqual(instance.path, "/test")
+        self.assertEqual(instance.method, "get")
+        self.assertEqual(instance.type, cf.EventType.API)
