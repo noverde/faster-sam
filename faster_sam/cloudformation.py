@@ -345,14 +345,18 @@ class CloudformationTemplate:
         self.set_parameters(parameters)
 
     @property
-    def functions(self) -> Dict[str, Any]:
+    def functions(self) -> Dict[str, Function]:
         """
-        Dict[str, Any]:
+        Dict[str, Function]:
             Dictionary containing Lambda function resources in the CloudFormation template.
         """
 
         if not hasattr(self, "_functions"):
-            self._functions = self.find_nodes(self.template["Resources"], ResourceType.FUNCTION)
+            self._functions = {}
+            nodes = self.find_nodes(self.template["Resources"], ResourceType.FUNCTION)
+
+            for resource_id, resource in nodes.items():
+                self._functions[resource_id] = Function(resource_id, resource)
 
         return self._functions
 
@@ -521,8 +525,7 @@ class CloudformationTemplate:
         )
 
         for function in self.functions.values():
-            if "Variables" in function.get("Properties", {}).get("Environment", {}):
-                variables.update(function["Properties"]["Environment"]["Variables"])
+            variables.update(function.environment)
 
         environment = {}
 
@@ -536,6 +539,7 @@ class CloudformationTemplate:
 
         return environment
 
+    # TODO: remove this method after refactoring the adapter module
     def lambda_handler(self, resource_id: str) -> str:
         """
         Returns a string representing the full module path for a Lambda Function handler.
@@ -553,13 +557,7 @@ class CloudformationTemplate:
             The constructed Lambda handler path.
         """
 
-        handler_path = self.functions[resource_id]["Properties"]["Handler"]
-        code_uri = self.functions[resource_id]["Properties"].get("CodeUri")
-
-        if code_uri:
-            handler_path = f"{code_uri}.{handler_path}".replace("/", "")
-
-        return handler_path
+        return self.functions[resource_id].handler
 
 
 class IntrinsicFunctions:
