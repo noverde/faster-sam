@@ -211,10 +211,12 @@ class SAM:
         routes: Dict[str, Any] = {}
 
         for resource_id, function in self.template.functions.items():
-            if "Events" not in function["Properties"]:
+            if "Events" not in function.resource["Properties"]:
                 continue
 
-            events = self.template.find_nodes(function["Properties"]["Events"], EventType.SQS)
+            events = self.template.find_nodes(
+                function.resource["Properties"]["Events"], EventType.SQS
+            )
 
             for event in events.values():
                 handler_path = self.template.lambda_handler(resource_id)
@@ -247,15 +249,17 @@ class SAM:
         routes: Dict[str, Any] = {}
 
         for resource_id, function in self.template.functions.items():
-            if "Events" not in function["Properties"]:
+            if "Events" not in function.resource["Properties"]:
                 continue
 
-            events = self.template.find_nodes(function["Properties"]["Events"], EventType.SCHEDULE)
+            events = self.template.find_nodes(
+                function.resource["Properties"]["Events"], EventType.SCHEDULE
+            )
 
             if not events:
                 continue
 
-            function_name = function["Properties"]["FunctionName"].replace("_", "-")
+            function_name = function.resource["Properties"]["FunctionName"].replace("_", "-")
             handler_path = self.template.lambda_handler(resource_id)
 
             path = f"/{function_name}"
@@ -284,11 +288,13 @@ class SAM:
         routes: Dict[str, Any] = {}
 
         for resource_id, function in self.template.functions.items():
-            if "Events" not in function["Properties"]:
+            if "Events" not in function.resource["Properties"]:
                 continue
 
             handler_path = self.template.lambda_handler(resource_id)
-            events = self.template.find_nodes(function["Properties"]["Events"], EventType.API)
+            events = self.template.find_nodes(
+                function.resource["Properties"]["Events"], EventType.API
+            )
 
             for event in events.values():
                 rest_api_id = event["Properties"].get("RestApiId", {"Ref": None})["Ref"]

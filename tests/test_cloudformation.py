@@ -173,7 +173,9 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_list_functions(self):
         cloudformation = CloudformationTemplate(self.template_1)
 
-        self.assertEqual(cloudformation.functions, self.functions)
+        for function in cloudformation.functions.values():
+            with self.subTest(function=function.resource):
+                self.assertEqual(function.resource, self.functions[function.id])
 
     def test_list_gateways(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example2.yml")
