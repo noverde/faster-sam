@@ -348,7 +348,7 @@ class TestApi(unittest.TestCase):
         instance = cf.Api(resource_id, resource)
 
         self.assertEqual(instance.name, "api")
-        self.assertEqual(instance.stage, "v1")
+        self.assertEqual(instance.stage_name, "v1")
 
 
 class TestApiEvent(unittest.TestCase):

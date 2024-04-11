@@ -260,7 +260,7 @@ class Function(Resource):
 class Api(Resource):
     @property
     def name(self) -> Optional[str]:
-        return self.resource["Properties"].get("Name")
+        return self.resource["Properties"]["Name"]
 
     @property
     def stage_name(self) -> str:
