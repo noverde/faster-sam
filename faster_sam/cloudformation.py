@@ -259,7 +259,7 @@ class Function(Resource):
 
 class Api(Resource):
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self.resource["Properties"]["Name"]
 
     @property
