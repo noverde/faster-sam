@@ -180,7 +180,9 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_list_gateways(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example2.yml")
 
-        self.assertEqual(cloudformation.gateways, self.gateways)
+        for api in cloudformation.apis.values():
+            with self.subTest(api=api.resource):
+                self.assertEqual(api.resource, self.gateways[api.id])
 
     def test_list_queues(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example6.yml")
