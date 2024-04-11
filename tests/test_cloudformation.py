@@ -374,3 +374,21 @@ class TestQueue(unittest.TestCase):
                 "maxReceiveCount": 3,
             },
         )
+
+
+class TestSQSEvent(unittest.TestCase):
+    def test_sqs_event(self):
+        resource_id = "TestSQS"
+        resource = {
+            "Type": "SQS",
+            "Properties": {
+                "Queue": "arn:aws:sqs:us-west-2::test-queue",
+                "BatchSize": 10,
+            },
+        }
+
+        instance = cf.SQSEvent(resource_id, resource)
+
+        self.assertEqual(instance.queue, "arn:aws:sqs:us-west-2::test-queue")
+        self.assertEqual(instance.batch_size, 10)
+        self.assertEqual(instance.type, cf.EventType.SQS)

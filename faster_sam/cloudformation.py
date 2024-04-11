@@ -189,6 +189,16 @@ class ApiEvent(EventSource):
         return resource_id
 
 
+class SQSEvent(EventSource):
+    @property
+    def queue(self) -> str:
+        return self.resource["Properties"]["Queue"]
+
+    @property
+    def batch_size(self) -> int:
+        return self.resource["Properties"]["BatchSize"]
+
+
 class Function(Resource):
     @property
     def name(self) -> str:
