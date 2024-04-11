@@ -199,6 +199,12 @@ class SQSEvent(EventSource):
         return self.resource["Properties"]["BatchSize"]
 
 
+class ScheduleEvent(EventSource):
+    @property
+    def schedule(self) -> str:
+        return self.resource["Properties"]["Schedule"]
+
+
 class Function(Resource):
     @property
     def name(self) -> str:
