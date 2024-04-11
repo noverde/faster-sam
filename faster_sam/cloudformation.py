@@ -295,6 +295,12 @@ class Queue(Resource):
         return self.resource["Properties"]["RedrivePolicy"]
 
 
+class Bucket(Resource):
+    @property
+    def name(self) -> str:
+        return self.resource["Properties"]["BucketName"]
+
+
 class CloudformationTemplate:
     """
     Represents an AWS CloudFormation template and provides methods for
