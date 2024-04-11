@@ -380,8 +380,10 @@ class CloudformationTemplate:
         if not hasattr(self, "_queues"):
             self._queues = {}
             nodes = self.find_nodes(self.template["Resources"], ResourceType.QUEUE)
+
             for resource_id, resource in nodes.items():
                 self._queues[resource_id] = Queue(resource_id, resource)
+
         return self._queues
 
     @property
