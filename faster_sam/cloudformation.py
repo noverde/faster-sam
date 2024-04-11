@@ -164,10 +164,16 @@ class EventSource(Resource):
 
     @classmethod
     def from_resource(cls, resource_id: str, resource: Dict[str, Any]) -> "EventSource":
-        if resource["Type"] == EventType.API.value:
-            return ApiEvent(resource_id, resource)
+        event_sources = {
+            EventType.API: ApiEvent,
+            EventType.SQS: SQSEvent,
+            EventType.SCHEDULE: ScheduleEvent,
+        }
 
-        return cls(resource_id, resource)
+        event_type = EventType(resource["Type"])
+        event_source = event_sources.get(event_type, cls)
+
+        return event_source(resource_id, resource)
 
 
 class ApiEvent(EventSource):
