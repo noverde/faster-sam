@@ -68,13 +68,13 @@ class EventType(Enum):
         Represents the "Api" node type.
     SQS : str
         Represents the "SQS" node type.
-    SCHEDULER : str
+    SCHEDULE : str
         Represents the "Schedule" node type.
     """
 
     API = "Api"
     SQS = "SQS"
-    SCHEDULER = "Schedule"
+    SCHEDULE = "Schedule"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
