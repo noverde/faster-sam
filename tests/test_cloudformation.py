@@ -185,7 +185,9 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_list_queues(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example6.yml")
 
-        self.assertEqual(cloudformation.queues, self.queues)
+        for queue in cloudformation.queues.values():
+            with self.subTest(queue=queue.resource):
+                self.assertEqual(queue.resource, self.queues[queue.id])
 
     def test_list_buckets(self):
         buckets = {
