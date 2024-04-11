@@ -226,7 +226,7 @@ class SAM:
                     resource_arn = resource_arn[0]
 
                 resource_name = resource_arn.replace(".Arn", "")
-                queue_name = self.template.queues[resource_name]["Properties"]["QueueName"]
+                queue_name = self.template.queues[resource_name].name
 
                 path = f"/{queue_name}"
                 endpoint = {"POST": {"handler": handler_path}}
