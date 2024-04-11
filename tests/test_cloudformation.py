@@ -326,6 +326,31 @@ class TestFunction(unittest.TestCase):
                 self.assertEqual(event.type, cf.EventType.API)
 
 
+class TestApi(unittest.TestCase):
+    def test_api(self):
+        resource_id = "ApiGateway"
+        resource = {
+            "Type": "AWS::Serverless::Api",
+            "Properties": {
+                "Name": "api",
+                "StageName": "v1",
+                "DefinitionBody": {
+                    "Fn::Transform": {
+                        "Name": "AWS::Include",
+                        "Parameters": {
+                            "Location": "./swagger.yml",
+                        },
+                    },
+                },
+            },
+        }
+
+        instance = cf.Api(resource_id, resource)
+
+        self.assertEqual(instance.name, "api")
+        self.assertEqual(instance.stage_name, "v1")
+
+
 class TestApiEvent(unittest.TestCase):
     def test_api_event(self):
         resource_id = "TestApi"

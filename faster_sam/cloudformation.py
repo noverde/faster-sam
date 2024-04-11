@@ -267,6 +267,16 @@ class Function(Resource):
         return events
 
 
+class Api(Resource):
+    @property
+    def name(self) -> str:
+        return self.resource["Properties"]["Name"]
+
+    @property
+    def stage_name(self) -> str:
+        return self.resource["Properties"]["StageName"]
+
+
 class Queue(Resource):
     @property
     def name(self) -> str:
