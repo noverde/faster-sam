@@ -388,9 +388,13 @@ class CloudformationTemplate:
         Dict[str, Any]:
             Dictionary containing buckets resources in the CloudFormation template.
         """
-
         if not hasattr(self, "_buckets"):
-            self._buckets = self.find_nodes(self.template["Resources"], ResourceType.BUCKET)
+            self._buckets = {}
+            nodes = self.find_nodes(self.template["Resources"], ResourceType.BUCKET)
+
+            for resource_id, resource in nodes.items():
+                self._buckets[resource_id] = Bucket(resource_id, resource)
+
         return self._buckets
 
     @property
