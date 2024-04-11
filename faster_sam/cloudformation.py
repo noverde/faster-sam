@@ -372,9 +372,9 @@ class CloudformationTemplate:
         return self._gateways
 
     @property
-    def queues(self) -> Dict[str, Any]:
+    def queues(self) -> Dict[str, Queue]:
         """
-        Dict[str, Any]:
+        Dict[str, Queue]:
             Dictionary containing SQS Queue resources in the CloudFormation template.
         """
         if not hasattr(self, "_queues"):
