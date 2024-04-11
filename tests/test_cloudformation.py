@@ -374,3 +374,19 @@ class TestQueue(unittest.TestCase):
                 "maxReceiveCount": 3,
             },
         )
+
+
+class TestBucket(unittest.TestCase):
+    def test_bucket(self):
+        resource_id = "TestBucket"
+        resource = {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+                "BucketName": "test-bucket",
+            },
+        }
+
+        instance = cf.Bucket(resource_id, resource)
+
+        self.assertEqual(instance.name, "test-bucket")
