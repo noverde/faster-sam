@@ -391,7 +391,7 @@ class TestBucket(unittest.TestCase):
 
         self.assertEqual(instance.name, "test-bucket")
 
-        
+
 class TestSQSEvent(unittest.TestCase):
     def test_sqs_event(self):
         resource_id = "TestSQS"
