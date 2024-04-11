@@ -326,8 +326,8 @@ class TestFunction(unittest.TestCase):
                 self.assertEqual(event.type, cf.EventType.API)
 
 
-class TestGateway(unittest.TestCase):
-    def test_gateway(self):
+class TestApi(unittest.TestCase):
+    def test_api(self):
         resource_id = "ApiGateway"
         resource = {
             "Type": "AWS::Serverless::Api",
@@ -345,7 +345,7 @@ class TestGateway(unittest.TestCase):
             },
         }
 
-        instance = cf.Gateway(resource_id, resource)
+        instance = cf.Api(resource_id, resource)
 
         self.assertEqual(instance.name, "api")
         self.assertEqual(instance.stage, "v1")

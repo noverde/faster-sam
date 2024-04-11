@@ -257,7 +257,7 @@ class Function(Resource):
         return events
 
 
-class Gateway(Resource):
+class Api(Resource):
     @property
     def name(self) -> str:
         return self.resource["Properties"]["Name"]
