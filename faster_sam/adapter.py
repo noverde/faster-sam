@@ -250,7 +250,7 @@ class SAM:
             if "Events" not in function["Properties"]:
                 continue
 
-            events = self.template.find_nodes(function["Properties"]["Events"], EventType.SCHEDULER)
+            events = self.template.find_nodes(function["Properties"]["Events"], EventType.SCHEDULE)
 
             if not events:
                 continue
