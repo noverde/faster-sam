@@ -361,15 +361,20 @@ class CloudformationTemplate:
         return self._functions
 
     @property
-    def gateways(self) -> Dict[str, Any]:
+    def apis(self) -> Dict[str, Api]:
         """
-        Dict[str, Any]:
+        Dict[str, Api]:
             Dictionary containing API Gateway resources in the CloudFormation template.
         """
 
-        if not hasattr(self, "_gateways"):
-            self._gateways = self.find_nodes(self.template["Resources"], ResourceType.API)
-        return self._gateways
+        if not hasattr(self, "_apis"):
+            self._apis = {}
+            nodes = self.find_nodes(self.template["Resources"], ResourceType.API)
+
+            for resource_id, resource in nodes.items():
+                self._apis[resource_id] = Api(resource_id, resource)
+
+        return self._apis
 
     @property
     def queues(self) -> Dict[str, Queue]:
@@ -418,16 +423,19 @@ class CloudformationTemplate:
         Load external files specified in the CloudFormation template like OpenAPI schema.
         """
 
-        for gateway in self.gateways.values():
-            if "DefinitionBody" not in gateway["Properties"]:
+        for api in self.apis.values():
+            # TODO: add definition body to the API object
+            if "DefinitionBody" not in api.resource["Properties"]:
                 continue
 
-            lc = gateway["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"]["Location"]
+            lc = api.resource["Properties"]["DefinitionBody"]["Fn::Transform"]["Parameters"][
+                "Location"
+            ]
 
             with open(lc) as fp:
                 swagger = yaml.safe_load(fp)
 
-            gateway["Properties"]["DefinitionBody"] = swagger
+            api.resource["Properties"]["DefinitionBody"] = swagger
 
     def set_parameters(self, parameters: Optional[Dict[str, str]]) -> None:
         """

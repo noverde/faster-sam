@@ -24,9 +24,7 @@ def resource_list(args: argparse.Namespace) -> None:
 
     if args.type is not None:
         resources = getattr(cf, args.type)
-
-        if args.type in ("functions", "buckets", "queues"):
-            resources = {key: value.resource for key, value in resources.items()}
+        resources = {key: value.resource for key, value in resources.items()}
 
     if resources:
         formatter = formatters[OutputFormat(args.output)]
@@ -51,7 +49,7 @@ def main() -> None:
     rsc_list_parser.add_argument(
         "-t",
         "--type",
-        choices=["buckets", "functions", "gateways", "queues"],
+        choices=["apis", "buckets", "functions", "queues"],
         help="filter by resource type. accepted values: %(choices)s.",
     )
     rsc_list_parser.add_argument(

@@ -81,9 +81,9 @@ class SAM:
         gateway: Dict[str, Any] = {"Properties": {}}
 
         if gateway_id is not None:
-            gateway = self.template.gateways[gateway_id]
+            gateway = self.template.apis[gateway_id].resource
         else:
-            gateway_ids = list(self.template.gateways.keys())
+            gateway_ids = list(self.template.apis.keys())
             gateway_len = len(gateway_ids)
 
             if gateway_len > 1:
@@ -92,8 +92,9 @@ class SAM:
 
             if gateway_len == 1:
                 gateway_id = gateway_ids[0]
-                gateway = self.template.gateways[gateway_id]
+                gateway = self.template.apis[gateway_id].resource
 
+        # TODO: change to use definition body attribute when available
         openapi_schema = gateway["Properties"].get("DefinitionBody")
 
         if openapi_schema is None:
