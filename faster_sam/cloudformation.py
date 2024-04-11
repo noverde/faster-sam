@@ -385,7 +385,7 @@ class CloudformationTemplate:
     @property
     def buckets(self) -> Dict[str, Bucket]:
         """
-        Dict[str, Any]:
+        Dict[str, Bucket]:
             Dictionary containing buckets resources in the CloudFormation template.
         """
         if not hasattr(self, "_buckets"):
