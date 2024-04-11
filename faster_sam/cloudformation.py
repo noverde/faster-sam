@@ -266,7 +266,7 @@ class Api(Resource):
     def stage(self) -> str:
         return self.resource["Properties"]["StageName"]
 
-      
+
 class Queue(Resource):
     @property
     def name(self) -> str:
