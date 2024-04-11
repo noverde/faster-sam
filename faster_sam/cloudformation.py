@@ -383,14 +383,18 @@ class CloudformationTemplate:
         return self._queues
 
     @property
-    def buckets(self) -> Dict[str, Any]:
+    def buckets(self) -> Dict[str, Bucket]:
         """
-        Dict[str, Any]:
+        Dict[str, Bucket]:
             Dictionary containing buckets resources in the CloudFormation template.
         """
-
         if not hasattr(self, "_buckets"):
-            self._buckets = self.find_nodes(self.template["Resources"], ResourceType.BUCKET)
+            self._buckets = {}
+            nodes = self.find_nodes(self.template["Resources"], ResourceType.BUCKET)
+
+            for resource_id, resource in nodes.items():
+                self._buckets[resource_id] = Bucket(resource_id, resource)
+
         return self._buckets
 
     @property
