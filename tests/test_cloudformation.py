@@ -433,3 +433,19 @@ class TestSQSEvent(unittest.TestCase):
         self.assertEqual(instance.queue, "arn:aws:sqs:us-west-2::test-queue")
         self.assertEqual(instance.batch_size, 10)
         self.assertEqual(instance.type, cf.EventType.SQS)
+
+
+class TestScheduleEvent(unittest.TestCase):
+    def test_schedule_event(self):
+        resource_id = "TestSchedule"
+        resource = {
+            "Type": "Schedule",
+            "Properties": {
+                "Schedule": "rate(1 minute)",
+            },
+        }
+
+        instance = cf.ScheduleEvent(resource_id, resource)
+
+        self.assertEqual(instance.schedule, "rate(1 minute)")
+        self.assertEqual(instance.type, cf.EventType.SCHEDULE)
