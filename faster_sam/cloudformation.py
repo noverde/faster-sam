@@ -383,7 +383,7 @@ class CloudformationTemplate:
         return self._queues
 
     @property
-    def buckets(self) -> Dict[str, Any]:
+    def buckets(self) -> Dict[str, Bucket]:
         """
         Dict[str, Any]:
             Dictionary containing buckets resources in the CloudFormation template.
