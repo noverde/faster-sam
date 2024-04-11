@@ -25,7 +25,7 @@ def resource_list(args: argparse.Namespace) -> None:
     if args.type is not None:
         resources = getattr(cf, args.type)
 
-        if args.type in ("functions", "queues"):
+        if args.type in ("functions", "buckets", "queues"):
             resources = {key: value.resource for key, value in resources.items()}
 
     if resources:

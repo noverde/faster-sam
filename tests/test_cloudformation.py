@@ -200,7 +200,9 @@ class TestCloudformationTemplate(unittest.TestCase):
 
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example7.yml")
 
-        self.assertEqual(cloudformation.buckets, buckets)
+        for bucket in cloudformation.buckets.values():
+            with self.subTest(bucket=bucket.resource):
+                self.assertEqual(bucket.resource, buckets[bucket.id])
 
     def test_list_environment(self):
         scenarios = {
