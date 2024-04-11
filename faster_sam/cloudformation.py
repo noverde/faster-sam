@@ -263,7 +263,7 @@ class Api(Resource):
         return self.resource["Properties"].get("Name")
 
     @property
-    def stage(self) -> str:
+    def stage_name(self) -> str:
         return self.resource["Properties"]["StageName"]
 
 
