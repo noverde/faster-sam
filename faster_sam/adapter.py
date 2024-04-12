@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 
-from faster_sam.cloudformation import CloudformationTemplate, EventType
+from faster_sam.cloudformation import ApiEvent, CloudformationTemplate, EventType
 from faster_sam.openapi import custom_openapi
 from faster_sam.routing import APIRoute, QueueRoute, ScheduleRoute
 
@@ -270,7 +270,7 @@ class SAM:
 
         return routes
 
-    def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
+    def lambda_mapper(self, gateway_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Generate a route map extracted from the lambda functions schema
         corresponding to the given gateway id.
@@ -288,26 +288,14 @@ class SAM:
 
         routes: Dict[str, Any] = {}
 
-        for resource_id, function in self.template.functions.items():
-            if "Events" not in function.resource["Properties"]:
-                continue
+        for function in self.template.functions.values():
+            for event in function.filtered_events(EventType.API).values():
+                if isinstance(event, ApiEvent):
+                    if gateway_id is not None and event.rest_api_id != gateway_id:
+                        continue
 
-            handler_path = self.template.lambda_handler(resource_id)
-            events = self.template.find_nodes(
-                function.resource["Properties"]["Events"], EventType.API
-            )
-
-            for event in events.values():
-                rest_api_id = event["Properties"].get("RestApiId", {"Ref": None})["Ref"]
-
-                if rest_api_id != gateway_id:
-                    continue
-
-                path = event["Properties"]["Path"]
-                method = event["Properties"]["Method"]
-                endpoint = {method: {"handler": handler_path}}
-
-                routes.setdefault(path, {}).update(endpoint)
+                    endpoint = {event.method: {"handler": function.handler}}
+                    routes.setdefault(event.path, {}).update(endpoint)
 
         return routes
 
