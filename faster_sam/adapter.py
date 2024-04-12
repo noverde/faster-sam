@@ -135,7 +135,7 @@ class SAM:
         app : FastAPI
             The FastAPI application instance to be configured.
         """
-        routes = self.lambda_schedule_mapper()
+        routes = self.lambda_mapper(event_type=EventType.SCHEDULE)
 
         self.register_routes(app, routes, ScheduleRoute)
 
@@ -198,40 +198,6 @@ class SAM:
 
         return routes
 
-    def lambda_schedule_mapper(self) -> Dict[str, Any]:
-        """
-        Generate a route map extracted from the lambda functions that is a schedule consumer
-        using the name of the function name as path.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Dictionary containing the routes.
-        """
-
-        routes: Dict[str, Any] = {}
-
-        for resource_id, function in self.template.functions.items():
-            if "Events" not in function.resource["Properties"]:
-                continue
-
-            events = self.template.find_nodes(
-                function.resource["Properties"]["Events"], EventType.SCHEDULE
-            )
-
-            if not events:
-                continue
-
-            function_name = function.resource["Properties"]["FunctionName"].replace("_", "-")
-            handler_path = self.template.lambda_handler(resource_id)
-
-            path = f"/{function_name}"
-            endpoint = {"POST": {"handler": handler_path}}
-
-            routes.setdefault(path, {}).update(endpoint)
-
-        return routes
-
     def lambda_mapper(
         self, gateway_id: Optional[str] = None, event_type: EventType = EventType.API
     ) -> Dict[str, Any]:
@@ -283,6 +249,9 @@ class SAM:
                         raise NotImplementedError()
 
                     path += queue_name
+                elif event_type == EventType.SCHEDULE:
+                    function_name = function.name.lower().replace("_", "-")
+                    path += function_name
 
                 endpoint = {method: {"handler": function.handler}}
                 routes.setdefault(path, {}).update(endpoint)
