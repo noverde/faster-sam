@@ -267,6 +267,15 @@ class SAM:
                         if fn == "Ref":
                             if isinstance(bucket_id, str):
                                 bucket_name = self.template.buckets[bucket_id].name
+                                if isinstance(bucket_name, dict):
+                                    fn, val = list(bucket_name.items())[0]
+
+                                    if fn == "Fn::Sub":
+                                        bucket_name = val.replace(
+                                            "${AWS::AccountId}", (os.getenv("PROJECT_NUMBER"))
+                                        )
+                                    else:
+                                        raise NotImplementedError()
                         else:
                             raise NotImplementedError()
                     else:

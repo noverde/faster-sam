@@ -171,6 +171,7 @@ class EventSource(Resource):
             EventType.API: ApiEvent,
             EventType.SQS: SQSEvent,
             EventType.SCHEDULE: ScheduleEvent,
+            EventType.S3: S3Event,
         }
 
         event_type = EventType(resource["Type"])
