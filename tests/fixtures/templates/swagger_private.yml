@@ -100,7 +100,7 @@ paths:
         httpMethod: POST
         type: aws_proxy
         uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction}/invocations"
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations"
         credentials:
           Fn::Sub: "arn:aws:iam::${AWS::AccountId}:role/apigateway-invoke-lambda-role"
     get:
