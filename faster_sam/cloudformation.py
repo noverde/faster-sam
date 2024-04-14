@@ -11,6 +11,26 @@ WITHOUT_PREFIX = ("Ref", "Condition")
 
 logger = logging.getLogger(__name__)
 
+intrinsic_functions = [
+    "Fn::Base64",
+    "Fn::Cidr",
+    "Fn::FindInMap",
+    "Fn::GetAtt",
+    "Fn::GetAZs",
+    "Fn::If",
+    "Fn::ImportValue",
+    "Fn::Join",
+    "Fn::Select",
+    "Fn::Split",
+    "Fn::Sub",
+    "Fn::Transform",
+    "Fn::Equals",
+    "Fn::Not",
+    "Fn::Or",
+    "Fn::And",
+    "Ref",
+]
+
 
 class CFTemplateNotFound(FileNotFoundError):
     """Raised when the CloudFormation template file cannot be found."""
@@ -343,6 +363,7 @@ class CloudformationTemplate:
         self.template = self.load(template_path)
         self.include_files()
         self.set_parameters(parameters)
+        self.evaluate_intrinsic_functions(self.template)
 
     @property
     def functions(self) -> Dict[str, Function]:
@@ -456,6 +477,22 @@ class CloudformationTemplate:
             if name in self.template["Parameters"]:
                 self.template["Parameters"][name]["Default"] = value
 
+    def evaluate_intrinsic_functions(self, obj: Dict[str, Any]):
+        """ """
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key in intrinsic_functions:
+                    result = IntrinsicFunctions.eval({key: value}, self.template)
+
+                    if result is None:
+                        result = value
+
+                    obj[key] = result
+                else:
+                    obj[key] = self.evaluate_intrinsic_functions(value)
+
+        return obj
+
     def load(self, template: Optional[str] = None) -> Dict[str, Any]:
         """
         Reads CloudFormation template file from the disk and convert it to a dictionary.
@@ -546,12 +583,7 @@ class CloudformationTemplate:
         environment = {}
 
         for key, val in variables.items():
-            if isinstance(val, (str, int, float)):
-                environment[key] = str(val)
-            else:
-                value = IntrinsicFunctions.eval(val, self.template)
-                if value is not None:
-                    environment[key] = str(value)
+            environment[key] = str(val)
 
         return environment
 
@@ -609,7 +641,8 @@ class IntrinsicFunctions:
         fun, val = list(function.items())[0]
 
         if fun not in implemented:
-            logging.warning(f"{fun} intrinsic function not implemented")
+            pass
+            # logging.warning(f"{fun} intrinsic function not implemented")
 
         if "Fn::Base64" == fun:
             return IntrinsicFunctions.base64(val)
