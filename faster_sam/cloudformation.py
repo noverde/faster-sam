@@ -70,11 +70,14 @@ class EventType(Enum):
         Represents the "SQS" node type.
     SCHEDULE : str
         Represents the "Schedule" node type.
+    S3 : str
+        Represents the "S3" node type.
     """
 
     API = "Api"
     SQS = "SQS"
     SCHEDULE = "Schedule"
+    S3 = "S3"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -209,6 +212,12 @@ class ScheduleEvent(EventSource):
     @property
     def schedule(self) -> str:
         return self.resource["Properties"]["Schedule"]
+
+
+class S3Event(EventSource):
+    @property
+    def bucket(self) -> str:
+        return self.resource["Properties"]["Bucket"]
 
 
 class Function(Resource):
