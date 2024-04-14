@@ -2,7 +2,7 @@ import base64
 from enum import Enum
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
@@ -491,7 +491,7 @@ class IntrinsicFunctions:
         return None
 
     @staticmethod
-    def get_att(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+    def get_att(value: Union[List[Any], str], template: Dict[str, Any]) -> Optional[str]:
         """
         Gets the value of an attribute from a CloudFormation template based on a list
         of logical name and attribute name.
@@ -508,6 +508,9 @@ class IntrinsicFunctions:
         Optional[str]
             The value of atribute name, or None if the keys are not found.
         """
+        if isinstance(value, str):
+            value = value.split(".")
+
         logical_name, attribute_name = value
 
         if logical_name not in template["Resources"]:
