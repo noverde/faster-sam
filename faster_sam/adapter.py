@@ -191,7 +191,7 @@ class SAM:
                     continue
 
                 resource_id = match.group(1)
-                handler_path = self.template.lambda_handler(resource_id)
+                handler_path = self.template.functions[resource_id].handler
                 endpoint = {method: {"handler": handler_path}}
 
                 routes.setdefault(path, {}).update(endpoint)
