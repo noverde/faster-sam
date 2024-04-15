@@ -1,7 +1,9 @@
 import base64
 import logging
 from enum import Enum
+import os
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Optional, Union
 
 import yaml
@@ -594,10 +596,6 @@ class IntrinsicFunctions:
             "Fn::Split",
         )
 
-        if isinstance(function, list):
-            import ipdb
-
-            ipdb.set_trace()
         fun, val = list(function.items())[0]
 
         if fun not in implemented:
@@ -856,3 +854,75 @@ class IntrinsicFunctions:
 
         for part in split_parts:
             result.append(part)
+
+        return result
+
+    def sub(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Substitutes occurrences in a string with corresponding environment variables.
+
+        This method searches for occurrences in the `value` string in the format `${placeholder}`
+        and replaces them with their corresponding values from the environment variables.
+        
+        If any occurrence is not found in the environment variables, the substitution is not performed.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A string with the placeholder to be replaced.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The string after performing the substitution, or None if the `value` is not a string or
+            is not found in the environment variables.
+        """
+        pseudo_parameters = [
+                "AWS::AccountId",
+                "AWS::NotificationARNs",
+                "AWS::NoValue",
+                "AWS::Partition",
+                "AWS::Region",
+                "AWS::StackId",
+                "AWS::StackName",
+                "AWS::URLSuffix"
+            ]
+        
+        def replace_placeholders(matches: List[Any], value: str):
+            matches = [param if param not in pseudo_parameters else param.replace("::", "_") for param in matches]
+
+            for match in matches:
+                if match in os.environ:
+                    env_var = os.environ[match]
+                    result = value.replace(f"${{{match}}}", env_var)
+                else:
+                    return None
+
+            return result
+
+        if isinstance(value, str):
+            pattern = r"\${(.*?)}"
+            matches = re.findall(pattern, value)
+
+            replace_placeholders(matches, value)
+
+        elif isinstance(value, list):
+            string_value = value[0]
+            
+            for val in value[1:]:
+                key, v = val.items()
+
+                if isinstance(v, dict):
+                    v = IntrinsicFunctions.eval(v, template)
+                    
+                    if v is None:
+                        return None
+                    
+                    val[key] = v
+                
+                pattern = r"\${({key})}"
+                matches = re.findall(pattern, val[key])
+
+                replace_placeholders(matches, string_value)
