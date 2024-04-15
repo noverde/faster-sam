@@ -555,16 +555,13 @@ class IntrinsicFunctions:
         """
         delimiter, values = value
 
-        if len(values) < 2:
-            return None
+        for index, element in enumerate(values):
+            if isinstance(element, dict):
+                element = IntrinsicFunctions.eval(element, template)
 
-        for i in range(len(values)):
-            if isinstance(values[i], dict):
-                evaluated_value = IntrinsicFunctions.eval(values[i], template)
+            if element is None:
+                return None
 
-                if evaluated_value is None:
-                    return None
+            values[index] = element
 
-                values[i] = evaluated_value
-
-        return delimiter.join(value[1])
+        return delimiter.join(values)
