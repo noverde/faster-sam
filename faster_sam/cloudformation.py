@@ -818,17 +818,12 @@ class IntrinsicFunctions:
             if values is None:
                 return None
 
-        result = []
+        result = ""
 
-        for i in range(len(values)):
-            if isinstance(values[i], dict):
-                evaluated_value = IntrinsicFunctions.eval(values[i], template)
+        if isinstance(values[int(index)], dict):
+            result = IntrinsicFunctions.eval(values[int(index)], template)
 
-                if evaluated_value is None:
-                    return None
+            if result is None:
+                return None
 
-                result.append(evaluated_value)
-            else:
-                result.append(values[i])
-
-        return result[int(index)]
+        return result
