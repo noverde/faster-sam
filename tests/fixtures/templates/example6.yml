@@ -19,7 +19,7 @@ Resources:
           Properties:
             Enabled: true
             Queue:
-              Fn::GetAtt: [DatabasesQueue.Arn]
+              Fn::GetAtt: DatabasesQueue.Arn
             BatchSize: 1
 
   DatabasesQueue:

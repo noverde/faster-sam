@@ -37,8 +37,9 @@ class TestSAM(unittest.TestCase):
 
     def test_configure_api(self):
         gateways = (None, None, "ApiGateway", "ApiGatewayTwo", None)
+        routes = (5, 5, 5, 6, 6)
 
-        for template, gateway in zip(self.templates, gateways):
+        for template, gateway, expected_routes in zip(self.templates, gateways, routes):
             with self.subTest(template=template, gateway=gateway):
                 app = FastAPI()
                 sam = SAM(template)
@@ -47,7 +48,7 @@ class TestSAM(unittest.TestCase):
 
                 sam.configure_api(app, gateway)
 
-                self.assertEqual(len(app.routes), 5)
+                self.assertEqual(len(app.routes), expected_routes)
 
     def test_configure_multiple_apis(self):
         app = FastAPI()
@@ -59,7 +60,7 @@ class TestSAM(unittest.TestCase):
         sam.configure_api(subapp, "ApiGatewayTwo")
 
         self.assertEqual(len(app.routes), 6)
-        self.assertEqual(len(subapp.routes), 5)
+        self.assertEqual(len(subapp.routes), 6)
 
     def test_configure_queues(self):
         app = FastAPI()
