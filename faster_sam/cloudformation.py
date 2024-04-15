@@ -555,26 +555,6 @@ class CloudformationTemplate:
 
         return environment
 
-    # TODO: remove this method after refactoring the adapter module
-    def lambda_handler(self, resource_id: str) -> str:
-        """
-        Returns a string representing the full module path for a Lambda Function handler.
-        The path is built by joining the code URI and the handler attributes on
-        the CloudFormation for the given Lambda Function identified by resource_id.
-
-        Parameters
-        ----------
-        resource_id : str
-            The id of the Lambda function resource.
-
-        Returns
-        -------
-        str
-            The constructed Lambda handler path.
-        """
-
-        return self.functions[resource_id].handler
-
 
 class IntrinsicFunctions:
     """
@@ -833,20 +813,15 @@ class IntrinsicFunctions:
             if values is None:
                 return None
 
-        result = []
+        result = ""
 
-        for i in range(len(values)):
-            if isinstance(values[i], dict):
-                evaluated_value = IntrinsicFunctions.eval(values[i], template)
+        if isinstance(values[int(index)], dict):
+            result = IntrinsicFunctions.eval(values[int(index)], template)
 
-                if evaluated_value is None:
-                    return None
+            if result is None:
+                return None
 
-                result.append(evaluated_value)
-            else:
-                result.append(values[i])
-
-        return result[int(index)]
+        return result
 
     @staticmethod
     def split(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
@@ -881,5 +856,3 @@ class IntrinsicFunctions:
 
         for part in split_parts:
             result.append(part)
-
-        return result
