@@ -863,8 +863,9 @@ class IntrinsicFunctions:
 
         This method searches for occurrences in the `value` string in the format `${placeholder}`
         and replaces them with their corresponding values from the environment variables.
-        
-        If any occurrence is not found in the environment variables, the substitution is not performed.
+
+        If any occurrence is not found in the environment variables, the substitution is not
+        performed.
 
         Parameters
         ----------
@@ -880,18 +881,21 @@ class IntrinsicFunctions:
             is not found in the environment variables.
         """
         pseudo_parameters = [
-                "AWS::AccountId",
-                "AWS::NotificationARNs",
-                "AWS::NoValue",
-                "AWS::Partition",
-                "AWS::Region",
-                "AWS::StackId",
-                "AWS::StackName",
-                "AWS::URLSuffix"
-            ]
-        
+            "AWS::AccountId",
+            "AWS::NotificationARNs",
+            "AWS::NoValue",
+            "AWS::Partition",
+            "AWS::Region",
+            "AWS::StackId",
+            "AWS::StackName",
+            "AWS::URLSuffix",
+        ]
+
         def replace_placeholders(matches: List[Any], value: str):
-            matches = [param if param not in pseudo_parameters else param.replace("::", "_") for param in matches]
+            matches = [
+                param if param not in pseudo_parameters else param.replace("::", "_")
+                for param in matches
+            ]
 
             for match in matches:
                 if match in os.environ:
@@ -910,18 +914,18 @@ class IntrinsicFunctions:
 
         elif isinstance(value, list):
             string_value = value[0]
-            
+
             for val in value[1:]:
                 key, v = val.items()
 
                 if isinstance(v, dict):
                     v = IntrinsicFunctions.eval(v, template)
-                    
+
                     if v is None:
                         return None
-                    
+
                     val[key] = v
-                
+
                 pattern = r"\${({key})}"
                 matches = re.findall(pattern, val[key])
 
