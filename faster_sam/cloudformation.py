@@ -555,26 +555,6 @@ class CloudformationTemplate:
 
         return environment
 
-    # TODO: remove this method after refactoring the adapter module
-    def lambda_handler(self, resource_id: str) -> str:
-        """
-        Returns a string representing the full module path for a Lambda Function handler.
-        The path is built by joining the code URI and the handler attributes on
-        the CloudFormation for the given Lambda Function identified by resource_id.
-
-        Parameters
-        ----------
-        resource_id : str
-            The id of the Lambda function resource.
-
-        Returns
-        -------
-        str
-            The constructed Lambda handler path.
-        """
-
-        return self.functions[resource_id].handler
-
 
 class IntrinsicFunctions:
     """
