@@ -25,3 +25,6 @@ dependencies = [
 auth = ["boto3", "requests"]
 redis = ["redis"]
 migrate = ["yoyo-migrations", "setuptools"]
+
+[project.scripts]
+faster = "faster_sam.cmd.faster:main"

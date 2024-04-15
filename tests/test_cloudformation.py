@@ -159,7 +159,8 @@ class TestCloudformationTemplate(unittest.TestCase):
         )
 
         self.assertEqual(
-            cloudformation.template["Parameters"]["Environment"]["Default"], "development"
+            cloudformation.template["Parameters"]["Environment"]["Default"],
+            "development",
         )
 
     def test_load_raises_exception(self):
@@ -172,17 +173,38 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_list_functions(self):
         cloudformation = CloudformationTemplate(self.template_1)
 
-        self.assertEqual(cloudformation.functions, self.functions)
+        for function in cloudformation.functions.values():
+            with self.subTest(function=function.resource):
+                self.assertEqual(function.resource, self.functions[function.id])
 
     def test_list_gateways(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example2.yml")
 
-        self.assertEqual(cloudformation.gateways, self.gateways)
+        for api in cloudformation.apis.values():
+            with self.subTest(api=api.resource):
+                self.assertEqual(api.resource, self.gateways[api.id])
 
     def test_list_queues(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example6.yml")
 
-        self.assertEqual(cloudformation.queues, self.queues)
+        for queue in cloudformation.queues.values():
+            with self.subTest(queue=queue.resource):
+                self.assertEqual(queue.resource, self.queues[queue.id])
+
+    def test_list_buckets(self):
+        buckets = {
+            "TestBucket": {
+                "Type": "AWS::S3::Bucket",
+                "DeletionPolicy": "Retain",
+                "Properties": {"BucketName": "test-bucket"},
+            }
+        }
+
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example7.yml")
+
+        for bucket in cloudformation.buckets.values():
+            with self.subTest(bucket=bucket.resource):
+                self.assertEqual(bucket.resource, buckets[bucket.id])
 
     def test_list_environment(self):
         scenarios = {
@@ -213,7 +235,7 @@ class TestCloudformationTemplate(unittest.TestCase):
     def test_find_nodes(self):
         cloudformation = CloudformationTemplate("tests/fixtures/templates/example1.yml")
         tree = cloudformation.template
-        nodes = cloudformation.find_nodes(tree["Resources"], cf.NodeType.LAMBDA)
+        nodes = cloudformation.find_nodes(tree["Resources"], cf.ResourceType.FUNCTION)
 
         self.assertEqual(nodes, self.functions)
 
@@ -241,5 +263,199 @@ class TestCloudformationTemplate(unittest.TestCase):
         }
         for key, function in functions.items():
             with self.subTest(**function["Properties"]):
-                handler_path = cloudformation.lambda_handler(key)
+                handler_path = cloudformation.functions[key].handler
                 self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")
+
+
+class TestResource(unittest.TestCase):
+    def test_resource(self):
+        resource_id = "Test"
+        resource = {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {"FunctionName": "test"},
+        }
+
+        instance = cf.Resource(resource_id, resource)
+
+        self.assertEqual(instance.id, resource_id)
+        self.assertEqual(instance.resource, resource)
+
+
+class TestEventSource(unittest.TestCase):
+    def test_event_source(self):
+        resource_id = "TestApi"
+        resource = {
+            "Type": "Api",
+            "Properties": {"Path": "/test", "Method": "get"},
+        }
+
+        instance = cf.EventSource.from_resource(resource_id, resource)
+
+        self.assertEqual(instance.type, cf.EventType.API)
+
+
+class TestFunction(unittest.TestCase):
+    def setUp(self):
+        self.event_id = "TestApi"
+        self.event = {
+            "Type": "Api",
+            "Properties": {"Path": "/test", "Method": "get"},
+        }
+
+        self.resource_id = "TestFunction"
+        self.resource = {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {
+                "FunctionName": "test",
+                "CodeUri": "src/",
+                "Handler": "lambda_handler.handler",
+                "Environment": {"Variables": {"ENVIRONMENT": "development"}},
+                "Events": {
+                    self.event_id: self.event,
+                    "TestSQS": {
+                        "Type": "SQS",
+                        "Properties": {"Queue": "arn:aws:sqs:us-west-2:012345678901:test-queue"},
+                    },
+                },
+            },
+        }
+
+    def test_function(self):
+        instance = cf.Function(self.resource_id, self.resource)
+
+        self.assertEqual(instance.name, "test")
+        self.assertEqual(instance.handler, "src.lambda_handler.handler")
+        self.assertEqual(instance.environment, {"ENVIRONMENT": "development"})
+        self.assertEqual(instance.events[self.event_id].type, cf.EventType.API)
+
+    def test_filtered_events(self):
+        instance = cf.Function(self.resource_id, self.resource)
+
+        for event in instance.filtered_events(cf.EventType.API).values():
+            with self.subTest(event=event):
+                self.assertEqual(event.type, cf.EventType.API)
+
+
+class TestApi(unittest.TestCase):
+    def test_api(self):
+        resource_id = "ApiGateway"
+        resource = {
+            "Type": "AWS::Serverless::Api",
+            "Properties": {
+                "Name": "api",
+                "StageName": "v1",
+                "DefinitionBody": {
+                    "Fn::Transform": {
+                        "Name": "AWS::Include",
+                        "Parameters": {
+                            "Location": "./swagger.yml",
+                        },
+                    },
+                },
+            },
+        }
+
+        instance = cf.Api(resource_id, resource)
+
+        self.assertEqual(instance.name, "api")
+        self.assertEqual(instance.stage_name, "v1")
+
+
+class TestApiEvent(unittest.TestCase):
+    def test_api_event(self):
+        resource_id = "TestApi"
+        resource = {
+            "Type": "Api",
+            "Properties": {
+                "RestApiId": {"Ref": "ApiGateway"},
+                "Path": "/test",
+                "Method": "get",
+            },
+        }
+
+        instance = cf.ApiEvent(resource_id, resource)
+
+        self.assertEqual(instance.rest_api_id, "ApiGateway")
+        self.assertEqual(instance.path, "/test")
+        self.assertEqual(instance.method, "get")
+        self.assertEqual(instance.type, cf.EventType.API)
+
+
+class TestQueue(unittest.TestCase):
+    def test_queue(self):
+        resource_id = "TestQueue"
+        resource = {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "QueueName": "test-queue",
+                "VisibilityTimeout": 120,
+                "MessageRetentionPeriod": 1209600,
+                "RedrivePolicy": {
+                    "deadLetterTargetArn": "arn:aws:sqs:us-west-2:012345678901:test-queue",
+                    "maxReceiveCount": 3,
+                },
+            },
+        }
+
+        instance = cf.Queue(resource_id, resource)
+
+        self.assertEqual(instance.name, "test-queue")
+        self.assertEqual(instance.visibility_timeout, 120)
+        self.assertEqual(instance.message_retention_period, 1209600)
+        self.assertEqual(
+            instance.redrive_policy,
+            {
+                "deadLetterTargetArn": "arn:aws:sqs:us-west-2:012345678901:test-queue",
+                "maxReceiveCount": 3,
+            },
+        )
+
+
+class TestBucket(unittest.TestCase):
+    def test_bucket(self):
+        resource_id = "TestBucket"
+        resource = {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+                "BucketName": "test-bucket",
+            },
+        }
+
+        instance = cf.Bucket(resource_id, resource)
+
+        self.assertEqual(instance.name, "test-bucket")
+
+
+class TestSQSEvent(unittest.TestCase):
+    def test_sqs_event(self):
+        resource_id = "TestSQS"
+        resource = {
+            "Type": "SQS",
+            "Properties": {
+                "Queue": "arn:aws:sqs:us-west-2::test-queue",
+                "BatchSize": 10,
+            },
+        }
+
+        instance = cf.SQSEvent(resource_id, resource)
+
+        self.assertEqual(instance.queue, "arn:aws:sqs:us-west-2::test-queue")
+        self.assertEqual(instance.batch_size, 10)
+        self.assertEqual(instance.type, cf.EventType.SQS)
+
+
+class TestScheduleEvent(unittest.TestCase):
+    def test_schedule_event(self):
+        resource_id = "TestSchedule"
+        resource = {
+            "Type": "Schedule",
+            "Properties": {
+                "Schedule": "rate(1 minute)",
+            },
+        }
+
+        instance = cf.ScheduleEvent(resource_id, resource)
+
+        self.assertEqual(instance.schedule, "rate(1 minute)")
+        self.assertEqual(instance.type, cf.EventType.SCHEDULE)

@@ -19,3 +19,9 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(*/5 * * * *)
+
+  TestBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: "test-bucket"
