@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 
-from faster_sam.cloudformation import CloudformationTemplate, NodeType
+from faster_sam.cloudformation import ApiEvent, CloudformationTemplate, EventType, SQSEvent
 from faster_sam.openapi import custom_openapi
 from faster_sam.routing import APIRoute, QueueRoute, ScheduleRoute
 
@@ -39,7 +39,9 @@ class SAM:
     """
 
     def __init__(
-        self, template_path: Optional[str] = None, parameters: Optional[Dict[str, str]] = None
+        self,
+        template_path: Optional[str] = None,
+        parameters: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Initializes the SAM object.
@@ -79,9 +81,9 @@ class SAM:
         gateway: Dict[str, Any] = {"Properties": {}}
 
         if gateway_id is not None:
-            gateway = self.template.gateways[gateway_id]
+            gateway = self.template.apis[gateway_id].resource
         else:
-            gateway_ids = list(self.template.gateways.keys())
+            gateway_ids = list(self.template.apis.keys())
             gateway_len = len(gateway_ids)
 
             if gateway_len > 1:
@@ -90,8 +92,9 @@ class SAM:
 
             if gateway_len == 1:
                 gateway_id = gateway_ids[0]
-                gateway = self.template.gateways[gateway_id]
+                gateway = self.template.apis[gateway_id].resource
 
+        # TODO: change to use definition body attribute when available
         openapi_schema = gateway["Properties"].get("DefinitionBody")
 
         if openapi_schema is None:
@@ -115,7 +118,7 @@ class SAM:
         app : FastAPI
             The FastAPI application instance to be configured.
         """
-        routes = self.lambda_queue_mapper()
+        routes = self.lambda_mapper(event_type=EventType.SQS)
 
         self.register_routes(app, routes, QueueRoute)
 
@@ -132,7 +135,7 @@ class SAM:
         app : FastAPI
             The FastAPI application instance to be configured.
         """
-        routes = self.lambda_schedule_mapper()
+        routes = self.lambda_mapper(event_type=EventType.SCHEDULE)
 
         self.register_routes(app, routes, ScheduleRoute)
 
@@ -195,85 +198,18 @@ class SAM:
 
         return routes
 
-    def lambda_queue_mapper(self) -> Dict[str, Any]:
+    def lambda_mapper(
+        self, gateway_id: Optional[str] = None, event_type: EventType = EventType.API
+    ) -> Dict[str, Any]:
         """
-        Generate a route map extracted from the lambda functions that is a queue consumer
-        using the name of the queue as path.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Dictionary containing the routes.
-        """
-
-        routes: Dict[str, Any] = {}
-
-        for resource_id, function in self.template.functions.items():
-            if "Events" not in function["Properties"]:
-                continue
-
-            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.SQS_EVENT)
-
-            for event in events.values():
-                handler_path = self.template.lambda_handler(resource_id)
-                resource_arn = event["Properties"]["Queue"]["Fn::GetAtt"]
-
-                if isinstance(resource_arn, list):
-                    resource_arn = resource_arn[0]
-
-                resource_name = resource_arn.replace(".Arn", "")
-                queue_name = self.template.queues[resource_name]["Properties"]["QueueName"]
-
-                path = f"/{queue_name}"
-                endpoint = {"POST": {"handler": handler_path}}
-
-                routes.setdefault(path, {}).update(endpoint)
-
-        return routes
-
-    def lambda_schedule_mapper(self) -> Dict[str, Any]:
-        """
-        Generate a route map extracted from the lambda functions that is a schedule consumer
-        using the name of the function name as path.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Dictionary containing the routes.
-        """
-
-        routes: Dict[str, Any] = {}
-
-        for resource_id, function in self.template.functions.items():
-            if "Events" not in function["Properties"]:
-                continue
-
-            events = self.template.find_nodes(
-                function["Properties"]["Events"], NodeType.SCHEDULER_EVENT
-            )
-
-            if not events:
-                continue
-
-            function_name = function["Properties"]["FunctionName"].replace("_", "-")
-            handler_path = self.template.lambda_handler(resource_id)
-
-            path = f"/{function_name}"
-            endpoint = {"POST": {"handler": handler_path}}
-
-            routes.setdefault(path, {}).update(endpoint)
-
-        return routes
-
-    def lambda_mapper(self, gateway_id: Optional[str]) -> Dict[str, Any]:
-        """
-        Generate a route map extracted from the lambda functions schema
-        corresponding to the given gateway id.
+        Generate a route map extracted from the lambda functions events.
 
         Parameters
         ----------
         gateway_id : Optional[str]
             Optional gateway id to filter the routes for a specific API Gateway.
+        event_type: EventType
+            The type of events to look for.
 
         Returns
         -------
@@ -283,23 +219,41 @@ class SAM:
 
         routes: Dict[str, Any] = {}
 
-        for resource_id, function in self.template.functions.items():
-            if "Events" not in function["Properties"]:
-                continue
+        for function in self.template.functions.values():
+            for event in function.filtered_events(event_type).values():
+                method = "POST"
+                path = "/"
 
-            handler_path = self.template.lambda_handler(resource_id)
-            events = self.template.find_nodes(function["Properties"]["Events"], NodeType.API_EVENT)
+                if isinstance(event, ApiEvent):
+                    if gateway_id is not None and event.rest_api_id != gateway_id:
+                        continue
 
-            for event in events.values():
-                rest_api_id = event["Properties"].get("RestApiId", {"Ref": None})["Ref"]
+                    method = event.method
+                    path = event.path
+                elif isinstance(event, SQSEvent):
+                    # TODO: refactor this after implementing intrinsic functions parsers
+                    if isinstance(event.queue, str):
+                        queue_name = event.queue.rsplit(":", maxsplit=1)[-1]
+                    elif isinstance(event.queue, dict):
+                        fn, args = list(event.queue.items())[0]
 
-                if rest_api_id != gateway_id:
-                    continue
+                        if fn == "Fn::GetAtt":
+                            if isinstance(args, str):
+                                args = args.split(".")
 
-                path = event["Properties"]["Path"]
-                method = event["Properties"]["Method"]
-                endpoint = {method: {"handler": handler_path}}
+                            queue_id = args[0]
+                            queue_name = self.template.queues[queue_id].name
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        raise NotImplementedError()
 
+                    path += queue_name
+                elif event_type == EventType.SCHEDULE:
+                    function_name = function.name.lower().replace("_", "-")
+                    path += function_name
+
+                endpoint = {method: {"handler": function.handler}}
                 routes.setdefault(path, {}).update(endpoint)
 
         return routes
