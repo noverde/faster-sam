@@ -37,8 +37,15 @@ Globals:
           Fn::GetAtt: [ ApiGatewayTwo, Region ]
         STAGE_NAME: 
           Fn::GetAtt: Stage.Region
-        HANDLER: 
-          Fn::Select: [ !FindInMap [Environments, !Ref Environment, Index], ["handler1", !Ref Handler]]
+        HANDLER:
+          Fn::Select:
+            - Fn::FindInMap:
+              - Environments
+              - Ref: Environment
+              - Index
+            - handler1
+            - Ref: Handler
+
 
 Resources:
   ApiGateway:

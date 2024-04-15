@@ -804,7 +804,7 @@ class IntrinsicFunctions:
             The selected value from the list, or None if any of the evaluated
             values are None.
         """
-        index, values = value
+        index, *values = value
 
         if isinstance(index, dict):
             index = IntrinsicFunctions.eval(index, template)
