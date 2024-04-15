@@ -263,7 +263,7 @@ class TestCloudformationTemplate(unittest.TestCase):
         }
         for key, function in functions.items():
             with self.subTest(**function["Properties"]):
-                handler_path = cloudformation.lambda_handler(key)
+                handler_path = cloudformation.functions[key].handler
                 self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")
 
 
