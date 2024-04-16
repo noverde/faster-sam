@@ -782,18 +782,22 @@ class IntrinsicFunctions:
         index, objects = value
 
         if isinstance(index, dict):
-
             index = IntrinsicFunctions.eval(index, template)
+
             if index is None:
                 return None
+
         if isinstance(objects, dict):
             objects = IntrinsicFunctions.eval(objects, template)
+
             if objects is None:
                 return None
         else:
             for i, obj in enumerate(objects):
                 if isinstance(obj, dict):
                     objects[i] = IntrinsicFunctions.eval(obj, template)
+
                     if objects[i] is None:
                         return None
+
         return objects[int(index)]
