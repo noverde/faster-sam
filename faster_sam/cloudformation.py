@@ -767,40 +767,33 @@ class IntrinsicFunctions:
         """
         Selects a value from a list based on the given index. If the value at the index
         is a dictionary, it evaluates it using CloudFormation template data.
-
         Parameters
         ----------
         value : List[Any]
             A list containing values from which to select.
         template : Dict[str, Any]
             A dictionary representing the CloudFormation template.
-
         Returns
         -------
         Optional[str]
             The selected value from the list, or None if any of the evaluated
             values are None.
         """
-        index, *values = value
+        index, objects = value
 
         if isinstance(index, dict):
-            index = IntrinsicFunctions.eval(index, template)
 
+            index = IntrinsicFunctions.eval(index, template)
             if index is None:
                 return None
-
-        if isinstance(values, dict):
-            values = IntrinsicFunctions.eval(values, template)
-
-            if values is None:
+        if isinstance(objects, dict):
+            objects = IntrinsicFunctions.eval(objects, template)
+            if objects is None:
                 return None
-
-        result = ""
-
-        if isinstance(values[int(index)], dict):
-            result = IntrinsicFunctions.eval(values[int(index)], template)
-
-            if result is None:
-                return None
-
-        return result
+        else:
+            for i, obj in enumerate(objects):
+                if isinstance(obj, dict):
+                    objects[i] = IntrinsicFunctions.eval(obj, template)
+                    if objects[i] is None:
+                        return None
+        return objects[int(index)]
