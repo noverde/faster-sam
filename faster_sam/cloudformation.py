@@ -702,7 +702,7 @@ class IntrinsicFunctions:
         return None
 
     @staticmethod
-    def get_att(value: Union[List[Any], str], template: Dict[str, Any]) -> Optional[str]:
+    def get_att(value: Union[List[str], str], template: Dict[str, Any]) -> Optional[str]:
         """
         Gets the value of an attribute from a CloudFormation template based on a list
         of logical name and attribute name.
@@ -736,15 +736,15 @@ class IntrinsicFunctions:
         if attribute_name not in template["Resources"][logical_name]["Properties"]:
             return None
 
-        function_value = template["Resources"][logical_name]["Properties"][attribute_name]
+        attribute_value = template["Resources"][logical_name]["Properties"][attribute_name]
 
-        if isinstance(function_value, dict):
-            function_value = IntrinsicFunctions.eval(function_value, template)
+        if isinstance(attribute_value, dict):
+            attribute_value = IntrinsicFunctions.eval(attribute_value, template)
 
-            if function_value is None:
+            if attribute_value is None:
                 return None
 
-        return function_value
+        return attribute_value
 
     @staticmethod
     def join(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
@@ -766,19 +766,16 @@ class IntrinsicFunctions:
         """
         delimiter, values = value
 
-        if len(values) < 2:
-            return None
+        for index, element in enumerate(values):
+            if isinstance(element, dict):
+                element = IntrinsicFunctions.eval(element, template)
 
-        for i in range(len(values)):
-            if isinstance(values[i], dict):
-                evaluated_value = IntrinsicFunctions.eval(values[i], template)
+            if element is None:
+                return None
 
-                if evaluated_value is None:
-                    return None
+            values[index] = element
 
-                values[i] = evaluated_value
-
-        return delimiter.join(value[1])
+        return delimiter.join(values)
 
     @staticmethod
     def select(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
@@ -799,7 +796,7 @@ class IntrinsicFunctions:
             The selected value from the list, or None if any of the evaluated
             values are None.
         """
-        index, values = value
+        index, *values = value
 
         if isinstance(index, dict):
             index = IntrinsicFunctions.eval(index, template)
