@@ -832,12 +832,12 @@ class IntrinsicFunctions:
             A list of strings resulting from splitting using the delimiter.
             or None if any of the evaluated values are None.
         """
-        delimiter, value = value
+        delimiter, source = value
 
-        if isinstance(value, dict):
-            value = IntrinsicFunctions.eval(value, template)
+        if isinstance(source, dict):
+            source = IntrinsicFunctions.eval(source, template)
 
-            if value is None:
+            if source is None:
                 return None
 
-        return value.split(delimiter)
+        return source.split(delimiter)
