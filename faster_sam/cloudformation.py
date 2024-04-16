@@ -594,10 +594,6 @@ class IntrinsicFunctions:
             "Fn::Split",
         )
 
-        if isinstance(function, list):
-            import ipdb
-
-            ipdb.set_trace()
         fun, val = list(function.items())[0]
 
         if fun not in implemented:
@@ -838,15 +834,10 @@ class IntrinsicFunctions:
         """
         delimiter, value = value
 
-        result = []
-
         if isinstance(value, dict):
             value = IntrinsicFunctions.eval(value, template)
 
             if value is None:
                 return None
 
-        split_parts = value.split(delimiter)
-
-        for part in split_parts:
-            result.append(part)
+        return value.split(delimiter)
