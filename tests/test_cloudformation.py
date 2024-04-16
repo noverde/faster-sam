@@ -418,7 +418,7 @@ class TestIntrinsicFunctions(unittest.TestCase):
                 "expected": None,
             },
         }
-        
+
         for key, values in scenarios.items():
             with self.subTest(case=key, template=values["template"]):
                 cloudformation = CloudformationTemplate(
