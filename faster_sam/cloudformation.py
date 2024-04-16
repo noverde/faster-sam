@@ -700,7 +700,7 @@ class IntrinsicFunctions:
         return None
 
     @staticmethod
-    def get_att(value: Union[List[Any], str], template: Dict[str, Any]) -> Optional[str]:
+    def get_att(value: Union[List[str], str], template: Dict[str, Any]) -> Optional[str]:
         """
         Gets the value of an attribute from a CloudFormation template based on a list
         of logical name and attribute name.
@@ -734,15 +734,15 @@ class IntrinsicFunctions:
         if attribute_name not in template["Resources"][logical_name]["Properties"]:
             return None
 
-        function_value = template["Resources"][logical_name]["Properties"][attribute_name]
+        attribute_value = template["Resources"][logical_name]["Properties"][attribute_name]
 
-        if isinstance(function_value, dict):
-            function_value = IntrinsicFunctions.eval(function_value, template)
+        if isinstance(attribute_value, dict):
+            attribute_value = IntrinsicFunctions.eval(attribute_value, template)
 
-            if function_value is None:
+            if attribute_value is None:
                 return None
 
-        return function_value
+        return attribute_value
 
     @staticmethod
     def join(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
@@ -764,40 +764,35 @@ class IntrinsicFunctions:
         """
         delimiter, values = value
 
-        if len(values) < 2:
-            return None
+        for index, element in enumerate(values):
+            if isinstance(element, dict):
+                element = IntrinsicFunctions.eval(element, template)
 
-        for i in range(len(values)):
-            if isinstance(values[i], dict):
-                evaluated_value = IntrinsicFunctions.eval(values[i], template)
+            if element is None:
+                return None
 
-                if evaluated_value is None:
-                    return None
+            values[index] = element
 
-                values[i] = evaluated_value
-
-        return delimiter.join(value[1])
+        return delimiter.join(values)
 
     @staticmethod
     def select(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
         """
         Selects a value from a list based on the given index. If the value at the index
         is a dictionary, it evaluates it using CloudFormation template data.
-
         Parameters
         ----------
         value : List[Any]
             A list containing values from which to select.
         template : Dict[str, Any]
             A dictionary representing the CloudFormation template.
-
         Returns
         -------
         Optional[str]
             The selected value from the list, or None if any of the evaluated
             values are None.
         """
-        index, values = value
+        index, objects = value
 
         if isinstance(index, dict):
             index = IntrinsicFunctions.eval(index, template)
@@ -805,21 +800,20 @@ class IntrinsicFunctions:
             if index is None:
                 return None
 
-        if isinstance(values, dict):
-            values = IntrinsicFunctions.eval(values, template)
+        if isinstance(objects, dict):
+            objects = IntrinsicFunctions.eval(objects, template)
 
-            if values is None:
+            if objects is None:
                 return None
+        else:
+            for i, obj in enumerate(objects):
+                if isinstance(obj, dict):
+                    objects[i] = IntrinsicFunctions.eval(obj, template)
 
-        result = ""
+                    if objects[i] is None:
+                        return None
 
-        if isinstance(values[int(index)], dict):
-            result = IntrinsicFunctions.eval(values[int(index)], template)
-
-            if result is None:
-                return None
-
-        return result
+        return objects[int(index)]
 
     @staticmethod
     def split(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
@@ -840,93 +834,12 @@ class IntrinsicFunctions:
             A list of strings resulting from splitting using the delimiter.
             or None if any of the evaluated values are None.
         """
-        delimiter, value = value
+        delimiter, source = value
 
-        result = []
+        if isinstance(source, dict):
+            source = IntrinsicFunctions.eval(source, template)
 
-        if isinstance(value, dict):
-            value = IntrinsicFunctions.eval(value, template)
-
-            if value is None:
+            if source is None:
                 return None
 
-        split_parts = value.split(delimiter)
-
-        for part in split_parts:
-            result.append(part)
-
-        return result
-
-    def sub(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
-        """
-        Substitutes occurrences in a string with corresponding environment variables.
-
-        This method searches for occurrences in the `value` string in the format `${placeholder}`
-        and replaces them with their corresponding values from the environment variables.
-
-        If any occurrence is not found in the environment variables, the substitution is not
-        performed.
-
-        Parameters
-        ----------
-        value : List[Any]
-            A string with the placeholder to be replaced.
-        template : Dict[str, Any]
-            A dictionary representing the CloudFormation template.
-
-        Returns
-        -------
-        Optional[str]
-            The string after performing the substitution, or None if the `value` is not a string or
-            is not found in the environment variables.
-        """
-        pseudo_parameters = [
-            "AWS::AccountId",
-            "AWS::NotificationARNs",
-            "AWS::NoValue",
-            "AWS::Partition",
-            "AWS::Region",
-            "AWS::StackId",
-            "AWS::StackName",
-            "AWS::URLSuffix",
-        ]
-
-        def replace_placeholders(matches: List[Any], value: str):
-            matches = [
-                param if param not in pseudo_parameters else param.replace("::", "_")
-                for param in matches
-            ]
-
-            for match in matches:
-                if match in os.environ:
-                    env_var = os.environ[match]
-                    result = value.replace(f"${{{match}}}", env_var)
-                else:
-                    return None
-
-            return result
-
-        if isinstance(value, str):
-            pattern = r"\${(.*?)}"
-            matches = re.findall(pattern, value)
-
-            replace_placeholders(matches, value)
-
-        elif isinstance(value, list):
-            string_value = value[0]
-
-            for val in value[1:]:
-                key, v = val.items()
-
-                if isinstance(v, dict):
-                    v = IntrinsicFunctions.eval(v, template)
-
-                    if v is None:
-                        return None
-
-                    val[key] = v
-
-                pattern = r"\${({key})}"
-                matches = re.findall(pattern, val[key])
-
-                replace_placeholders(matches, string_value)
+        return source.split(delimiter)
