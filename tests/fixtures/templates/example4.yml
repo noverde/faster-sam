@@ -12,6 +12,9 @@ Parameters:
   Handler:
     Type: String
     Default: handler2
+  HandlerList:
+    Type: String
+    Default: [handler, handler2]
 
 Mappings:
   Environments:
