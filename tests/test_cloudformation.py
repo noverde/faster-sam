@@ -307,6 +307,39 @@ class TestIntrinsicFunctions(unittest.TestCase):
 
                 self.assertEqual(value, values["expected"])
 
+    def test_join_function(self):
+        scenarios = {
+            "Resolved Function": {
+                "template": "tests/fixtures/templates/example2.yml",
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "Handler"}],
+                    ]
+                },
+                "expected": "fixtures.handlers.lambda_handler.handler",
+            },
+            "Unresolved Function with Incorrect Reference": {
+                "template": "tests/fixtures/templates/example2.yml",
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "fixture"}],
+                    ]
+                },
+                "expected": None,
+            },
+        }
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=values["template"]):
+                cloudformation = CloudformationTemplate(
+                    values["template"], parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
 
 class TestResource(unittest.TestCase):
     def test_resource(self):
