@@ -43,8 +43,8 @@ Globals:
               - Environments
               - Ref: Environment
               - Index
-            - handler1
-            - Ref: Handler
+            - - handler1
+              - Ref: Handler
 
 Resources:
   ApiGateway:
