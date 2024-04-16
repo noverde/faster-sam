@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 import faster_sam.cloudformation as cf
-from faster_sam.cloudformation import CloudformationTemplate
+from faster_sam.cloudformation import CloudformationTemplate, IntrinsicFunctions
 
 
 @contextmanager
@@ -267,6 +267,79 @@ class TestCloudformationTemplate(unittest.TestCase):
             with self.subTest(**function["Properties"]):
                 handler_path = cloudformation.functions[key].handler
                 self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")
+
+
+class TestIntrinsicFunctions(unittest.TestCase):
+    def test_getatt_function(self):
+        scenarios = {
+            "Resolved Function": {
+                "template": "tests/fixtures/templates/example3.yml",
+                "function": {"Fn::GetAtt": ["ApiGateway", {"Ref": "AttributeName"}]},
+                "expected": "v1",
+            },
+            "Attribute ID is None": {
+                "template": "tests/fixtures/templates/example3.yml",
+                "function": {"Fn::GetAtt": ["ApiFunction", {"Ref": "AttributeName"}]},
+                "expected": None,
+            },
+            "Attribute Name is None": {
+                "template": "tests/fixtures/templates/example3.yml",
+                "function": {"Fn::GetAtt": ["ApiGateway", "attibute"]},
+                "expected": None,
+            },
+            "Unresolved Attribute Function": {
+                "template": "tests/fixtures/templates/example3.yml",
+                "function": {"Fn::GetAtt": ["ApiGateway", {"Ref": "Attribute"}]},
+                "expected": None,
+            },
+            "Unresolved Function Return Value": {
+                "template": "tests/fixtures/templates/example3.yml",
+                "function": {"Fn::GetAtt": ["ApiGateway", "Tags"]},
+                "expected": None,
+            },
+        }
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=values["template"]):
+                cloudformation = CloudformationTemplate(
+                    values["template"], parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    def test_join_function(self):
+        scenarios = {
+            "Resolved Function": {
+                "template": "tests/fixtures/templates/example2.yml",
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "Handler"}],
+                    ]
+                },
+                "expected": "fixtures.handlers.lambda_handler.handler",
+            },
+            "Unresolved Function with Incorrect Reference": {
+                "template": "tests/fixtures/templates/example2.yml",
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "fixture"}],
+                    ]
+                },
+                "expected": None,
+            },
+        }
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=values["template"]):
+                cloudformation = CloudformationTemplate(
+                    values["template"], parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
 
 
 class TestResource(unittest.TestCase):

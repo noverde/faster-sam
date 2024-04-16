@@ -37,6 +37,8 @@ Resources:
       Name: sam-api
       StageName: 
         Ref: StageName
+      Tags: 
+        Ref: Tags
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
