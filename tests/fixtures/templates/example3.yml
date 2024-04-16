@@ -15,6 +15,9 @@ Parameters:
   AttributeName:
     Type: String
     Default: StageName
+  Accounts:
+    Type: String
+    Default: dev@gmail|dotz@gmail.com
 
 Mappings:
   Environments:
