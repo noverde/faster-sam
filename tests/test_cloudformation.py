@@ -428,6 +428,42 @@ class TestIntrinsicFunctions(unittest.TestCase):
 
                 self.assertEqual(value, values["expected"])
 
+    @mock.patch.dict(
+        "os.environ",
+        {
+            "AWS_AccountId": "123456789",
+            "ENVIRONMENT": "dev",
+        },
+    )
+    def test_replace_placeholders(self):
+        scenarios = [
+            {
+                "name": "with env vars",
+                "string": "account-${AWS::AccountId}-${ENVIRONMENT}",
+                "matches": ["AWS::AccountId", "ENVIRONMENT"],
+                "expected_result": "account-123456789-dev",
+            },
+            {
+                "name": "missing env vars",
+                "string": "account-${Id}",
+                "matches": ["Id"],
+                "expected_result": None,
+            },
+            {
+                "name": "no matches",
+                "string": "account-${AWS::AccountId}-${ENVIRONMENT}",
+                "matches": ["OTHER_VAR"],
+                "expected_result": None,
+            },
+        ]
+
+        for scenario in scenarios:
+            with self.subTest(case=scenario["name"]):
+                result = IntrinsicFunctions.replace_placeholders(
+                    scenario["string"], scenario["matches"]
+                )
+                self.assertEqual(result, scenario["expected_result"])
+
     @mock.patch.dict("os.environ", {"account": "1234"})
     def test_sub_function(self):
         scenarios = {
