@@ -825,6 +825,36 @@ class IntrinsicFunctions:
 
         return source.split(delimiter)
 
+    def replace_placeholders(string: str, matches: List[Any]):
+        pseudo_parameters = [
+            "AWS::AccountId",
+            "AWS::NotificationARNs",
+            "AWS::NoValue",
+            "AWS::Partition",
+            "AWS::Region",
+            "AWS::StackId",
+            "AWS::StackName",
+            "AWS::URLSuffix",
+        ]
+
+        result_string = string
+
+        for match in matches:
+            if match in pseudo_parameters:
+                if match.replace("::", "_") in os.environ:
+                    env_var = os.environ[match.replace("::", "_")]
+                    result_string = result_string.replace(f"${{{match}}}", env_var)
+                else:
+                    return None
+            else:
+                if match in os.environ:
+                    env_var = os.environ[match]
+                    result_string = result_string.replace(f"${{{match}}}", env_var)
+                else:
+                    return None
+
+        return result_string
+
     @staticmethod
     def sub(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
         """
@@ -844,36 +874,7 @@ class IntrinsicFunctions:
             The resulting string after performing substitutions, or None if any of the
             variables or intrinsic functions could not be resolved.
         """
-
-        pseudo_parameters = [
-            "AWS::AccountId",
-            "AWS::NotificationARNs",
-            "AWS::NoValue",
-            "AWS::Partition",
-            "AWS::Region",
-            "AWS::StackId",
-            "AWS::StackName",
-            "AWS::URLSuffix",
-        ]
-
         pattern = r"\${(.*?)}"
-
-        def replace(string: str, matches: List[Any]):
-            matches = [
-                param if param not in pseudo_parameters else param.replace("::", "_")
-                for param in matches
-            ]
-
-            result_string = string
-
-            for match in matches:
-                if match in os.environ:
-                    env_var = os.environ[match]
-                    result_string = result_string.replace(f"${{{match}}}", env_var)
-                else:
-                    return None
-
-            return result_string
 
         if isinstance(value, list):
             string, var_list = value
@@ -903,8 +904,8 @@ class IntrinsicFunctions:
             if not matches:
                 return result
 
-            return replace(result, matches)
+            return IntrinsicFunctions.replace_placeholders(result, matches)
         else:
             matches = re.findall(pattern, value)
 
-            return replace(value, matches)
+            return IntrinsicFunctions.replace_placeholders(value, matches)
