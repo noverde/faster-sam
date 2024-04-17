@@ -212,7 +212,6 @@ class TestCloudformationTemplate(unittest.TestCase):
             "tests/fixtures/templates/example2.yml": {
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
-                "SENDER_ACCOUNT": "tests/",
                 "HANDLER": "fixtures.handlers.lambda_handler.handler",
             },
             "tests/fixtures/templates/example3.yml": {
