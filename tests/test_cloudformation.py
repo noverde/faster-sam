@@ -432,27 +432,27 @@ class TestIntrinsicFunctions(unittest.TestCase):
     @mock.patch.dict("os.environ", {"account": "1234"})
     def test_sub_function(self):
         scenarios = {
-            "x1": {
+            "Resolved Function with list of variables": {
                 "template": "tests/fixtures/templates/example4.yml",
                 "function": {"Fn::Sub": ["account-${account}", [{"account": {"Ref": "Account"}}]]},
                 "expected": "account-1234",
             },
-            "x2": {
+            "Unresolved Function with nonexistent reference": {
                 "template": "tests/fixtures/templates/example4.yml",
                 "function": {"Fn::Sub": ["account-${account}", [{"account": {"Ref": "acc"}}]]},
                 "expected": None,
             },
-            "x3": {
+            "Resolved Function with string value": {
                 "template": "tests/fixtures/templates/example4.yml",
                 "function": {"Fn::Sub": "account-${account}"},
                 "expected": "account-1234",
             },
-            "x4": {
+            "Unresolved Function with nonexistent variable": {
                 "template": "tests/fixtures/templates/example4.yml",
                 "function": {"Fn::Sub": "account-${acc}"},
                 "expected": None,
             },
-            "x5": {
+            "Unresolved Function with nonexistent variable name": {
                 "template": "tests/fixtures/templates/example4.yml",
                 "function": {"Fn::Sub": ["account-${account}", [{"value": {"Ref": "Account"}}]]},
                 "expected": None,
