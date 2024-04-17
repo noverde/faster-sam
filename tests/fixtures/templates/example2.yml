@@ -34,8 +34,6 @@ Globals:
             - Environments
             - Ref: Environment
             - LogLevel
-        SENDER_ACCOUNT: 
-          Fn::GetAtt: [ HelloWorldFunction, CodeUri ]
         HANDLER:
           Fn::Join:
             - "."
