@@ -31,8 +31,6 @@ Globals:
             - Environments
             - Ref: Environment
             - LogLevel
-        SENDER_ACCOUNT: 
-          Fn::GetAtt: [ HelloWorldFunction, CodeUri ]
 
 Resources:
   ApiGateway:
