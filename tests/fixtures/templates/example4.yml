@@ -42,8 +42,6 @@ Globals:
       Variables:
         ENVIRONMENT:
           Ref: Environment
-        SENDER_ACCOUNT: 
-          Fn::GetAtt: [ ApiGatewayTwo, Region ]
         STAGE_NAME: 
           Fn::GetAtt: ApiGateway.Region
         HANDLER:
