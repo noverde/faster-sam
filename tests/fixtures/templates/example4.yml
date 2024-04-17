@@ -15,6 +15,12 @@ Parameters:
   HandlerList:
     Type: String
     Default: [handler, handler2]
+  Account:
+    Type: String
+    Default: 1234
+  VarName:
+    Type: String
+    Default: account
 
 Mappings:
   Environments:

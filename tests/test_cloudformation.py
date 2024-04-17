@@ -1,7 +1,8 @@
 import io
-import unittest
+from unittest import mock
 from contextlib import contextmanager
 from pathlib import Path
+import unittest
 
 import yaml
 
@@ -417,6 +418,53 @@ class TestIntrinsicFunctions(unittest.TestCase):
                 "function": {"Fn::Split": ["|", {"Ref": "AccountList"}]},
                 "expected": None,
             },
+        }
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=values["template"]):
+                cloudformation = CloudformationTemplate(
+                    values["template"], parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    @mock.patch.dict("os.environ", {"account": "1234"})
+    def test_sub_function(self):
+        scenarios = {
+            "x1": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": ["account-${account}", [{"account": {"Ref": "Account"}}]]},
+                "expected": "account-1234",
+            },
+            "x2": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": ["account-${account}", [{"account": {"Ref": "acc"}}]]},
+                "expected": None,
+            },
+            "x3": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": "account-${account}"},
+                "expected": "account-1234",
+            },
+            "x4": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": "account-${acc}"},
+                "expected": None,
+            },
+            "x5": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": ["account-${account}", [{"value": {"Ref": "Account"}}]]},
+                "expected": None,
+            },
+            # "x": {
+            #     "template": "tests/fixtures/templates/example4.yml",
+            #     "function": {"Fn::Sub":
+            #                   ["account-${account}",
+            #                   [!Ref VarName: {"Ref": "Account"}}]]
+            #                 },
+            #     "expected": "account-1234",
+            # },
         }
 
         for key, values in scenarios.items():

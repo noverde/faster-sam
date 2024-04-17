@@ -589,11 +589,12 @@ class IntrinsicFunctions:
         implemented = (
             "Fn::Base64",
             "Fn::FindInMap",
-            "Ref",
             "Fn::GetAtt",
             "Fn::Join",
             "Fn::Select",
             "Fn::Split",
+            "Fn::Sub",
+            "Ref",
         )
 
         fun, val = list(function.items())[0]
@@ -618,6 +619,9 @@ class IntrinsicFunctions:
 
         if "Fn::Split" == fun:
             return IntrinsicFunctions.split(val, template)
+
+        if "Fn::Sub" == fun:
+            return IntrinsicFunctions.sub(val, template)
 
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
@@ -843,3 +847,83 @@ class IntrinsicFunctions:
                 return None
 
         return source.split(delimiter)
+
+    @staticmethod
+    def sub(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Substitutes intrinsic functions and environment variables in the given value.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A list containing the string to perform substitutions on and a dictionary
+            containing variable names and their corresponding values.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The resulting string after performing substitutions, or None if any of the
+            variables or intrinsic functions could not be resolved.
+        """
+
+        pseudo_parameters = [
+            "AWS::AccountId",
+            "AWS::NotificationARNs",
+            "AWS::NoValue",
+            "AWS::Partition",
+            "AWS::Region",
+            "AWS::StackId",
+            "AWS::StackName",
+            "AWS::URLSuffix",
+        ]
+
+        pattern = r"\${(.*?)}"
+
+        def replace(string: str, matches: List[Any]):
+            matches = [
+                param if param not in pseudo_parameters else param.replace("::", "_")
+                for param in matches
+            ]
+
+            for match in matches:
+                if match in os.environ:
+                    env_var = os.environ[match]
+                    return string.replace(f"${{{match}}}", env_var)
+                else:
+                    return None
+
+        if isinstance(value, list):
+            string, var_list = value
+
+            for var_dict in var_list:
+                var_name, var_value = list(var_dict.items())[0]
+
+                if isinstance(var_name, dict):
+                    var_name = IntrinsicFunctions.eval(var_name, template)
+
+                    if var_name is None:
+                        return None
+
+                if isinstance(var_value, dict):
+                    var_value = IntrinsicFunctions.eval(var_value, template)
+
+                    if var_value is None:
+                        return None
+
+                if var_name in string:
+                    result = string.replace(f"${{{var_name}}}", str(var_value))
+                else:
+                    return None
+
+            matches = re.findall(pattern, result)
+
+            if not matches:
+                return result
+
+            return replace(result, matches)
+        else:
+            matches = re.findall(pattern, value)
+
+            return replace(value, matches)
