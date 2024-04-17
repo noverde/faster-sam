@@ -887,12 +887,16 @@ class IntrinsicFunctions:
                 for param in matches
             ]
 
+            result_string = string
+
             for match in matches:
                 if match in os.environ:
                     env_var = os.environ[match]
-                    return string.replace(f"${{{match}}}", env_var)
+                    result_string = result_string.replace(f"${{{match}}}", env_var)
                 else:
                     return None
+
+            return result_string
 
         if isinstance(value, list):
             string, var_list = value
