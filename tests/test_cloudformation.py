@@ -269,6 +269,11 @@ class TestCloudformationTemplate(unittest.TestCase):
                 handler_path = cloudformation.functions[key].handler
                 self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")
 
+    def test(self):
+        cloudformation = CloudformationTemplate("tests/fixtures/templates/example8.yml")
+
+        print(cloudformation.template)
+
 
 class TestIntrinsicFunctions(unittest.TestCase):
     def test_getatt_function(self):
