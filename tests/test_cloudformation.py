@@ -273,36 +273,33 @@ class TestIntrinsicFunctions(unittest.TestCase):
     def test_getatt_function(self):
         scenarios = {
             "Resolved Function": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::GetAtt": ["ApiGateway", {"Ref": "AttributeName"}]},
                 "expected": "v1",
             },
             "Attribute ID is None": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::GetAtt": ["ApiFunction", {"Ref": "AttributeName"}]},
                 "expected": None,
             },
             "Attribute Name is None": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::GetAtt": ["ApiGateway", "attibute"]},
                 "expected": None,
             },
             "Unresolved Attribute Function": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::GetAtt": ["ApiGateway", {"Ref": "Attribute"}]},
                 "expected": None,
             },
             "Unresolved Function Return Value": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::GetAtt": ["ApiGateway", "Tags"]},
                 "expected": None,
             },
         }
 
+        template = "tests/fixtures/templates/example3.yml"
+
         for key, values in scenarios.items():
-            with self.subTest(case=key, template=values["template"]):
+            with self.subTest(case=key, template=template):
                 cloudformation = CloudformationTemplate(
-                    values["template"], parameters={"Environment": "development"}
+                    template, parameters={"Environment": "development"}
                 )
                 value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
 
@@ -311,7 +308,6 @@ class TestIntrinsicFunctions(unittest.TestCase):
     def test_join_function(self):
         scenarios = {
             "Resolved Function": {
-                "template": "tests/fixtures/templates/example2.yml",
                 "function": {
                     "Fn::Join": [
                         ".",
@@ -321,7 +317,6 @@ class TestIntrinsicFunctions(unittest.TestCase):
                 "expected": "fixtures.handlers.lambda_handler.handler",
             },
             "Unresolved Function with Incorrect Reference": {
-                "template": "tests/fixtures/templates/example2.yml",
                 "function": {
                     "Fn::Join": [
                         ".",
@@ -332,10 +327,12 @@ class TestIntrinsicFunctions(unittest.TestCase):
             },
         }
 
+        template = "tests/fixtures/templates/example2.yml"
+
         for key, values in scenarios.items():
-            with self.subTest(case=key, template=values["template"]):
+            with self.subTest(case=key, template=template):
                 cloudformation = CloudformationTemplate(
-                    values["template"], parameters={"Environment": "development"}
+                    template, parameters={"Environment": "development"}
                 )
                 value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
 
@@ -344,7 +341,6 @@ class TestIntrinsicFunctions(unittest.TestCase):
     def test_select_function(self):
         scenarios = {
             "Resolved Function with Correct Index": {
-                "template": "tests/fixtures/templates/example4.yml",
                 "function": {
                     "Fn::Select": [
                         {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
@@ -354,7 +350,6 @@ class TestIntrinsicFunctions(unittest.TestCase):
                 "expected": "handler2",
             },
             "Unresolved Function with Incorrect Reference in List": {
-                "template": "tests/fixtures/templates/example4.yml",
                 "function": {
                     "Fn::Select": [
                         {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
@@ -364,7 +359,6 @@ class TestIntrinsicFunctions(unittest.TestCase):
                 "expected": None,
             },
             "Resolved Function with Correct Reference in List": {
-                "template": "tests/fixtures/templates/example4.yml",
                 "function": {
                     "Fn::Select": [
                         {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
@@ -374,12 +368,10 @@ class TestIntrinsicFunctions(unittest.TestCase):
                 "expected": "handler2",
             },
             "Unresolved Function with Incorrect Index Reference": {
-                "template": "tests/fixtures/templates/example4.yml",
                 "function": {"Fn::Select": [{"Ref": "index"}, {"Ref": "HandlerList"}]},
                 "expected": None,
             },
             "Unresolved Function with Incorrect Reference in Map": {
-                "template": "tests/fixtures/templates/example4.yml",
                 "function": {
                     "Fn::Select": [
                         {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
@@ -390,10 +382,12 @@ class TestIntrinsicFunctions(unittest.TestCase):
             },
         }
 
+        template = "tests/fixtures/templates/example4.yml"
+
         for key, values in scenarios.items():
-            with self.subTest(case=key, template=values["template"]):
+            with self.subTest(case=key, template=template):
                 cloudformation = CloudformationTemplate(
-                    values["template"], parameters={"Environment": "development"}
+                    template, parameters={"Environment": "development"}
                 )
                 value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
 
