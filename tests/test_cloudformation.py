@@ -396,26 +396,25 @@ class TestIntrinsicFunctions(unittest.TestCase):
     def test_split_function(self):
         scenarios = {
             "Resolved Function": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::Split": ["|", "dev@gmail|dotz@gmail.com"]},
                 "expected": ["dev@gmail", "dotz@gmail.com"],
             },
             "Resolved Function with Reference": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::Split": ["|", {"Ref": "Accounts"}]},
                 "expected": ["dev@gmail", "dotz@gmail.com"],
             },
             "Unresolved Function with Incorrect Reference": {
-                "template": "tests/fixtures/templates/example3.yml",
                 "function": {"Fn::Split": ["|", {"Ref": "AccountList"}]},
                 "expected": None,
             },
         }
 
+        template = "tests/fixtures/templates/example3.yml"
+
         for key, values in scenarios.items():
-            with self.subTest(case=key, template=values["template"]):
+            with self.subTest(case=key, template=template):
                 cloudformation = CloudformationTemplate(
-                    values["template"], parameters={"Environment": "development"}
+                    template, parameters={"Environment": "development"}
                 )
                 value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
 

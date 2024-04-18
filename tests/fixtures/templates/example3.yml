@@ -83,5 +83,5 @@ Resources:
             Fn::Select: 
               - 1
               - Fn::Split: 
-                  - "|"
-                  - "dev@gmail|dotz@gmail.com"
+                - "|"
+                - "dev@gmail|dotz@gmail.com"
