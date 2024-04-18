@@ -344,6 +344,7 @@ class CloudformationTemplate:
 
         self.template = self.load(template_path)
         self.include_files()
+        self.template = self.evaluate_and_replace(self.template)
         self.set_parameters(parameters)
 
     @property
@@ -545,17 +546,49 @@ class CloudformationTemplate:
         for function in self.functions.values():
             variables.update(function.environment)
 
-        environment = {}
+        for key, value in variables.items():
+            variables[key] = str(value)
 
-        for key, val in variables.items():
-            if isinstance(val, (str, int, float)):
-                environment[key] = str(val)
-            else:
-                value = IntrinsicFunctions.eval(val, self.template)
-                if value is not None:
-                    environment[key] = str(value)
+        return variables
 
-        return environment
+    def evaluate_and_replace(self, obj) -> Dict[str, Any]:
+        import ipdb
+        ipdb.set_trace()
+        functions = [
+            "Fn::Base64",
+            "Fn::FindInMap",
+            "Fn::GetAtt",
+            "Fn::Join",
+            "Fn::Select",
+            "Fn::Split",
+            "Fn::Sub",
+            "Ref",
+        ]
+
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key in functions:
+                    obj[key] = IntrinsicFunctions.eval(obj, self.template)
+                
+                elif isinstance(value, dict):
+                    obj[key] = self.evaluate_and_replace(value)
+
+            return obj
+
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                if isinstance(item, dict):
+                    for key, value in item.items():
+                        if key in functions:
+                            obj[i] = IntrinsicFunctions.eval(obj, self.template)
+                        
+                        elif isinstance(value, dict):
+                            obj[i] = self.evaluate_and_replace(item)
+
+                elif isinstance(item, str) and item.startswith("!"):
+                    obj[i] = IntrinsicFunctions.eval(item, self.template)
+                
+            return obj
 
 
 class IntrinsicFunctions:
