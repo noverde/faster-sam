@@ -551,9 +551,7 @@ class CloudformationTemplate:
 
         return variables
 
-    def evaluate_and_replace(self, obj) -> Dict[str, Any]:
-        import ipdb
-        ipdb.set_trace()
+    def evaluate_and_replace(self, obj: Dict[str, Any], parent_key=None) -> Dict[str, Any]:
         functions = [
             "Fn::Base64",
             "Fn::FindInMap",
@@ -566,28 +564,17 @@ class CloudformationTemplate:
         ]
 
         if isinstance(obj, dict):
-            for key, value in obj.items():
+            for key in obj.keys():
+                value = obj[key]
+
                 if key in functions:
-                    obj[key] = IntrinsicFunctions.eval(obj, self.template)
-                
+                    result = IntrinsicFunctions.eval(key, self.template)
+
+                    obj[parent_key] = result
+
                 elif isinstance(value, dict):
-                    obj[key] = self.evaluate_and_replace(value)
+                    obj[key] = self.evaluate_and_replace(value, parent_key=key)
 
-            return obj
-
-        elif isinstance(obj, list):
-            for i, item in enumerate(obj):
-                if isinstance(item, dict):
-                    for key, value in item.items():
-                        if key in functions:
-                            obj[i] = IntrinsicFunctions.eval(obj, self.template)
-                        
-                        elif isinstance(value, dict):
-                            obj[i] = self.evaluate_and_replace(item)
-
-                elif isinstance(item, str) and item.startswith("!"):
-                    obj[i] = IntrinsicFunctions.eval(item, self.template)
-                
             return obj
 
 
