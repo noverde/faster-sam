@@ -1,7 +1,8 @@
 import io
-import unittest
+from unittest import mock
 from contextlib import contextmanager
 from pathlib import Path
+import unittest
 
 import yaml
 
@@ -415,6 +416,89 @@ class TestIntrinsicFunctions(unittest.TestCase):
             with self.subTest(case=key, template=template):
                 cloudformation = CloudformationTemplate(
                     template, parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    @mock.patch.dict(
+        "os.environ",
+        {
+            "AWS_AccountId": "123456789",
+            "ENVIRONMENT": "dev",
+        },
+    )
+    def test_replace_placeholders(self):
+        scenarios = [
+            {
+                "name": "with env vars",
+                "string": "account-${AWS::AccountId}-${ENVIRONMENT}",
+                "matches": ["AWS::AccountId", "ENVIRONMENT"],
+                "expected_result": "account-123456789-dev",
+            },
+            {
+                "name": "missing env vars",
+                "string": "account-${Id}",
+                "matches": ["Id"],
+                "expected_result": None,
+            },
+            {
+                "name": "no matches",
+                "string": "account-${AWS::AccountId}-${ENVIRONMENT}",
+                "matches": ["OTHER_VAR"],
+                "expected_result": None,
+            },
+        ]
+
+        for scenario in scenarios:
+            with self.subTest(case=scenario["name"]):
+                result = IntrinsicFunctions.replace_placeholders(
+                    scenario["string"], scenario["matches"]
+                )
+                self.assertEqual(result, scenario["expected_result"])
+
+    @mock.patch.dict("os.environ", {"account": "1234"})
+    def test_sub_function(self):
+        scenarios = {
+            "Resolved Function with list of variables": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": ["account-${account}", [{"account": {"Ref": "Account"}}]]},
+                "expected": "account-1234",
+            },
+            "Unresolved Function with nonexistent reference": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": ["account-${account}", [{"account": {"Ref": "acc"}}]]},
+                "expected": None,
+            },
+            "Resolved Function with string value": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": "account-${account}"},
+                "expected": "account-1234",
+            },
+            "Unresolved Function with nonexistent variable": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": "account-${acc}"},
+                "expected": None,
+            },
+            "Unresolved Function with nonexistent variable name": {
+                "template": "tests/fixtures/templates/example4.yml",
+                "function": {"Fn::Sub": ["account-${account}", [{"value": {"Ref": "Account"}}]]},
+                "expected": None,
+            },
+            # "x": {
+            #     "template": "tests/fixtures/templates/example4.yml",
+            #     "function": {"Fn::Sub":
+            #                   ["account-${account}",
+            #                   [!Ref VarName: {"Ref": "Account"}}]]
+            #                 },
+            #     "expected": "account-1234",
+            # },
+        }
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=values["template"]):
+                cloudformation = CloudformationTemplate(
+                    values["template"], parameters={"Environment": "development"}
                 )
                 value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
 
