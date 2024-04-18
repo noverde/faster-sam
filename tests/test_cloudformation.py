@@ -306,7 +306,6 @@ class TestIntrinsicFunctions(unittest.TestCase):
     def test_join_function(self):
         scenarios = {
             "Resolved Function": {
-                "template": "tests/fixtures/templates/example2.yml",
                 "function": {
                     "Fn::Join": [
                         ".",
@@ -316,7 +315,6 @@ class TestIntrinsicFunctions(unittest.TestCase):
                 "expected": "fixtures.handlers.lambda_handler.handler",
             },
             "Unresolved Function with Incorrect Reference": {
-                "template": "tests/fixtures/templates/example2.yml",
                 "function": {
                     "Fn::Join": [
                         ".",
@@ -327,10 +325,12 @@ class TestIntrinsicFunctions(unittest.TestCase):
             },
         }
 
+        template = "tests/fixtures/templates/example2.yml"
+
         for key, values in scenarios.items():
-            with self.subTest(case=key, template=values["template"]):
+            with self.subTest(case=key, template=template):
                 cloudformation = CloudformationTemplate(
-                    values["template"], parameters={"Environment": "development"}
+                    template, parameters={"Environment": "development"}
                 )
                 value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
 
