@@ -290,6 +290,8 @@ class Bucket(ResourceInterface):
         json_body = bytes_body.decode()
         body = json.loads(json_body)
 
+        logger.warning(json_body)
+
         event = {
             "Records": [
                 {
