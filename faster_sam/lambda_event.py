@@ -285,12 +285,12 @@ class Bucket(ResourceInterface):
         Dict[str, Any]
             An bucket event.
         """
-
         bytes_body = await self.request.body()
         json_body = bytes_body.decode()
         body = json.loads(json_body)
 
         logger.warning(json_body)
+        logger.warning(self.request.headers)
 
         event = {
             "Records": [
