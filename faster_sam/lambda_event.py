@@ -298,9 +298,7 @@ class Bucket(ResourceInterface):
                     "eventTime": body["timeCreated"],
                     "eventName": "s3:ObjectCreated:*",
                     "userIdentity": {"principalId": ""},
-                    "requestParameters": {
-                        "sourceIPAddress": ""
-                    },
+                    "requestParameters": {"sourceIPAddress": ""},
                     "responseElements": {
                         "x-amz-request-id": "",
                         "x-amz-id-2": "EXAMPLE123/",
@@ -317,7 +315,7 @@ class Bucket(ResourceInterface):
                             "key": body["name"],
                             "size": body["size"],
                             "eTag": body["etag"],
-                            "sequencer": ""
+                            "sequencer": "",
                         },
                     },
                 }

@@ -121,15 +121,15 @@ def build_request_bucket():
         "method": "POST",
         "query_string": b"",
         "headers": {
-            b'x-forwarded-for': b'192.178.13.229',
-            b'ce-id': b'9475010998622634',
-            b'ce-time': b'2024-04-19T21:01:59.503551Z',
-            b'ce-bucket': b'test-bucket'
+            b"x-forwarded-for": b"192.178.13.229",
+            b"ce-id": b"9475010998622634",
+            b"ce-time": b"2024-04-19T21:01:59.503551Z",
+            b"ce-bucket": b"test-bucket",
         },
         "client": ("169.254.1.1", 35668),
         "server": ("192.168.1.1", 8080),
         "scheme": "http",
-        "app": FastAPI()
+        "app": FastAPI(),
     }
 
     return Request(scope, receive)
