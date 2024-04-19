@@ -236,6 +236,98 @@ class Schedule(ResourceInterface):
         return event
 
 
+class Bucket(ResourceInterface):
+    def __init__(self, request: Request, endpoint: Handler):
+        """
+        Initializes the Bucket.
+
+        Parameters
+        ----------
+        request : Request
+            A request object.
+        endpoint : Handler
+            A callable object.
+        """
+        super().__init__(request, endpoint)
+
+    async def call_endpoint(self) -> Response:
+        """
+        Call event buider and retuns a custom response based
+        on the mapped event.
+
+        Returns
+        -------
+        Response
+            A response object.
+        """
+        event = await self.event_builder()
+
+        tasks = BackgroundTasks()
+
+        tasks.add_task(self.endpoint, event, None)
+
+        return CustomResponse(
+            {
+                "body": json.dumps({"message": "send for processing"}),
+                "statusCode": 202,
+                "background_tasks": tasks,
+            }
+        )
+
+    async def event_builder(self):
+        """
+        Builds an event of type bucket
+
+        It uses the given request object to fill the event details.
+
+        Returns
+        -------
+        Dict[str, Any]
+            An bucket event.
+        """
+
+        bytes_body = await self.request.body()
+        json_body = bytes_body.decode()
+        body = json.loads(json_body)
+
+        event = {
+            "Records": [
+                {
+                    "eventVersion": "2.0",
+                    "eventSource": "aws:s3",
+                    "awsRegion": "us-east-1",
+                    "eventTime": self.request.headers["ce-time"],
+                    "eventName": "s3:ObjectCreated:*",
+                    "userIdentity": {"principalId": ""},
+                    "requestParameters": {
+                        "sourceIPAddress": self.request.headers["x-forwarded-for"]
+                    },
+                    "responseElements": {
+                        "x-amz-request-id": self.request.headers["ce-id"],
+                        "x-amz-id-2": "EXAMPLE123/",
+                    },
+                    "s3": {
+                        "s3SchemaVersion": "1.0",
+                        "configurationId": "testConfigRule",
+                        "bucket": {
+                            "name": self.request.headers["ce-bucket"],
+                            "ownerIdentity": {"principalId": "EXAMPLE"},
+                            "arn": "arn:aws:s3:::example-bucket",
+                        },
+                        "object": {
+                            "key": body["id"],
+                            "size": body["size"],
+                            "eTag": body["etag"],
+                            "sequencer": "0A1B2C3D4E5F678901",
+                        },
+                    },
+                }
+            ]
+        }
+
+        return event
+
+
 class ApiGateway(ResourceInterface):
     def __init__(self, request: Request, endpoint: Handler):
         """

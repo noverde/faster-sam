@@ -24,4 +24,17 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     Properties:
-      BucketName: "test-bucket"
+      BucketName: 
+        Fn::Sub: "test-bucket-${AWS::AccountId}"
+
+  ImportFile:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: sre-my-schedule
+      CodeUri: tests/
+      Handler: fixtures.handlers.lambda_handler.handler
+      Events:
+        S3Event:
+            Type: S3
+            Properties:
+              Bucket: !Ref TestBucket

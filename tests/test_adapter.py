@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest.mock import patch
 
 from fastapi import FastAPI
 
@@ -78,6 +79,21 @@ class TestSAM(unittest.TestCase):
         self.assertEqual(len(app.routes), 4)
 
         sam.configure_schedule(app)
+        self.assertEqual(len(app.routes), 5)
+
+    @patch.dict(
+        "os.environ",
+        {
+            "PROJECT_NUMBER": "123",
+        },
+    )
+    def test_configure_bucket(self):
+        app = FastAPI()
+        sam = SAM("tests/fixtures/templates/example7.yml")
+
+        self.assertEqual(len(app.routes), 4)
+
+        sam.configure_bucket(app)
         self.assertEqual(len(app.routes), 5)
 
     def test_configure_api_raises_gateway_lookup_error(self):
