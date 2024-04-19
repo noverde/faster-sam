@@ -289,38 +289,35 @@ class Bucket(ResourceInterface):
         json_body = bytes_body.decode()
         body = json.loads(json_body)
 
-        logger.warning(json_body)
-        logger.warning(self.request.headers)
-
         event = {
             "Records": [
                 {
                     "eventVersion": "2.0",
                     "eventSource": "aws:s3",
                     "awsRegion": "us-east-1",
-                    "eventTime": self.request.headers["ce-time"],
+                    "eventTime": body["timeCreated"],
                     "eventName": "s3:ObjectCreated:*",
                     "userIdentity": {"principalId": ""},
                     "requestParameters": {
-                        "sourceIPAddress": self.request.headers["x-forwarded-for"]
+                        "sourceIPAddress": ""
                     },
                     "responseElements": {
-                        "x-amz-request-id": self.request.headers["ce-id"],
+                        "x-amz-request-id": "",
                         "x-amz-id-2": "EXAMPLE123/",
                     },
                     "s3": {
                         "s3SchemaVersion": "1.0",
                         "configurationId": "testConfigRule",
                         "bucket": {
-                            "name": self.request.headers["ce-bucket"],
+                            "name": body["bucket"],
                             "ownerIdentity": {"principalId": "EXAMPLE"},
                             "arn": "arn:aws:s3:::example-bucket",
                         },
                         "object": {
-                            "key": body["id"],
+                            "key": body["name"],
                             "size": body["size"],
                             "eTag": body["etag"],
-                            "sequencer": "0A1B2C3D4E5F678901",
+                            "sequencer": ""
                         },
                     },
                 }

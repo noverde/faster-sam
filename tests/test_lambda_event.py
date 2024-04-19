@@ -90,25 +90,49 @@ def build_request_schedule():
     return Request(scope, receive)
 
 
-# def build_request_bucket():
+def build_request_bucket():
+    async def receive():
+        body = {
+            "kind": "storage#object",
+            "id": "test-bucket/Captura.png/171355802",
+            "selfLink": "https://www.googleapis.com/storage/v1/b/test-bucket/o/Captura.png",
+            "name": "Captura.png",
+            "bucket": "test-bucket",
+            "generation": "17135544002",
+            "metageneration": "1",
+            "contentType": "image/png",
+            "timeCreated": "2024-04-19T19:20:02.583Z",
+            "updated": "2024-04-19T19:20:02.583Z",
+            "storageClass": "STANDARD",
+            "timeStorageClassUpdated": "2024-04-19T19:20:02.583Z",
+            "size": "21032",
+            "md5Hash": "VZsw8CMPjh427rA==",
+            "mediaLink": "https://storage.googleapis.com/download/storage/v1/b/test-bucket",
+            "crc32c": "EIMw==",
+            "etag": "CMKy4UDEAE=",
+        }
+        return {"type": "http.request", "body": json.dumps(body).encode()}
 
-# async def receive():
-#     body = {}
-#     return {"type": "http.request", "body": json.dumps(body).encode()}
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "root_path": "/s3event",
+        "path": "/test-bucket",
+        "method": "POST",
+        "query_string": b"",
+        "headers": {
+            b'x-forwarded-for': b'192.178.13.229',
+            b'ce-id': b'9475010998622634',
+            b'ce-time': b'2024-04-19T21:01:59.503551Z',
+            b'ce-bucket': b'test-bucket'
+        },
+        "client": ("169.254.1.1", 35668),
+        "server": ("192.168.1.1", 8080),
+        "scheme": "http",
+        "app": FastAPI()
+    }
 
-# scope = {
-#     "type": "http",
-#     "http_version": "1.1",
-#     "root_path": "",
-#     "path": "/test",
-#     "method": "GET",
-#     "query_string": [],
-#     "path_params": {},
-#     "client": ("127.0.0.1", 80),
-#     "app": FastAPI(),
-# }
-
-# return Request(scope, receive)
+    return Request(scope, receive)
 
 
 class TestCustomResponse(unittest.TestCase):
@@ -215,28 +239,29 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(event, dict)
         self.assertEqual(set(event.keys()), expected_keys)
 
-    # async def test_event_builder_bucket(self):
-    #     request = build_request_bucket()
-    #     expected_keys = {
-    #         "version",
-    #         "id",
-    #         "detail-type",
-    #         "source",
-    #         "account",
-    #         "time",
-    #         "region",
-    #         "resources",
-    #         "detail",
-    #     }
+    async def test_event_builder_bucket(self):
+        request = build_request_bucket()
+        expected_keys = {
+            "requestParameters",
+            "s3",
+            "eventTime",
+            "userIdentity",
+            "eventName",
+            "responseElements",
+            "awsRegion",
+            "eventVersion",
+            "eventSource",
+        }
 
-    #     module_name = "tests.fixtures.handlers.lambda_handler"
-    #     handler_name = "handler"
-    #     handler_path = f"{module_name}.{handler_name}"
-    #     handler = faster_sam.routing.import_handler(handler_path)
+        module_name = "tests.fixtures.handlers.lambda_handler"
+        handler_name = "handler"
+        handler_path = f"{module_name}.{handler_name}"
+        handler = faster_sam.routing.import_handler(handler_path)
 
-    #     schedule = faster_sam.lambda_event.Schedule(request, handler)
+        bucket = faster_sam.lambda_event.Bucket(request, handler)
 
-    #     event = await schedule.event_builder()
+        event = await bucket.event_builder()
 
-    #     self.assertIsInstance(event, dict)
-    #     self.assertEqual(set(event.keys()), expected_keys)
+        self.assertIsInstance(event, dict)
+        print(set(event["Records"][0].keys()))
+        self.assertEqual(set(event["Records"][0].keys()), expected_keys)
