@@ -266,10 +266,7 @@ class Bucket(ResourceInterface):
             result = self.endpoint(event, None)
         except Exception as error:
             logger.exception(error)
-            return CustomResponse({"body": "Error processing message", "statusCode": 500})
-
-        if isinstance(result, dict) and "batchItemFailures" in result:
-            return CustomResponse({"body": json.dumps(result), "statusCode": 500})
+            return CustomResponse({"body": "Error processing request", "statusCode": 500})
 
         return CustomResponse({"body": json.dumps(result), "statusCode": 200})
 
