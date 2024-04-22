@@ -599,14 +599,14 @@ class IntrinsicFunctions:
 
         fun, val = list(function.items())[0]
 
-        if fun in functions.keys():
-            return functions[fun](val, template)
-        else:
+        if fun not in functions:
             logging.warning(f"{fun} intrinsic function not implemented")
             return None
 
+        return functions[fun](val, template)
+
     @staticmethod
-    def base64(value: str, template: Dict[str, Any]) -> str:
+    def base64(value: str, _: Dict[str, Any]) -> str:
         """
         Encode a string to base64.
 
