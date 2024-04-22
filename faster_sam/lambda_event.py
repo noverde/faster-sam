@@ -262,17 +262,16 @@ class Bucket(ResourceInterface):
         """
         event = await self.event_builder()
 
-        tasks = BackgroundTasks()
+        try:
+            result = self.endpoint(event, None)
+        except Exception as error:
+            logger.exception(error)
+            return CustomResponse({"body": "Error processing message", "statusCode": 500})
 
-        tasks.add_task(self.endpoint, event, None)
+        if isinstance(result, dict) and "batchItemFailures" in result:
+            return CustomResponse({"body": json.dumps(result), "statusCode": 500})
 
-        return CustomResponse(
-            {
-                "body": json.dumps({"message": "send for processing"}),
-                "statusCode": 202,
-                "background_tasks": tasks,
-            }
-        )
+        return CustomResponse({"body": json.dumps(result), "statusCode": 200})
 
     async def event_builder(self):
         """
