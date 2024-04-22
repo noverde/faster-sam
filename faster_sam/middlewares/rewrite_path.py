@@ -1,6 +1,7 @@
 import json
 from http import HTTPStatus
 import logging
+from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -56,11 +57,20 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
 
         logger.debug(f"Received body: {body}")
 
-        queue = body["message"]["attributes"]["endpoint"]
+        endpoint = self.endpoint(body)
 
-        if "/" in queue:
-            queue = queue.rsplit("/")[-1]
-
-        request.scope["path"] = "/" + queue
+        request.scope["path"] = "/" + endpoint
 
         return await call_next(request)
+
+    def endpoint(self, body: dict[str, Any]) -> str:
+        if "message" in body:
+            endpoint = body["message"]["attributes"]["endpoint"]
+
+            if "/" in endpoint:
+                endpoint = endpoint.rsplit("/")[-1]
+
+        elif "bucket" in body:
+            endpoint = body["bucket"]
+
+        return endpoint
