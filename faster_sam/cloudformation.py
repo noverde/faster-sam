@@ -586,50 +586,27 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = (
-            "Fn::Base64",
-            "Fn::FindInMap",
-            "Fn::GetAtt",
-            "Fn::Join",
-            "Fn::Select",
-            "Fn::Split",
-            "Fn::Sub",
-            "Ref",
-        )
+        functions = {
+            "Fn::Base64": IntrinsicFunctions.base64,
+            "Fn::FindInMap": IntrinsicFunctions.find_in_map,
+            "Fn::GetAtt": IntrinsicFunctions.get_att,
+            "Fn::Join": IntrinsicFunctions.join,
+            "Fn::Select": IntrinsicFunctions.select,
+            "Fn::Split": IntrinsicFunctions.split,
+            "Fn::Sub": IntrinsicFunctions.sub,
+            "Ref": IntrinsicFunctions.ref,
+        }
 
         fun, val = list(function.items())[0]
 
-        if fun not in implemented:
+        if fun not in functions:
             logging.warning(f"{fun} intrinsic function not implemented")
+            return None
 
-        if "Fn::Base64" == fun:
-            return IntrinsicFunctions.base64(val)
-
-        if "Fn::FindInMap" == fun:
-            return IntrinsicFunctions.find_in_map(val, template)
-
-        if "Fn::GetAtt" == fun:
-            return IntrinsicFunctions.get_att(val, template)
-
-        if "Fn::Join" == fun:
-            return IntrinsicFunctions.join(val, template)
-
-        if "Fn::Select" == fun:
-            return IntrinsicFunctions.select(val, template)
-
-        if "Fn::Split" == fun:
-            return IntrinsicFunctions.split(val, template)
-
-        if "Fn::Sub" == fun:
-            return IntrinsicFunctions.sub(val, template)
-
-        if "Ref" == fun:
-            return IntrinsicFunctions.ref(val, template)
-
-        return None
+        return functions[fun](val, template)
 
     @staticmethod
-    def base64(value: str) -> str:
+    def base64(value: str, _: Dict[str, Any]) -> str:
         """
         Encode a string to base64.
 
