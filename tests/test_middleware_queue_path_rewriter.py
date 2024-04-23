@@ -3,10 +3,10 @@ import unittest
 
 from fastapi import FastAPI, Request, Response
 
-from faster_sam.middlewares import rewrite_path
+from faster_sam.middlewares import queue_path_rewriter
 
 
-class TestRewritePathMiddleware(unittest.IsolatedAsyncioTestCase):
+class TestQueuePathRewriterMiddleware(unittest.IsolatedAsyncioTestCase):
     async def test_middleware_rewrite_path(self):
         async def receive():
             return {
@@ -16,7 +16,7 @@ class TestRewritePathMiddleware(unittest.IsolatedAsyncioTestCase):
 
         app = FastAPI()
 
-        middleware = rewrite_path.RewritePathMiddleware(app)
+        middleware = queue_path_rewriter.QueuePathRewriterMiddleware(app)
 
         async def call_next(request: Request) -> Response:
             return Response(content=json.dumps({"path": request.scope["path"]}))
@@ -36,7 +36,7 @@ class TestRewritePathMiddleware(unittest.IsolatedAsyncioTestCase):
 
         app = FastAPI()
 
-        middleware = rewrite_path.RewritePathMiddleware(app)
+        middleware = queue_path_rewriter.QueuePathRewriterMiddleware(app)
 
         async def call_next(request: Request) -> Response:
             return Response(content=json.dumps({"path": request.scope["path"]}))
@@ -50,7 +50,7 @@ class TestRewritePathMiddleware(unittest.IsolatedAsyncioTestCase):
     async def test_middleware_rewrite_path_without_post(self):
         app = FastAPI()
 
-        middleware = rewrite_path.RewritePathMiddleware(app)
+        middleware = queue_path_rewriter.QueuePathRewriterMiddleware(app)
 
         async def call_next(request: Request) -> Response:
             return Response(content=json.dumps({"path": request.scope["path"]}))
