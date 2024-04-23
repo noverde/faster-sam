@@ -10,9 +10,9 @@ from starlette.types import ASGIApp
 logger = logging.getLogger(__name__)
 
 
-class RewritePathMiddleware(BaseHTTPMiddleware):
+class BucketPathRewriterMiddleware(BaseHTTPMiddleware):
     """
-    Rewrites a specified part of the request path.
+    Rewrites a specified part of the request path with bucket name.
 
     Parameters
     ----------
@@ -22,13 +22,13 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp) -> None:
         """
-        Initializes the RewritePathMiddleware.
+        Initializes the BucketPathRewriterMiddleware.
         """
         super().__init__(app, self.dispatch)
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """
-        Rewrites a specified part of the request path.
+        Rewrites a specified part of the request path with bucket name.
 
         Parameters
         ----------
@@ -56,11 +56,8 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
 
         logger.debug(f"Received body: {body}")
 
-        queue = body["message"]["attributes"]["endpoint"]
+        bucket_name = body["bucket"]
 
-        if "/" in queue:
-            queue = queue.rsplit("/")[-1]
-
-        request.scope["path"] = "/" + queue
+        request.scope["path"] = "/" + bucket_name
 
         return await call_next(request)
