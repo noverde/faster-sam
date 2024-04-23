@@ -4,9 +4,16 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 
-from faster_sam.cloudformation import ApiEvent, CloudformationTemplate, EventType, SQSEvent
+from faster_sam.cloudformation import (
+    ApiEvent,
+    CloudformationTemplate,
+    EventType,
+    SQSEvent,
+    ScheduleEvent,
+    S3Event,
+)
 from faster_sam.openapi import custom_openapi
-from faster_sam.routing import APIRoute, QueueRoute, ScheduleRoute
+from faster_sam.routing import APIRoute, BucketRoute, QueueRoute, ScheduleRoute
 
 ARN_PATTERN = r"^arn:aws:apigateway.*\${(\w+)\.Arn}/invocations$"
 
@@ -139,6 +146,23 @@ class SAM:
 
         self.register_routes(app, routes, ScheduleRoute)
 
+    def configure_bucket(
+        self,
+        app: FastAPI,
+    ) -> None:
+        """
+        Configures the FastAPI application with routes based on buckets defined
+        in cloudformation template.
+
+        Parameters
+        ----------
+        app : FastAPI
+            The FastAPI application instance to be configured.
+        """
+        routes = self.lambda_mapper(event_type=EventType.S3)
+
+        self.register_routes(app, routes, BucketRoute)
+
     def openapi_mapper(self, openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create a route map extracted from the given OpenAPI schema.
@@ -249,9 +273,34 @@ class SAM:
                         raise NotImplementedError()
 
                     path += queue_name
-                elif event_type == EventType.SCHEDULE:
+                elif isinstance(event, ScheduleEvent):
                     function_name = function.name.lower().replace("_", "-")
                     path += function_name
+                elif isinstance(event, S3Event):
+                    # TODO: refactor this after implementing intrinsic functions parsers
+                    if isinstance(event.bucket, str):
+                        bucket_name = event.bucket
+                    elif isinstance(event.bucket, dict):
+                        fn, bucket_id = list(event.bucket.items())[0]
+
+                        if fn == "Ref":
+                            if isinstance(bucket_id, str):
+                                bucket_name = self.template.buckets[bucket_id].name
+                                if isinstance(bucket_name, dict):
+                                    fn, val = list(bucket_name.items())[0]
+
+                                    if fn == "Fn::Sub":
+                                        bucket_name = val.replace(
+                                            "${AWS::AccountId}", (os.getenv("PROJECT_NUMBER"))
+                                        )
+                                    else:
+                                        raise NotImplementedError()
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        raise NotImplementedError()
+
+                    path += bucket_name
 
                 endpoint = {method: {"handler": function.handler}}
                 routes.setdefault(path, {}).update(endpoint)
