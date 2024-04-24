@@ -392,7 +392,7 @@ class TestIntrinsicFunctions(unittest.TestCase):
 
                 self.assertEqual(value, values["expected"])
 
-                
+
 class TestResource(unittest.TestCase):
     def test_resource(self):
         resource_id = "Test"
