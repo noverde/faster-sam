@@ -85,3 +85,4 @@ Resources:
               - Fn::Split: 
                 - "|"
                 - "dev@gmail|dotz@gmail.com"
+            Fn::GetAtt: [ ApiGateway, !Ref AttributeName ]

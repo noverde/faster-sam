@@ -70,11 +70,14 @@ class EventType(Enum):
         Represents the "SQS" node type.
     SCHEDULE : str
         Represents the "Schedule" node type.
+    S3 : str
+        Represents the "S3" node type.
     """
 
     API = "Api"
     SQS = "SQS"
     SCHEDULE = "Schedule"
+    S3 = "S3"
 
 
 def multi_constructor(loader: CFLoader, tag_suffix: str, node: yaml.nodes.Node) -> Dict[str, Any]:
@@ -168,6 +171,7 @@ class EventSource(Resource):
             EventType.API: ApiEvent,
             EventType.SQS: SQSEvent,
             EventType.SCHEDULE: ScheduleEvent,
+            EventType.S3: S3Event,
         }
 
         event_type = EventType(resource["Type"])
@@ -209,6 +213,12 @@ class ScheduleEvent(EventSource):
     @property
     def schedule(self) -> str:
         return self.resource["Properties"]["Schedule"]
+
+
+class S3Event(EventSource):
+    @property
+    def bucket(self) -> str:
+        return self.resource["Properties"]["Bucket"]
 
 
 class Function(Resource):
@@ -584,15 +594,7 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = (
-            "Fn::Base64",
-            "Fn::FindInMap",
-            "Ref",
-            "Fn::GetAtt",
-            "Fn::Join",
-            "Fn::Select",
-            "Fn::Split",
-        )
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join", "Fn::Select")
 
         fun, val = list(function.items())[0]
 
