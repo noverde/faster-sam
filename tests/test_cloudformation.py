@@ -212,6 +212,7 @@ class TestCloudformationTemplate(unittest.TestCase):
             "tests/fixtures/templates/example2.yml": {
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
+                "HANDLER": "fixtures.handlers.lambda_handler.handler",
             },
             "tests/fixtures/templates/example3.yml": {
                 "ENVIRONMENT": "development",
@@ -292,6 +293,39 @@ class TestIntrinsicFunctions(unittest.TestCase):
         }
 
         template = "tests/fixtures/templates/example3.yml"
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=template):
+                cloudformation = CloudformationTemplate(
+                    template, parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    def test_join_function(self):
+        scenarios = {
+            "Resolved Function": {
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "Handler"}],
+                    ]
+                },
+                "expected": "fixtures.handlers.lambda_handler.handler",
+            },
+            "Unresolved Function with Incorrect Reference": {
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "fixture"}],
+                    ]
+                },
+                "expected": None,
+            },
+        }
+
+        template = "tests/fixtures/templates/example2.yml"
 
         for key, values in scenarios.items():
             with self.subTest(case=key, template=template):

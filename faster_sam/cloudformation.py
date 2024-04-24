@@ -594,7 +594,7 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt")
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join")
 
         fun, val = list(function.items())[0]
 
@@ -609,6 +609,9 @@ class IntrinsicFunctions:
 
         if "Fn::GetAtt" == fun:
             return IntrinsicFunctions.get_att(val, template)
+
+        if "Fn::Join" == fun:
+            return IntrinsicFunctions.join(val, template)
 
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
@@ -734,3 +737,34 @@ class IntrinsicFunctions:
                 return None
 
         return attribute_value
+
+    @staticmethod
+    def join(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Joins elements in a list with a specified delimiter.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A list containing two elements: the delimiter as the first element,
+            and the values to join as the second element.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The joined string if successful; otherwise, None.
+        """
+        delimiter, values = value
+
+        for index, element in enumerate(values):
+            if isinstance(element, dict):
+                element = IntrinsicFunctions.eval(element, template)
+
+            if element is None:
+                return None
+
+            values[index] = element
+
+        return delimiter.join(values)
