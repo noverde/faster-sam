@@ -616,6 +616,9 @@ class IntrinsicFunctions:
         if "Fn::Select" == fun:
             return IntrinsicFunctions.select(val, template)
 
+        if "Fn::Split" == fun:
+            return IntrinsicFunctions.split(val, template)
+
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
 
@@ -811,3 +814,32 @@ class IntrinsicFunctions:
                         return None
 
         return objects[int(index)]
+
+    @staticmethod
+    def split(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Splits a list of values using a specified delimiter.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A tuple containing the delimiter as its first element, followed
+            by a list of values to split.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            A list of strings resulting from splitting using the delimiter.
+            or None if any of the evaluated values are None.
+        """
+        delimiter, source = value
+
+        if isinstance(source, dict):
+            source = IntrinsicFunctions.eval(source, template)
+
+            if source is None:
+                return None
+
+        return source.split(delimiter)
