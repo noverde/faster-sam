@@ -529,3 +529,19 @@ class TestScheduleEvent(unittest.TestCase):
 
         self.assertEqual(instance.schedule, "rate(1 minute)")
         self.assertEqual(instance.type, cf.EventType.SCHEDULE)
+
+
+class TestS3Event(unittest.TestCase):
+    def test_s3_event(self):
+        resource_id = "TestS3"
+        resource = {
+            "Type": "S3",
+            "Properties": {
+                "Bucket": "TestBucket",
+            },
+        }
+
+        instance = cf.S3Event(resource_id, resource)
+
+        self.assertEqual(instance.bucket, "TestBucket")
+        self.assertEqual(instance.type, cf.EventType.S3)
