@@ -594,7 +594,7 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join")
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join", "Fn::Select")
 
         fun, val = list(function.items())[0]
 
@@ -612,6 +612,9 @@ class IntrinsicFunctions:
 
         if "Fn::Join" == fun:
             return IntrinsicFunctions.join(val, template)
+
+        if "Fn::Select" == fun:
+            return IntrinsicFunctions.select(val, template)
 
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
@@ -768,3 +771,43 @@ class IntrinsicFunctions:
             values[index] = element
 
         return delimiter.join(values)
+
+    @staticmethod
+    def select(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Selects a value from a list based on the given index. If the value at the index
+        is a dictionary, it evaluates it using CloudFormation template data.
+        Parameters
+        ----------
+        value : List[Any]
+            A list containing values from which to select.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+        Returns
+        -------
+        Optional[str]
+            The selected value from the list, or None if any of the evaluated
+            values are None.
+        """
+        index, objects = value
+
+        if isinstance(index, dict):
+            index = IntrinsicFunctions.eval(index, template)
+
+            if index is None:
+                return None
+
+        if isinstance(objects, dict):
+            objects = IntrinsicFunctions.eval(objects, template)
+
+            if objects is None:
+                return None
+        else:
+            for i, obj in enumerate(objects):
+                if isinstance(obj, dict):
+                    objects[i] = IntrinsicFunctions.eval(obj, template)
+
+                    if objects[i] is None:
+                        return None
+
+        return objects[int(index)]

@@ -9,15 +9,24 @@ Parameters:
   Environment:
     Type: String
     Default: development
+  Handler:
+    Type: String
+    Default: handler2
+  HandlerList:
+    Type: String
+    Default: [handler, handler2]
 
 Mappings:
   Environments:
     development:
       LogLevel: DEBUG
+      Index: 1
     staging:
       LogLevel: WARNING
+      Index: 1
     production:
       LogLevel: ERROR
+      Index: 1
 
 Globals:
   Function:
@@ -27,6 +36,16 @@ Globals:
       Variables:
         ENVIRONMENT:
           Ref: Environment
+        STAGE_NAME: 
+          Fn::GetAtt: ApiGateway.Region
+        HANDLER:
+          Fn::Select:
+            - Fn::FindInMap:
+              - Environments
+              - Ref: Environment
+              - Index
+            - - handler1
+              - Ref: Handler
 
 Resources:
   ApiGateway:

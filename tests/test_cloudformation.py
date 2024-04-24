@@ -222,6 +222,7 @@ class TestCloudformationTemplate(unittest.TestCase):
             "tests/fixtures/templates/example4.yml": {
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
+                "HANDLER": "handler2",
             },
         }
 
@@ -326,6 +327,61 @@ class TestIntrinsicFunctions(unittest.TestCase):
         }
 
         template = "tests/fixtures/templates/example2.yml"
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=template):
+                cloudformation = CloudformationTemplate(
+                    template, parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    def test_select_function(self):
+        scenarios = {
+            "Resolved Function with Correct Index": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        ["handler1", {"Ref": "Handler"}],
+                    ]
+                },
+                "expected": "handler2",
+            },
+            "Unresolved Function with Incorrect Reference in List": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        ["handler1", {"Ref": "Fixture"}],
+                    ]
+                },
+                "expected": None,
+            },
+            "Resolved Function with Correct Reference in List": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        {"Ref": "HandlerList"},
+                    ]
+                },
+                "expected": "handler2",
+            },
+            "Unresolved Function with Incorrect Index Reference": {
+                "function": {"Fn::Select": [{"Ref": "index"}, {"Ref": "HandlerList"}]},
+                "expected": None,
+            },
+            "Unresolved Function with Incorrect Reference in Map": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        {"Ref": "Fixture"},
+                    ]
+                },
+                "expected": None,
+            },
+        }
+
+        template = "tests/fixtures/templates/example4.yml"
 
         for key, values in scenarios.items():
             with self.subTest(case=key, template=template):
