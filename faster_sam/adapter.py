@@ -293,12 +293,9 @@ class SAM:
                                         bucket_name = val.replace(
                                             "${AWS::AccountId}", (os.getenv("PROJECT_NUMBER"))
                                         )
-                                    else:
-                                        raise NotImplementedError()
-                        else:
-                            raise NotImplementedError()
-                    else:
-                        raise NotImplementedError()
+
+                    if bucket_name is None:
+                        raise NotImplementedError
 
                     path += bucket_name
 

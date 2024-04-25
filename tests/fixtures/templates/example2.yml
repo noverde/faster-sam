@@ -8,6 +8,9 @@ Description: >
 Parameters:
   Environment:
     Type: String
+  Handler:
+    type: String
+    Default: handler
 
 Mappings:
   Environments:
@@ -31,6 +34,13 @@ Globals:
             - Environments
             - Ref: Environment
             - LogLevel
+        HANDLER:
+          Fn::Join:
+            - "."
+            - - fixtures
+              - handlers
+              - lambda_handler
+              - Ref: Handler
 
 Resources:
   ApiGateway:

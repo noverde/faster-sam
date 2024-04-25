@@ -9,6 +9,15 @@ Parameters:
   Environment:
     Type: String
     Default: development
+  StageName:
+    Type: String
+    Default: v1
+  AttributeName:
+    Type: String
+    Default: StageName
+  Accounts:
+    Type: String
+    Default: dev@gmail|dotz@gmail.com
 
 Mappings:
   Environments:
@@ -29,7 +38,10 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       Name: sam-api
-      StageName: v1
+      StageName: 
+        Ref: StageName
+      Tags: 
+        Ref: Tags
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
@@ -63,3 +75,14 @@ Resources:
               - Environments
               - Ref: Environment
               - LogLevel
+          STAGE_NAME: 
+            Fn::GetAtt:
+              - ApiGateway
+              - Ref: AttributeName
+          SENDER_ACCOUNT:
+            Fn::Select: 
+              - 1
+              - Fn::Split: 
+                - "|"
+                - "dev@gmail|dotz@gmail.com"
+            Fn::GetAtt: [ ApiGateway, !Ref AttributeName ]

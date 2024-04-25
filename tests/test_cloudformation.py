@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 import faster_sam.cloudformation as cf
-from faster_sam.cloudformation import CloudformationTemplate
+from faster_sam.cloudformation import CloudformationTemplate, IntrinsicFunctions
 
 
 @contextmanager
@@ -212,14 +212,18 @@ class TestCloudformationTemplate(unittest.TestCase):
             "tests/fixtures/templates/example2.yml": {
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
+                "HANDLER": "fixtures.handlers.lambda_handler.handler",
             },
             "tests/fixtures/templates/example3.yml": {
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
+                "STAGE_NAME": "v1",
+                "SENDER_ACCOUNT": "dotz@gmail.com",
             },
             "tests/fixtures/templates/example4.yml": {
                 "ENVIRONMENT": "development",
                 "LOG_LEVEL": "DEBUG",
+                "HANDLER": "handler2",
             },
         }
 
@@ -263,6 +267,158 @@ class TestCloudformationTemplate(unittest.TestCase):
             with self.subTest(**function["Properties"]):
                 handler_path = cloudformation.functions[key].handler
                 self.assertEqual(handler_path, "tests.fixtures.handlers.lambda_handler.handler")
+
+
+class TestIntrinsicFunctions(unittest.TestCase):
+    def test_getatt_function(self):
+        scenarios = {
+            "Resolved Function": {
+                "function": {"Fn::GetAtt": ["ApiGateway", {"Ref": "AttributeName"}]},
+                "expected": "v1",
+            },
+            "Attribute ID is None": {
+                "function": {"Fn::GetAtt": ["ApiFunction", {"Ref": "AttributeName"}]},
+                "expected": None,
+            },
+            "Attribute Name is None": {
+                "function": {"Fn::GetAtt": ["ApiGateway", "attibute"]},
+                "expected": None,
+            },
+            "Unresolved Attribute Function": {
+                "function": {"Fn::GetAtt": ["ApiGateway", {"Ref": "Attribute"}]},
+                "expected": None,
+            },
+            "Unresolved Function Return Value": {
+                "function": {"Fn::GetAtt": ["ApiGateway", "Tags"]},
+                "expected": None,
+            },
+        }
+
+        template = "tests/fixtures/templates/example3.yml"
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=template):
+                cloudformation = CloudformationTemplate(
+                    template, parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    def test_join_function(self):
+        scenarios = {
+            "Resolved Function": {
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "Handler"}],
+                    ]
+                },
+                "expected": "fixtures.handlers.lambda_handler.handler",
+            },
+            "Unresolved Function with Incorrect Reference": {
+                "function": {
+                    "Fn::Join": [
+                        ".",
+                        ["fixtures", "handlers", "lambda_handler", {"Ref": "fixture"}],
+                    ]
+                },
+                "expected": None,
+            },
+        }
+
+        template = "tests/fixtures/templates/example2.yml"
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=template):
+                cloudformation = CloudformationTemplate(
+                    template, parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    def test_select_function(self):
+        scenarios = {
+            "Resolved Function with Correct Index": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        ["handler1", {"Ref": "Handler"}],
+                    ]
+                },
+                "expected": "handler2",
+            },
+            "Unresolved Function with Incorrect Reference in List": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        ["handler1", {"Ref": "Fixture"}],
+                    ]
+                },
+                "expected": None,
+            },
+            "Resolved Function with Correct Reference in List": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        {"Ref": "HandlerList"},
+                    ]
+                },
+                "expected": "handler2",
+            },
+            "Unresolved Function with Incorrect Index Reference": {
+                "function": {"Fn::Select": [{"Ref": "index"}, {"Ref": "HandlerList"}]},
+                "expected": None,
+            },
+            "Unresolved Function with Incorrect Reference in Map": {
+                "function": {
+                    "Fn::Select": [
+                        {"Fn::FindInMap": ["Environments", {"Ref": "Environment"}, "Index"]},
+                        {"Ref": "Fixture"},
+                    ]
+                },
+                "expected": None,
+            },
+        }
+
+        template = "tests/fixtures/templates/example4.yml"
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=template):
+                cloudformation = CloudformationTemplate(
+                    template, parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
+
+    def test_split_function(self):
+        scenarios = {
+            "Resolved Function": {
+                "function": {"Fn::Split": ["|", "dev@gmail|dotz@gmail.com"]},
+                "expected": ["dev@gmail", "dotz@gmail.com"],
+            },
+            "Resolved Function with Reference": {
+                "function": {"Fn::Split": ["|", {"Ref": "Accounts"}]},
+                "expected": ["dev@gmail", "dotz@gmail.com"],
+            },
+            "Unresolved Function with Incorrect Reference": {
+                "function": {"Fn::Split": ["|", {"Ref": "AccountList"}]},
+                "expected": None,
+            },
+        }
+
+        template = "tests/fixtures/templates/example3.yml"
+
+        for key, values in scenarios.items():
+            with self.subTest(case=key, template=template):
+                cloudformation = CloudformationTemplate(
+                    template, parameters={"Environment": "development"}
+                )
+                value = IntrinsicFunctions.eval(values["function"], cloudformation.template)
+
+                self.assertEqual(value, values["expected"])
 
 
 class TestResource(unittest.TestCase):

@@ -594,7 +594,7 @@ class IntrinsicFunctions:
         NotImplementedError
             If the intrinsic function is not implemented.
         """
-        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref")
+        implemented = ("Fn::Base64", "Fn::FindInMap", "Ref", "Fn::GetAtt", "Fn::Join", "Fn::Select")
 
         fun, val = list(function.items())[0]
 
@@ -606,6 +606,18 @@ class IntrinsicFunctions:
 
         if "Fn::FindInMap" == fun:
             return IntrinsicFunctions.find_in_map(val, template)
+
+        if "Fn::GetAtt" == fun:
+            return IntrinsicFunctions.get_att(val, template)
+
+        if "Fn::Join" == fun:
+            return IntrinsicFunctions.join(val, template)
+
+        if "Fn::Select" == fun:
+            return IntrinsicFunctions.select(val, template)
+
+        if "Fn::Split" == fun:
+            return IntrinsicFunctions.split(val, template)
 
         if "Ref" == fun:
             return IntrinsicFunctions.ref(val, template)
@@ -686,3 +698,148 @@ class IntrinsicFunctions:
         # NOTE: this is a partial implementation
 
         return None
+
+    @staticmethod
+    def get_att(value: Union[List[str], str], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Gets the value of an attribute from a CloudFormation template based on a list
+        of logical name and attribute name.
+
+        Parameters
+        ----------
+        value : List[Any]
+            List containing the logical name and attribute name
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The value of atribute name, or None if the keys are not found.
+        """
+        if isinstance(value, str):
+            value = value.split(".")
+
+        logical_name, attribute_name = value
+
+        if logical_name not in template["Resources"]:
+            return None
+
+        if isinstance(attribute_name, dict):
+            attribute_name = IntrinsicFunctions.eval(attribute_name, template)
+
+            if attribute_name is None:
+                return None
+
+        if attribute_name not in template["Resources"][logical_name]["Properties"]:
+            return None
+
+        attribute_value = template["Resources"][logical_name]["Properties"][attribute_name]
+
+        if isinstance(attribute_value, dict):
+            attribute_value = IntrinsicFunctions.eval(attribute_value, template)
+
+            if attribute_value is None:
+                return None
+
+        return attribute_value
+
+    @staticmethod
+    def join(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Joins elements in a list with a specified delimiter.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A list containing two elements: the delimiter as the first element,
+            and the values to join as the second element.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            The joined string if successful; otherwise, None.
+        """
+        delimiter, values = value
+
+        for index, element in enumerate(values):
+            if isinstance(element, dict):
+                element = IntrinsicFunctions.eval(element, template)
+
+            if element is None:
+                return None
+
+            values[index] = element
+
+        return delimiter.join(values)
+
+    @staticmethod
+    def select(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Selects a value from a list based on the given index. If the value at the index
+        is a dictionary, it evaluates it using CloudFormation template data.
+        Parameters
+        ----------
+        value : List[Any]
+            A list containing values from which to select.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+        Returns
+        -------
+        Optional[str]
+            The selected value from the list, or None if any of the evaluated
+            values are None.
+        """
+        index, objects = value
+
+        if isinstance(index, dict):
+            index = IntrinsicFunctions.eval(index, template)
+
+            if index is None:
+                return None
+
+        if isinstance(objects, dict):
+            objects = IntrinsicFunctions.eval(objects, template)
+
+            if objects is None:
+                return None
+        else:
+            for i, obj in enumerate(objects):
+                if isinstance(obj, dict):
+                    objects[i] = IntrinsicFunctions.eval(obj, template)
+
+                    if objects[i] is None:
+                        return None
+
+        return objects[int(index)]
+
+    @staticmethod
+    def split(value: List[Any], template: Dict[str, Any]) -> Optional[str]:
+        """
+        Splits a list of values using a specified delimiter.
+
+        Parameters
+        ----------
+        value : List[Any]
+            A tuple containing the delimiter as its first element, followed
+            by a list of values to split.
+        template : Dict[str, Any]
+            A dictionary representing the CloudFormation template.
+
+        Returns
+        -------
+        Optional[str]
+            A list of strings resulting from splitting using the delimiter.
+            or None if any of the evaluated values are None.
+        """
+        delimiter, source = value
+
+        if isinstance(source, dict):
+            source = IntrinsicFunctions.eval(source, template)
+
+            if source is None:
+                return None
+
+        return source.split(delimiter)
