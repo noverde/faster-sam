@@ -196,7 +196,7 @@ class TestCloudformationTemplate(unittest.TestCase):
             "TestBucket": {
                 "Type": "AWS::S3::Bucket",
                 "DeletionPolicy": "Retain",
-                "Properties": {"BucketName": "test-bucket"},
+                "Properties": {"BucketName": {"Fn::Sub": "test-bucket-${AWS::AccountId}"}},
             }
         }
 
