@@ -10,7 +10,7 @@ from starlette.types import ASGIApp
 logger = logging.getLogger(__name__)
 
 
-class RewritePathMiddleware(BaseHTTPMiddleware):
+class QueuePathRewriterMiddleware(BaseHTTPMiddleware):
     """
     Rewrites a specified part of the request path.
 
@@ -22,7 +22,7 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp) -> None:
         """
-        Initializes the RewritePathMiddleware.
+        Initializes the QueuePathRewriterMiddleware.
         """
         super().__init__(app, self.dispatch)
 
@@ -47,12 +47,13 @@ class RewritePathMiddleware(BaseHTTPMiddleware):
 
         body = await request.body()
 
-        if not body:
+        try:
+            body = json.loads(body)
+        except json.JSONDecodeError:
             content = {"message": "Invalid Request"}
             status_code = HTTPStatus.BAD_REQUEST
-            return Response(content=json.dumps(content), status_code=status_code.value)
 
-        body = json.loads(body)
+            return Response(content=json.dumps(content), status_code=status_code.value)
 
         logger.debug(f"Received body: {body}")
 
