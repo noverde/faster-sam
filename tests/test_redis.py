@@ -28,7 +28,7 @@ class TestRedis(unittest.TestCase):
 
         self.redis_patch = mock.patch("faster_sam.cache.redis_cache.Redis")
         self.redis_mock = self.redis_patch.start()
-        self.redis_mock.from_url.return_value = FakeRedis()
+        self.redis_mock.return_value = FakeRedis()
         self.key = "1234"
 
     def tearDown(self) -> None:
