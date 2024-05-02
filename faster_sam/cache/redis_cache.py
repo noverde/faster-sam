@@ -1,9 +1,7 @@
 import os
 from typing import Optional
 from redis import Redis
-from redis.backoff import ExponentialBackoff
-from redis.retry import Retry
-from redis.connection import parse_url
+
 from faster_sam.cache.cache_interface import CacheInterface
 
 
@@ -56,14 +54,11 @@ class RedisCache(CacheInterface):
         Redis
             The Redis connection object.
         """
-        conn = parse_url(CACHE_URL)
-
-        retry = Retry(ExponentialBackoff(), 3)
-
-        if self._connection is None:
-            self._connection = Redis(
-                host=conn["host"], retry=retry, retry_on_error=[ConnectionError, TimeoutError]
-            )
+        try:
+            if self._connection is None:
+                self._connection = Redis.from_url(url=CACHE_URL)
+        except ConnectionError:
+            self._connection = Redis.from_url(url=CACHE_URL)
 
         return self._connection
 
