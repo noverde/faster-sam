@@ -1,9 +1,12 @@
+import logging
 import os
 from typing import Optional
+
 from redis import Redis
 
 from faster_sam.cache.cache_interface import CacheInterface
 
+logger = logging.getLogger(__name__)
 
 CACHE_TTL = int(os.getenv("FASTER_SAM_CACHE_TTL", 900))
 CACHE_URL = os.getenv("FASTER_SAM_CACHE_URL", "")
@@ -59,6 +62,16 @@ class RedisCache(CacheInterface):
 
         return self._connection
 
+    def reconnect(self) -> None:
+        """
+        Reconnect to the Redis server.
+
+        This method is used to re-establish a connection to the Redis server
+        in case the connection is lost.
+        """
+        self.connection.disconnect()
+        self.connection.connect()
+
     def set(self, key: str, value: str, ttl: int = CACHE_TTL) -> None:
         """
         Set a value in the Redis cache.
@@ -78,7 +91,13 @@ class RedisCache(CacheInterface):
         -------
         None
         """
-        self.connection.set(key, value, ttl)
+        try:
+            self.connection.set(key, value, ttl)
+        except ConnectionError:
+            logger.info("Failed to connect to Redis server.")
+
+            self.reconnect()
+            self.connection.set(key, value, ttl)
 
     def get(self, key: str) -> Optional[str]:
         """
@@ -96,6 +115,11 @@ class RedisCache(CacheInterface):
             otherwise None.
         """
         try:
-            return self.connection.get(key)
+            response = self.connection.get(key)
         except ConnectionError:
-            return self.connection.get(key)
+            logger.info("Failed to connect to Redis server.")
+
+            self.reconnect()
+            response = self.connection.get(key)
+
+        return response
