@@ -12,6 +12,22 @@ CACHE_TTL = int(os.getenv("FASTER_SAM_CACHE_TTL", 900))
 CACHE_URL = os.getenv("FASTER_SAM_CACHE_URL", "")
 
 
+def retry(retry: int = 3):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for _ in range(retry):
+                try:
+                    return func(*args, **kwargs)
+                except ConnectionError:
+                    RedisCache.reconnect()
+
+            return None
+
+        return wrapper
+
+    return decorator
+
+
 class RedisCache(CacheInterface):
     """
     A cache backend implementation using Redis.
@@ -62,15 +78,16 @@ class RedisCache(CacheInterface):
 
         return self._connection
 
-    def reconnect(self) -> None:
+    @classmethod
+    def reconnect(cls) -> None:
         """
         Reconnect to the Redis server.
 
         This method is used to re-establish a connection to the Redis server
         in case the connection is lost.
         """
-        self.connection.disconnect()
-        self.connection.connect()
+        cls.connection.disconnect()
+        cls.connection.connect()
 
     def set(self, key: str, value: str, ttl: int = CACHE_TTL) -> None:
         """
@@ -99,7 +116,8 @@ class RedisCache(CacheInterface):
             self.reconnect()
             self.connection.set(key, value, ttl)
 
-    def get(self, key: str, retry=3, retry_count=0) -> Optional[str]:
+    @retry()
+    def get(self, key: str) -> Optional[str]:
         """
         Retrieve a value from the Redis cache.
 
@@ -114,12 +132,4 @@ class RedisCache(CacheInterface):
             The value associated with the given key if it exists in the cache,
             otherwise None.
         """
-        try:
-            return self.connection.get(key)
-        except ConnectionError:
-            if retry > retry_count:
-                logger.info("Failed to connect to Redis server.")
-                self.reconnect()
-                response = self.connection.get(key, retry, retry_count + 1)
-
-        return response
+        return self.connection.get(key)
