@@ -54,10 +54,7 @@ class RedisCache(CacheInterface):
         Redis
             The Redis connection object.
         """
-        try:
-            if self._connection is None:
-                self._connection = Redis.from_url(url=CACHE_URL)
-        except ConnectionError:
+        if self._connection is None:
             self._connection = Redis.from_url(url=CACHE_URL)
 
         return self._connection
@@ -98,4 +95,7 @@ class RedisCache(CacheInterface):
             The value associated with the given key if it exists in the cache,
             otherwise None.
         """
-        return self.connection.get(key)
+        try:
+            return self.connection.get(key)
+        except ConnectionError:
+            return self.connection.get(key)
