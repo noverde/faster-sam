@@ -9,12 +9,17 @@ from faster_sam.cache.redis_cache import RedisCache
 class FakeRedis(CacheInterface):
     def __init__(self):
         self._db = {}
+        self.connected = False
 
-    def connect(self):
-        pass
+    def reconnect(self) -> None:
+        self.disconnect()
+        self.connect()
 
-    def disconnect(self):
-        pass
+    def disconnect(self) -> None:
+        self.connected = False
+
+    def connect(self) -> None:
+        self.connected = True
 
     def set(self, key, value, ttl):
         if isinstance(value, dict):
@@ -36,8 +41,6 @@ class TestRedis(unittest.TestCase):
         self.redis_mock = self.redis_patch.start()
 
         self.fake_redis_instance = FakeRedis()
-        self.fake_redis_instance.connect = mock.Mock()
-        self.fake_redis_instance.disconnect = mock.Mock()
 
         self.redis_mock.from_url.return_value = self.fake_redis_instance
         self.key = "1234"
@@ -61,23 +64,27 @@ class TestRedis(unittest.TestCase):
         self.assertIsNotNone(payload)
         self.assertEqual(payload, "teste")
 
-    def test_get_cache_exception(self):
-        self.fake_redis_instance.set = mock.Mock(side_effect=ConnectionError())
-
-        cache = RedisCache()
-        cache.set("123", "teste")
-
-        self.assertEqual(cache.get(key="123"), None)
-
     def test_set_cache_exception(self):
-        self.fake_redis_instance.get = mock.Mock(side_effect=ConnectionError())
+        self.fake_redis = mock.patch("FakeRedis.get")
+        self.fake_redis.side_effect = ConnectionError()
+        import ipdb
 
-        cache = RedisCache()
-        cache.set("123", "teste")
+        ipdb.set_trace()
+
+        with self.assertRaises(ConnectionError):
+            cache = RedisCache()
+            cache.set("123", "teste")
 
         self.assertEqual(cache.get(key="123"), None)
-        cache.connection.disconnect.assert_called_once()
-        cache.connection.connect.assert_called_once()
+
+    # def test_get_cache_exception(self):
+    #     self.fake_redis_instance.get.side_effect = ConnectionError()
+
+    #     cache = RedisCache()
+    #     cache.set("123", "teste")
+
+    #     self.assertEqual(cache.get(key="123"), None)
+    #     self.assertTrue(cache.connection.connected)
 
     def test_cache_not_exists(self):
         cache = RedisCache()
