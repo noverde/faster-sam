@@ -115,11 +115,11 @@ class RedisCache(CacheInterface):
             The value associated with the given key if it exists in the cache,
             otherwise None.
         """
-        if retry > 0:
-            try:
-                return self.connection.get(key)
-            except ConnectionError:
-                RedisCache.reconnect()
+        try:
+            return self.connection.get(key)
+        except ConnectionError:
+            if retry > 0:
+                self.reconnect()
                 return self.get(key, retry - 1)
 
         logger.info("Failed to connect to Redis server.")
