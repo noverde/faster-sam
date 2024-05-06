@@ -12,22 +12,6 @@ CACHE_TTL = int(os.getenv("FASTER_SAM_CACHE_TTL", 900))
 CACHE_URL = os.getenv("FASTER_SAM_CACHE_URL", "")
 
 
-def retry(retry: int = 3):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            for _ in range(retry):
-                try:
-                    return func(*args, **kwargs)
-                except ConnectionError:
-                    RedisCache.reconnect()
-
-            return None
-
-        return wrapper
-
-    return decorator
-
-
 class RedisCache(CacheInterface):
     """
     A cache backend implementation using Redis.
@@ -78,16 +62,19 @@ class RedisCache(CacheInterface):
 
         return self._connection
 
-    @classmethod
-    def reconnect(cls) -> None:
+    def reconnect(self) -> None:
         """
         Reconnect to the Redis server.
 
         This method is used to re-establish a connection to the Redis server
         in case the connection is lost.
+
+        Returns
+        -------
+        None
         """
-        cls.connection.disconnect()
-        cls.connection.connect()
+        self.connection.disconnect()
+        self.connection.connect()
 
     def set(self, key: str, value: str, ttl: int = CACHE_TTL) -> None:
         """
@@ -113,11 +100,7 @@ class RedisCache(CacheInterface):
         except ConnectionError:
             logger.info("Failed to connect to Redis server.")
 
-            self.reconnect()
-            self.connection.set(key, value, ttl)
-
-    @retry()
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str, retry: int = 1) -> Optional[str]:
         """
         Retrieve a value from the Redis cache.
 
@@ -132,4 +115,12 @@ class RedisCache(CacheInterface):
             The value associated with the given key if it exists in the cache,
             otherwise None.
         """
-        return self.connection.get(key)
+        if retry > 0:
+            try:
+                return self.connection.get(key)
+            except ConnectionError:
+                RedisCache.reconnect()
+                return self.get(key, retry - 1)
+
+        logger.info("Failed to connect to Redis server.")
+        return None
