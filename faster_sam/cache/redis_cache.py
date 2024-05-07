@@ -100,7 +100,7 @@ class RedisCache(CacheInterface):
         except ConnectionError:
             logger.info("Failed to connect to Redis server.")
 
-    def get(self, key: str, retry: int = 1) -> Optional[str]:
+    def get(self, key: str, attempts: int = 1) -> Optional[str]:
         """
         Retrieve a value from the Redis cache.
 
@@ -118,9 +118,9 @@ class RedisCache(CacheInterface):
         try:
             return self.connection.get(key)
         except ConnectionError:
-            if retry > 0:
+            if attempts > 0:
                 self.reconnect()
-                return self.get(key, retry - 1)
+                return self.get(key, attempts - 1)
 
         logger.info("Failed to connect to Redis server.")
         return None
