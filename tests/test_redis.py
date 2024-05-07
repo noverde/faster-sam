@@ -1,8 +1,8 @@
 import unittest
 from unittest import mock
+
 from faster_sam.cache import redis_cache
 from faster_sam.cache.cache_interface import CacheInterface
-
 from faster_sam.cache.redis_cache import RedisCache
 
 
@@ -10,10 +10,6 @@ class FakeRedis(CacheInterface):
     def __init__(self):
         self._db = {}
         self.connected = False
-
-    def reconnect(self) -> None:
-        self.disconnect()
-        self.connect()
 
     def disconnect(self) -> None:
         self.connected = False
@@ -40,9 +36,7 @@ class TestRedis(unittest.TestCase):
         self.redis_patch = mock.patch("faster_sam.cache.redis_cache.Redis")
         self.redis_mock = self.redis_patch.start()
 
-        self.fake_redis_instance = FakeRedis()
-
-        self.redis_mock.from_url.return_value = self.fake_redis_instance
+        self.redis_mock.from_url.return_value = FakeRedis()
         self.key = "1234"
 
     def tearDown(self) -> None:
@@ -64,27 +58,31 @@ class TestRedis(unittest.TestCase):
         self.assertIsNotNone(payload)
         self.assertEqual(payload, "teste")
 
-    def test_set_cache_exception(self):
-        self.fake_redis = mock.patch("FakeRedis.get")
-        self.fake_redis.side_effect = ConnectionError()
-        import ipdb
+    @mock.patch.object(RedisCache, "reconnect")
+    def test_set_cache_exception(self, m_cache):
 
-        ipdb.set_trace()
-
-        with self.assertRaises(ConnectionError):
+        with mock.patch.object(FakeRedis, "set", side_effect=ConnectionError):
             cache = RedisCache()
             cache.set("123", "teste")
 
-        self.assertEqual(cache.get(key="123"), None)
+            cache.reconnect.assert_not_called()
+            self.assertEqual(cache.get(key="123"), None)
 
-    # def test_get_cache_exception(self):
-    #     self.fake_redis_instance.get.side_effect = ConnectionError()
+    @mock.patch.object(RedisCache, "reconnect")
+    def test_get_cache_exception(self, m_cache):
 
-    #     cache = RedisCache()
-    #     cache.set("123", "teste")
+        with mock.patch.object(FakeRedis, "get", side_effect=ConnectionError):
+            cache = RedisCache()
+            response = cache.get("123")
 
-    #     self.assertEqual(cache.get(key="123"), None)
-    #     self.assertTrue(cache.connection.connected)
+            self.assertIsNone(response)
+            cache.reconnect.assert_called_once()
+
+    def test_reconnect(self):
+        cache = RedisCache()
+        cache.reconnect()
+
+        self.assertTrue(cache.connection.connected)
 
     def test_cache_not_exists(self):
         cache = RedisCache()
