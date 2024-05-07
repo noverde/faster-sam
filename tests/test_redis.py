@@ -64,7 +64,7 @@ class TestRedis(unittest.TestCase):
         cache = RedisCache()
         cache.set("123", "teste", 900)
 
-        self.assertEqual(cache.get("123"), None)
+        self.assertIsNone(cache.get("123"))
         mock_set.assert_called_once()
         mock_reconnect.assert_not_called()
 
@@ -75,7 +75,7 @@ class TestRedis(unittest.TestCase):
         cache.set("123", "teste", 900)
         response = cache.get("123")
 
-        self.assertEqual(response, None)
+        self.assertIsNone(response)
         self.assertEqual(mock_get.call_count, 2)
         mock_reconnect.assert_called_once()
 
