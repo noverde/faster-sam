@@ -60,21 +60,24 @@ class TestRedis(unittest.TestCase):
 
     @mock.patch.object(RedisCache, "reconnect")
     @mock.patch.object(FakeRedis, "set", side_effect=ConnectionError)
-    def test_set_cache_exception(self, mock_reconnect, mock_set):
+    def test_set_cache_exception(self, mock_set, mock_reconnect):
         cache = RedisCache()
-        mock_set("123", "teste", 900)
+        cache.set("123", "teste", 900)
 
+        self.assertEqual(cache.get("123"), None)
+        mock_set.assert_called_once()
         mock_reconnect.assert_not_called()
-        cache.set("123", "teste")
 
     @mock.patch.object(RedisCache, "reconnect")
     @mock.patch.object(FakeRedis, "get", side_effect=ConnectionError)
-    def test_get_cache_exception(self, mock_reconnect, mock_get):
+    def test_get_cache_exception(self, mock_get, mock_reconnect):
         cache = RedisCache()
-        mock_get("123")
+        cache.set("123", "teste", 900)
+        response = cache.get("123")
 
-        mock_reconnect.assert_not_called()
-        self.assertEqual(cache.get(key="123"), None)
+        self.assertEqual(response, None)
+        self.assertEqual(mock_get.call_count, 2)
+        mock_reconnect.assert_called_once()
 
     def test_reconnect(self):
         cache = RedisCache()
