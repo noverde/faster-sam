@@ -9,10 +9,9 @@ from uuid import uuid4
 
 import boto3
 from botocore.client import BaseClient
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from faster_sam import web_identity_providers
 from faster_sam.cache.cache_interface import CacheInterface
@@ -188,7 +187,7 @@ class LambdaClient:
         self.set_client()
 
 
-class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
+class LambdaAuthorizerMiddleware:
     """
     Invoke Lambda function at AWS to authorize API requests.
 
@@ -221,7 +220,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         """
         Initializes the LambdaAuthorizer.
         """
-        super().__init__(app, self.dispatch)
+        self.app = app
         self._lambda_function = lambda_function
         self._lambda_client = None
         self._credentials = credentials
@@ -242,7 +241,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
         return self._lambda_client.client
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Response:
         """
         Allow or deny a request based on authorization function rules.
 
@@ -261,6 +260,8 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
         content = {"message": "Unauthorized"}
         status_code = HTTPStatus.UNAUTHORIZED
 
+        request = Request(scope, receive)
+
         token = request.headers.get(
             AUTH_HEADER,
             request.headers.get("authorization", request.headers.get("x-api-key")),
@@ -277,7 +278,7 @@ class LambdaAuthorizerMiddleware(BaseHTTPMiddleware):
 
         if payload is not None and payload["policyDocument"]["Statement"][0]["Effect"] == "Allow":
             request.scope["authorization_context"] = payload.get("context")
-            return await call_next(request)
+            return await self.app(scope, receive, send)
 
         if payload is None:
             content = {"message": "Something went wrong. Try again"}

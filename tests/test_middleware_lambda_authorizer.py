@@ -2,6 +2,7 @@ import copy
 import io
 import json
 import os
+from typing import Any, Dict
 import unittest
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
@@ -154,34 +155,31 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
         self.boto_patch.stop()
         self.redis_patch.stop()
 
+    async def send(self, message: Dict[str, Any]) -> None:
+        pass
+
+    async def receive(self) -> Dict[str, Any]:
+        return {"type": "http.request", "body": b"", "more_body": False}
+
     async def test_middleware_unauthorized(self):
-        request = Request(scope=self.scope)
+
         self.lambda_cli.return_value.invoke.return_value = invokation_response("Deny")
 
-        response = await self.middleware.dispatch(request, call_next_function())
+        response = await self.middleware(self.scope, self.receive, self.send)
+
         body = json.loads(response.body)
 
         self.assertEqual(body["message"], "Unauthorized")
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
 
     async def test_middleware_authorized(self):
-        call_next_response = Response(
-            content=json.dumps({"message": "Authorized"}), status_code=HTTPStatus.OK.value
-        )
-        call_next = call_next_function(call_next_response)
-        request = Request(scope=self.scope)
-
         self.lambda_cli.return_value.invoke.return_value = invokation_response("Allow")
 
-        response = await self.middleware.dispatch(request, call_next)
-        body = json.loads(response.body)
+        response = await self.middleware(self.scope, self.receive, self.send)
 
-        self.assertEqual(body["message"], "Authorized")
-        self.assertEqual(response.status_code, HTTPStatus.OK.value)
+        self.assertIsNone(response)
 
     async def test_middleware_internal_server_error(self):
-        request = Request(scope=self.scope)
-
         self.lambda_cli.return_value.invoke.side_effect = ClientError(
             error_response={
                 "Error": {
@@ -192,52 +190,39 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             operation_name="InvokeFunction ",
         )
 
-        response = await self.middleware.dispatch(request, call_next_function())
+        response = await self.middleware(self.scope, self.receive, self.send)
         body = json.loads(response.body)
 
         self.assertEqual(body["message"], "Something went wrong. Try again")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR.value)
 
     async def test_middleware_unauthorized_cached(self):
-        request = Request(scope=self.scope)
-
         self.redis.set(
             "eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k", json.dumps(self.authorization)
         )
 
-        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        response = await self.middleware_with_cache(self.scope, self.receive, self.send)
+
         body = json.loads(response.body)
 
         self.assertEqual(body["message"], "Unauthorized")
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED.value)
 
     async def test_middleware_authorized_cached(self):
-        call_next_response = Response(
-            content=json.dumps({"message": "Authorized"}), status_code=HTTPStatus.OK.value
-        )
-        request = Request(scope=self.scope)
-
         self.authorization["policyDocument"]["Statement"][0]["Effect"] = "Allow"
 
         self.redis.set(
             "eyJhbGciOiJIUzI1.eyJib3Jyb4Ik1TF9.JKvZfg5LZ9L96k", json.dumps(self.authorization)
         )
 
-        response = await self.middleware_with_cache.dispatch(
-            request, call_next_function(call_next_response)
-        )
+        response = await self.middleware_with_cache(self.scope, self.receive, self.send)
 
-        body = json.loads(response.body)
-
-        self.assertEqual(body["message"], "Authorized")
-        self.assertEqual(response.status_code, HTTPStatus.OK.value)
+        self.assertIsNone(response)
 
     async def test_middleware_unauthorized_cache_not_found(self):
-        request = Request(scope=self.scope)
-
         self.lambda_cli.return_value.invoke.return_value = invokation_response("Deny")
 
-        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        response = await self.middleware_with_cache(self.scope, self.receive, self.send)
         body = json.loads(response.body)
 
         self.assertEqual(body["message"], "Unauthorized")
@@ -249,9 +234,8 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             (b"user-agent", b"curl/7.81.0"),
             (b"accept", b"*/*"),
         ]
-        request = Request(scope=self.scope)
 
-        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        response = await self.middleware_with_cache(self.scope, self.receive, self.send)
         body = json.loads(response.body)
 
         self.assertEqual(body["message"], "Unauthorized")
@@ -265,11 +249,10 @@ class TestLambdaAuthorizerMiddleware(unittest.IsolatedAsyncioTestCase):
             (b"user-agent", b"curl/7.81.0"),
             (b"my-auth-key", b"sdfkjhF2545FFggg"),
         ]
-        request = Request(scope=self.scope)
 
         self.redis.set("sdfkjhF2545FFggg", json.dumps(self.authorization))
 
-        response = await self.middleware_with_cache.dispatch(request, call_next_function())
+        response = await self.middleware_with_cache(self.scope, self.receive, self.send)
         body = json.loads(response.body)
 
         self.assertEqual(body["message"], "Unauthorized")
