@@ -1,21 +1,27 @@
 import json
 import unittest
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
+from fastapi.requests import Request
+from fastapi.responses import Response
+from fastapi.testclient import TestClient
 
-from faster_sam.middlewares import remove_path
+from faster_sam.middlewares.remove_path import RemovePathMiddleware
 
 
-class TestRemovePathMiddleware(unittest.IsolatedAsyncioTestCase):
-    async def test_middleware_remove_path(self):
+class TestRemovePathMiddleware(unittest.TestCase):
+    def setUp(self) -> None:
+        async def homepage(request: Request) -> Response:
+            return Response(content=json.dumps({"message": "Hello, World"}))
+
         app = FastAPI()
+        app.add_middleware(RemovePathMiddleware, path="/foo")
+        app.add_route("/bar", homepage)
 
-        middleware = remove_path.RemovePathMiddleware(app, path="/test")
+        self.client = TestClient(app)
 
-        async def call_next(request: Request) -> Response:
-            return Response(content=json.dumps({"path": request.scope["path"]}))
+    def test_remove_path(self) -> None:
+        response = self.client.get("/foo/bar")
 
-        request = Request(scope={"type": "http", "method": "GET", "path": "/test/foo"})
-        response = await middleware.dispatch(request, call_next)
-
-        self.assertEqual(json.loads(response.body), {"path": "/foo"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "Hello, World"})
