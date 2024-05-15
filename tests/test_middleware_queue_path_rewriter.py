@@ -2,61 +2,35 @@ import json
 import unittest
 
 from fastapi import FastAPI, Request, Response
+from fastapi.testclient import TestClient
 
 from faster_sam.middlewares import queue_path_rewriter
 
 
-class TestQueuePathRewriterMiddleware(unittest.IsolatedAsyncioTestCase):
-    async def test_middleware_rewrite_path(self):
-        async def receive():
-            return {
-                "type": "http.request",
-                "body": b'{"message":{"attributes":{"endpoint":"aws/bar"}}}',
-            }
-
-        app = FastAPI()
-
-        middleware = queue_path_rewriter.QueuePathRewriterMiddleware(app)
-
-        async def call_next(request: Request) -> Response:
+class TestQueuePathRewriterMiddleware(unittest.TestCase):
+    def setUp(self) -> None:
+        async def queue(request: Request) -> Response:
             return Response(content=json.dumps({"path": request.scope["path"]}))
 
-        request = Request(scope={"type": "http", "method": "POST", "path": "/foo"}, receive=receive)
+        app = FastAPI()
+        app.add_middleware(queue_path_rewriter.QueuePathRewriterMiddleware)
+        app.add_route("/queue", queue)
 
-        response = await middleware.dispatch(request, call_next)
+        self.client = TestClient(app)
+
+    async def test_middleware_rewrite_path(self):
+        response = self.client.post(
+            "/queue", json={"message": {"attributes": {"endpoint": "/foo/bar"}}}
+        )
 
         self.assertEqual(json.loads(response.body), {"path": "/bar"})
 
     async def test_middleware_rewrite_path_with_empty_body(self):
-        async def receive():
-            return {
-                "type": "http.request",
-                "body": b"",
-            }
-
-        app = FastAPI()
-
-        middleware = queue_path_rewriter.QueuePathRewriterMiddleware(app)
-
-        async def call_next(request: Request) -> Response:
-            return Response(content=json.dumps({"path": request.scope["path"]}))
-
-        request = Request(scope={"type": "http", "method": "POST", "path": "/foo"}, receive=receive)
-
-        response = await middleware.dispatch(request, call_next)
+        response = self.client.post("/queue", json={})
 
         self.assertEqual(json.loads(response.body), {"message": "Invalid Request"})
 
     async def test_middleware_rewrite_path_without_post(self):
-        app = FastAPI()
-
-        middleware = queue_path_rewriter.QueuePathRewriterMiddleware(app)
-
-        async def call_next(request: Request) -> Response:
-            return Response(content=json.dumps({"path": request.scope["path"]}))
-
-        request = Request(scope={"type": "http", "method": "GET", "path": "/foo"})
-
-        response = await middleware.dispatch(request, call_next)
+        response = self.client.get("/queue")
 
         self.assertEqual(json.loads(response.body), {"path": "/foo"})
