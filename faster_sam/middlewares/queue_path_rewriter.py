@@ -1,7 +1,6 @@
-import json
 import logging
-from http import HTTPStatus
 
+from starlette.datastructures import Headers
 from starlette.responses import Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -47,19 +46,9 @@ class QueuePathRewriterMiddleware:
 
         logger.debug(f"Received scope: {scope}")
 
-        _receive = await receive()
+        header = Headers(scope=scope)
 
-        try:
-            body = json.loads(_receive["body"])
-        except json.JSONDecodeError:
-            content = {"message": "Invalid Request"}
-            status_code = HTTPStatus.BAD_REQUEST
-
-            return Response(content=json.dumps(content), status_code=status_code.value)
-
-        logger.debug(f"Received body: {body}")
-
-        queue = body["message"]["attributes"]["endpoint"]
+        queue = header["endpoint"]
 
         if "/" in queue:
             queue = queue.rsplit("/")[-1]
