@@ -32,8 +32,10 @@ class QueuePathRewriterMiddleware:
         ----------
         request : Request
             The incoming request.
-        call_next : RequestResponseEndpoint
-            Next middleware or endpoint on the execution stack.
+        scope : Scope
+            The ASGI scope.
+        receive : Receive
+            The receive channel.
 
         Returns
         -------

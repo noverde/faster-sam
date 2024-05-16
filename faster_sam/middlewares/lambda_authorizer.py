@@ -249,8 +249,12 @@ class LambdaAuthorizerMiddleware:
         ----------
         request : Request
             The incoming request.
-        call_next : RequestResponseEndpoint
-            Next middleware or endpoint on the execution stack
+        request : Request
+            The incoming request.
+        scope : Scope
+            The ASGI scope.
+        receive : Receive
+            The receive channel.
 
         Returns
         -------
