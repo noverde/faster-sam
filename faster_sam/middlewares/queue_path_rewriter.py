@@ -45,6 +45,8 @@ class QueuePathRewriterMiddleware:
         if scope["type"] != "http" or scope["method"] != "POST":
             return await self.app(scope, receive, send)
 
+        logger.debug(f"Received scope: {scope}")
+
         _receive = await receive()
 
         try:
