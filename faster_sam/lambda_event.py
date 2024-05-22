@@ -151,8 +151,6 @@ class SQS(ResourceInterface):
             "ApproximateFirstReceiveTimestamp": "",
         }
 
-        logger.warning(f"Message Attributes: {body['message'].get('attributes', '')}")
-
         event = {
             "Records": [
                 {
