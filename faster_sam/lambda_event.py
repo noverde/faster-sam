@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict
 from uuid import uuid4
+
 from fastapi import BackgroundTasks, Request, Response
 
 logger = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ class SQS(ResourceInterface):
                     "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
                     "body": base64.b64decode(body["message"]["data"]).decode("UTF-8"),
                     "attributes": attributes,
-                    "messageAttributes": body["message"]["attributes"],
+                    "messageAttributes": body["message"].get("attributes", {}),
                     "md5OfBody": hashlib.md5(json_body.encode("utf-8")).hexdigest(),
                     "eventSource": "aws:sqs",
                     "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
