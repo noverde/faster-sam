@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict
 from uuid import uuid4
+
 from fastapi import BackgroundTasks, Request, Response
 
 logger = logging.getLogger(__name__)
@@ -149,6 +150,8 @@ class SQS(ResourceInterface):
             "SenderId": "",
             "ApproximateFirstReceiveTimestamp": "",
         }
+
+        logger.debug(f"Message Attributes: {body['message'].get('attributes', '')}")
 
         event = {
             "Records": [
