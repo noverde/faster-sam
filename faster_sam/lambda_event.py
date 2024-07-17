@@ -365,6 +365,9 @@ class ApiGateway(ResourceInterface):
 
         now = datetime.now(timezone.utc)
         body = await self.request.body()
+        authorization = self.request.scope.get("authorization_context") or self.request.scope.get(
+            "authorizer"
+        )
         event = {
             "body": body.decode(),
             "path": self.request.url.path,
@@ -385,7 +388,7 @@ class ApiGateway(ResourceInterface):
                 "path": self.request.url.path,
                 "httpMethod": self.request.method,
                 "protocol": f"HTTP/{self.request.scope['http_version']}",
-                "authorizer": self.request.scope.get("authorization_context"),
+                "authorizer": authorization,
             },
         }
 
