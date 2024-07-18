@@ -1,16 +1,21 @@
 faster\_sam.cache package
 =========================
 
-.. automodule:: faster_sam.cache
+Submodules
+----------
+
+faster\_sam.cache.cache\_interface module
+-----------------------------------------
+
+.. automodule:: faster_sam.cache.cache_interface
    :members:
    :undoc-members:
    :show-inheritance:
 
-Submodules
-----------
+faster\_sam.cache.redis\_cache module
+-------------------------------------
 
-.. toctree::
-   :maxdepth: 4
-
-   faster_sam.cache.cache_interface
-   faster_sam.cache.redis_cache
+.. automodule:: faster_sam.cache.redis_cache
+   :members:
+   :undoc-members:
+   :show-inheritance:
