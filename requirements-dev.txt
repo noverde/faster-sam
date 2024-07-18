@@ -3,11 +3,11 @@ black==24.4.2
 flake8==7.1.0
 build==1.2.1
 twine==5.1.1
-sphinx==7.4.6
-boto3 == 1.34.144
+sphinx==7.1.2
+boto3==1.34.144
 requests==2.32.3
 redis==5.0.7
 yoyo-migrations==8.2.0
-setuptools==69.2.0
+setuptools==70.3.0
 
 -e .
