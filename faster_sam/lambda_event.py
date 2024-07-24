@@ -11,7 +11,7 @@ from fastapi import BackgroundTasks, Request, Response
 
 logger = logging.getLogger(__name__)
 
-KILO_SECONDS = 1000.0
+MILLISECONDS = 1000
 
 Handler = Callable[[Dict[str, Any], Any], Dict[str, Any]]
 
@@ -141,12 +141,18 @@ class SQS(ResourceInterface):
         json_body = bytes_body.decode()
         body = json.loads(json_body)
 
+        publish_time = body["message"]["publishTime"]
+
+        try:
+            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%SZ")
+
+        sent_timestamp = int(publish_time.timestamp()) * MILLISECONDS
+
         attributes = {
             "ApproximateReceiveCount": body["deliveryAttempt"],
-            "SentTimestamp": datetime.timestamp(
-                datetime.strptime(body["message"]["publishTime"], "%Y-%m-%dT%H:%M:%S.%fZ")
-            )
-            * KILO_SECONDS,
+            "SentTimestamp": sent_timestamp,
             "SenderId": "",
             "ApproximateFirstReceiveTimestamp": "",
         }
