@@ -38,7 +38,7 @@ def build_request_api_gateway():
     return Request(scope, receive)
 
 
-def build_request_sqs():
+def build_request_sqs_with_milliseconds():
     async def receive():
         body = {
             "deliveryAttempt": 1,
@@ -50,8 +50,39 @@ def build_request_sqs():
                 "publishTime": "2024-02-22T15:45:31.346Z",
                 "publish_time": "2024-02-22T15:45:31.346Z",
             },
-            "subscription": "projects/dotz-noverde-dev/subscriptions/test-workflows",
         }
+
+        return {"type": "http.request", "body": json.dumps(body).encode()}
+
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "root_path": "",
+        "path": "/test",
+        "method": "GET",
+        "query_string": [],
+        "path_params": {},
+        "client": ("127.0.0.1", 80),
+        "app": FastAPI(),
+    }
+
+    return Request(scope, receive)
+
+
+def build_request_sqs_with_seconds():
+    async def receive():
+        body = {
+            "deliveryAttempt": 1,
+            "message": {
+                "attributes": {"endpoint": "sre-tests-queue"},
+                "data": "aGVsbG8=",
+                "messageId": "10519041647717348",
+                "message_id": "10519041647717348",
+                "publishTime": "2024-02-22T15:45:31Z",
+                "publish_time": "2024-02-22T15:45:31Z",
+            },
+        }
+
         return {"type": "http.request", "body": json.dumps(body).encode()}
 
     scope = {
@@ -188,7 +219,6 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
         self.assertIn("authorizer", event["requestContext"])
 
     async def test_event_builder_sqs(self):
-        request = build_request_sqs()
         expected_key = {
             "messageId",
             "receiptHandle",
@@ -206,12 +236,19 @@ class TestEventBuilder(unittest.IsolatedAsyncioTestCase):
         handler_path = f"{module_name}.{handler_name}"
         handler = faster_sam.routing.import_handler(handler_path)
 
-        sqs = faster_sam.lambda_event.SQS(request, handler)
+        cases = {
+            "publish_time_with_milliseconds": build_request_sqs_with_milliseconds,
+            "publish_time_with_seconds": build_request_sqs_with_seconds,
+        }
 
-        event = await sqs.event_builder()
+        for case, request in cases.items():
+            with self.subTest(case=case):
+                sqs = faster_sam.lambda_event.SQS(request(), handler)
 
-        self.assertIsInstance(event, dict)
-        self.assertEqual(set(event["Records"][0].keys()), expected_key)
+                event = await sqs.event_builder()
+
+                self.assertIsInstance(event, dict)
+                self.assertEqual(set(event["Records"][0].keys()), expected_key)
 
     async def test_event_builder_schedule(self):
         request = build_request_schedule()
