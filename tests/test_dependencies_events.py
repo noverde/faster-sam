@@ -58,8 +58,7 @@ class TestApiGatewayProxy(unittest.IsolatedAsyncioTestCase):
 
 
 class TestSQS(unittest.TestCase):
-    @patch("uuid.uuid4", return_value=uuid.UUID("12345678123456781234567812345678"))
-    async def test_event(self, mock_uuid):
+    async def test_event(self):
         data = {
             "message": {
                 "data": "aGVsbG8=",
@@ -73,7 +72,11 @@ class TestSQS(unittest.TestCase):
 
         pubsub_envelope = PubSubEnvelope(**data)
 
-        SQSEvent = events.sqs(PubSubEnvelope)
+        sender_id = uuid.uuid4()
+
+        with patch("uuid.uuid4", return_value=sender_id):
+            SQSEvent = events.sqs(PubSubEnvelope)
+
         event = SQSEvent(pubsub_envelope)
 
         parsed_datetime = datetime.strptime(data["message"]["publishTime"], "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -89,7 +92,7 @@ class TestSQS(unittest.TestCase):
             record["attributes"]["SentTimestamp"],
             timestamp_milliseconds,
         )
-        self.assertEqual(record["attributes"]["SenderId"], "12345678-1234-5678-1234-567812345678")
+        self.assertEqual(record["attributes"]["SenderId"], str(sender_id))
         self.assertEqual(
             record["attributes"]["ApproximateFirstReceiveTimestamp"],
             timestamp_milliseconds,
