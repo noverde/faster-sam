@@ -1,8 +1,13 @@
+import hashlib
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Type
 from uuid import uuid4
+import uuid
 
 from fastapi import Request
+from pydantic import BaseModel
+
+from faster_sam.protocols import IntoSQSInfo
 
 
 async def apigateway_proxy(request: Request) -> Dict[str, Any]:
@@ -31,3 +36,34 @@ async def apigateway_proxy(request: Request) -> Dict[str, Any]:
         },
     }
     return event
+
+
+def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
+    def dep(message: schema) -> Dict[str, Any]:
+        assert isinstance(message, IntoSQSInfo)
+
+        info = message.into()
+        event = {
+            "Records": [
+                {
+                    "messageId": info.id,
+                    "receiptHandle": str(uuid.uuid4()),
+                    "body": info.body,
+                    "attributes": {
+                        "ApproximateReceiveCount": info.receive_count,
+                        "SentTimestamp": info.sent_timestamp,
+                        "SenderId": str(uuid.uuid4()),
+                        "ApproximateFirstReceiveTimestamp": info.sent_timestamp,
+                    },
+                    "messageAttributes": info.message_attributes,
+                    "md5OfBody": hashlib.md5(info.body.encode()).hexdigest(),
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": info.source_arn,
+                    "awsRegion": None,
+                },
+            ]
+        }
+
+        return event
+
+    return dep
