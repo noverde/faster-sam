@@ -67,3 +67,33 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
         return event
 
     return dep
+
+
+async def s3(request: Request) -> Dict[str, Any]:
+    body = await request.body()
+    event = {
+        "Records": [
+            {
+                "eventVersion": "2.0",
+                "eventSource": "aws:s3",
+                "awsRegion": None,
+                "eventTime": body["timeCreated"],
+                "eventName": "s3:ObjectCreated:*",
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "bucket": {
+                        "name": body["bucket"],
+                        "arn": f"arn:aws:s3:::{body['bucket']}",
+                    },
+                    "object": {
+                        "key": body["name"],
+                        "size": body["size"],
+                        "eTag": body["etag"],
+                        "sequencer": uuid.uuid4().int,
+                    },
+                },
+            }
+        ]
+    }
+
+    return event
