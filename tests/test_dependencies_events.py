@@ -109,6 +109,7 @@ class TestSQS(unittest.TestCase):
             f"arn:aws:sqs:::{data['subscription'].rsplit('/', maxsplit=1)[-1]}",
         )
 
+
 def build_request_bucket():
     async def receive():
         body = {
@@ -153,13 +154,13 @@ def build_request_bucket():
 
     return Request(scope, receive)
 
+
 class TestS3Event(unittest.IsolatedAsyncioTestCase):
     async def test_s3_event(self):
         request = build_request_bucket()
         sequencer = uuid.uuid4()
         with patch("uuid.uuid4", return_value=sequencer):
             event = await events.s3(request)
-
 
         self.assertIsInstance(event, dict)
         self.assertIn("Records", event)
