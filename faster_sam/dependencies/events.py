@@ -71,9 +71,8 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
 
 
 async def s3(request: Request) -> Dict[str, Any]:
-    bytes_body = await request.body()
-    json_body = bytes_body.decode()
-    body = json.loads(json_body)
+    body = await request.body()
+    body = json.loads(body)
     event = {
         "Records": [
             {
