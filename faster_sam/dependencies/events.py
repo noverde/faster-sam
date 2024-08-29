@@ -1,8 +1,14 @@
+import hashlib
 from datetime import datetime, timezone
-from typing import Any, Dict
+import json
+from typing import Any, Callable, Dict, Type
 from uuid import uuid4
+import uuid
 
 from fastapi import Request
+from pydantic import BaseModel
+
+from faster_sam.protocols import IntoSQSInfo
 
 
 async def apigateway_proxy(request: Request) -> Dict[str, Any]:
@@ -30,4 +36,66 @@ async def apigateway_proxy(request: Request) -> Dict[str, Any]:
             "protocol": f"HTTP/{request.scope['http_version']}",
         },
     }
+    return event
+
+
+def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
+    def dep(message: schema) -> Dict[str, Any]:
+        assert isinstance(message, IntoSQSInfo)
+
+        info = message.into()
+        event = {
+            "Records": [
+                {
+                    "messageId": info.id,
+                    "receiptHandle": str(uuid.uuid4()),
+                    "body": info.body,
+                    "attributes": {
+                        "ApproximateReceiveCount": info.receive_count,
+                        "SentTimestamp": info.sent_timestamp,
+                        "SenderId": str(uuid.uuid4()),
+                        "ApproximateFirstReceiveTimestamp": info.sent_timestamp,
+                    },
+                    "messageAttributes": info.message_attributes,
+                    "md5OfBody": hashlib.md5(info.body.encode()).hexdigest(),
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": info.source_arn,
+                    "awsRegion": None,
+                },
+            ]
+        }
+
+        return event
+
+    return dep
+
+
+async def s3(request: Request) -> Dict[str, Any]:
+    body = await request.body()
+    body = json.loads(body)
+    event = {
+        "Records": [
+            {
+                "eventVersion": "2.0",
+                "eventSource": "aws:s3",
+                "awsRegion": None,
+                "eventTime": body["timeCreated"],
+                "eventName": "s3:ObjectCreated:*",
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "bucket": {
+                        "name": body["bucket"],
+                        "arn": f"arn:aws:s3:::{body['bucket']}",
+                    },
+                    "object": {
+                        "key": body["name"],
+                        "size": body["size"],
+                        "eTag": body["etag"],
+                        "sequencer": uuid.uuid4().int,
+                    },
+                },
+            }
+        ]
+    }
+
     return event
