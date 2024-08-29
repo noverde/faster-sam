@@ -1,5 +1,6 @@
 import hashlib
 from datetime import datetime, timezone
+import json
 from typing import Any, Callable, Dict, Type
 from uuid import uuid4
 import uuid
@@ -70,7 +71,9 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
 
 
 async def s3(request: Request) -> Dict[str, Any]:
-    body = await request.body()
+    bytes_body = await request.body()
+    json_body = bytes_body.decode()
+    body = json.loads(json_body)
     event = {
         "Records": [
             {

@@ -1,4 +1,5 @@
 import base64
+import json
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -107,3 +108,69 @@ class TestSQS(unittest.TestCase):
             record["eventSourceARN"],
             f"arn:aws:sqs:::{data['subscription'].rsplit('/', maxsplit=1)[-1]}",
         )
+
+def build_request_bucket():
+    async def receive():
+        body = {
+            "kind": "storage#object",
+            "id": "test-bucket/my-object/171355802",
+            "selfLink": "https://www.googleapis.com/storage/v1/b/test-bucket/o/my-object",
+            "name": "my-object",
+            "bucket": "test-bucket",
+            "generation": "17135544002",
+            "metageneration": "1",
+            "contentType": "image/png",
+            "timeCreated": "2024-04-19T19:20:02.583Z",
+            "updated": "2024-04-19T19:20:02.583Z",
+            "storageClass": "STANDARD",
+            "timeStorageClassUpdated": "2024-04-19T19:20:02.583Z",
+            "size": 1234,
+            "md5Hash": "VZsw8CMPjh427rA==",
+            "mediaLink": "https://storage.googleapis.com/download/storage/v1/b/test-bucket",
+            "crc32c": "EIMw==",
+            "etag": "CMKy4UDEAE=",
+        }
+        return {"type": "http.request", "body": json.dumps(body).encode()}
+
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "root_path": "/s3event",
+        "path": "/test-bucket",
+        "method": "POST",
+        "query_string": b"",
+        "headers": {
+            b"x-forwarded-for": b"192.178.13.229",
+            b"ce-id": b"9475010998622634",
+            b"ce-time": b"2024-04-19T21:01:59.503551Z",
+            b"ce-bucket": b"test-bucket",
+        },
+        "client": ("169.254.1.1", 35668),
+        "server": ("192.168.1.1", 8080),
+        "scheme": "http",
+        "app": FastAPI(),
+    }
+
+    return Request(scope, receive)
+
+class TestS3Event(unittest.IsolatedAsyncioTestCase):
+    async def test_s3_event(self):
+        request = build_request_bucket()
+        sequencer = uuid.uuid4()
+        with patch("uuid.uuid4", return_value=sequencer):
+            event = await events.s3(request)
+
+
+        self.assertIsInstance(event, dict)
+        self.assertIn("Records", event)
+        self.assertEqual(len(event["Records"]), 1)
+        record = event["Records"][0]
+        self.assertEqual(record["eventSource"], "aws:s3")
+        self.assertEqual(record["eventName"], "s3:ObjectCreated:*")
+        self.assertEqual(record["s3"]["bucket"]["name"], "test-bucket")
+        self.assertEqual(record["s3"]["object"]["key"], "my-object")
+        self.assertEqual(record["s3"]["object"]["size"], 1234)
+        self.assertEqual(record["s3"]["object"]["eTag"], "CMKy4UDEAE=")
+        self.assertEqual(record["s3"]["s3SchemaVersion"], "1.0")
+        self.assertIn("sequencer", record["s3"]["object"])
+        self.assertEqual(record["s3"]["object"]["sequencer"], int(sequencer))
