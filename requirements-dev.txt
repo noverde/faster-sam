@@ -9,6 +9,6 @@ requests==2.32.3
 redis==5.0.8
 yoyo-migrations==8.2.0
 setuptools==72.2.0
-httpx==0.27.0
+httpx==0.27.2
 
 -e .
