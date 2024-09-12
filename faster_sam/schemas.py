@@ -22,7 +22,7 @@ class PubSubMessage(BaseModel):
 class PubSubEnvelope(BaseModel):
     message: PubSubMessage
     subscription: str
-    deliveryAttempt: int
+    deliveryAttempt: int = 0
 
     def into(self) -> SQSInfo:
         milliseconds = 1000
