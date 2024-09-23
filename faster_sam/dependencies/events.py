@@ -56,7 +56,10 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
                         "SenderId": str(uuid.uuid4()),
                         "ApproximateFirstReceiveTimestamp": info.sent_timestamp,
                     },
-                    "messageAttributes": info.message_attributes,
+                    "messageAttributes": {
+                        "stringValue": info.message_attributes,
+                        **info.message_attributes,
+                    },
                     "md5OfBody": hashlib.md5(info.body.encode()).hexdigest(),
                     "eventSource": "aws:sqs",
                     "eventSourceARN": info.source_arn,
