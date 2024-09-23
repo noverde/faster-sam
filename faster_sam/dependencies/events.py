@@ -57,7 +57,10 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
                         "ApproximateFirstReceiveTimestamp": info.sent_timestamp,
                     },
                     "messageAttributes": {
-                        "stringValue": info.message_attributes,
+                        **{
+                            key: {"stringValue": value}
+                            for key, value in info.message_attributes.items()
+                        },
                         **info.message_attributes,
                     },
                     "md5OfBody": hashlib.md5(info.body.encode()).hexdigest(),
