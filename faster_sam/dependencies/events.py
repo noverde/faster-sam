@@ -4,6 +4,7 @@ import json
 from typing import Any, Callable, Dict, Type
 from uuid import uuid4
 import uuid
+from dependencies.helpers import build_messages_attributes
 
 from fastapi import Request
 from pydantic import BaseModel
@@ -44,6 +45,7 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
         assert isinstance(message, IntoSQSInfo)
 
         info = message.into()
+        message_attributes = build_messages_attributes(info.message_attributes)
         event = {
             "Records": [
                 {
@@ -56,13 +58,7 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
                         "SenderId": str(uuid.uuid4()),
                         "ApproximateFirstReceiveTimestamp": info.sent_timestamp,
                     },
-                    "messageAttributes": {
-                        **{
-                            key: {"stringValue": value}
-                            for key, value in info.message_attributes.items()
-                        },
-                        **info.message_attributes,
-                    },
+                    "messageAttributes": message_attributes,
                     "md5OfBody": hashlib.md5(info.body.encode()).hexdigest(),
                     "eventSource": "aws:sqs",
                     "eventSourceARN": info.source_arn,
