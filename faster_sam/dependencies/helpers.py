@@ -1,4 +1,7 @@
 def build_messages_attributes(attributes: dict[str, str]) -> dict[str, dict[str, str]]:
+    if not attributes:
+        return {}
+
     attrs = {}
 
     for key, value in attributes.items():
