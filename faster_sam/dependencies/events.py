@@ -4,7 +4,7 @@ import json
 from typing import Any, Callable, Dict, Type
 from uuid import uuid4
 import uuid
-from dependencies.helpers import build_messages_attributes
+from faster_sam.dependencies.helpers import build_messages_attributes
 
 from fastapi import Request
 from pydantic import BaseModel
