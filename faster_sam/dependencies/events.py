@@ -47,7 +47,7 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
         info = message.into()
 
         message_attributes = {}
-        if not info.message_attributes:
+        if info.message_attributes:
             message_attributes = helpers.build_message_attributes(info.message_attributes)
 
         event = {
