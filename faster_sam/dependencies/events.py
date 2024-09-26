@@ -4,7 +4,7 @@ import json
 from typing import Any, Callable, Dict, Type
 from uuid import uuid4
 import uuid
-from faster_sam.dependencies.helpers import build_messages_attributes
+from faster_sam import helpers
 
 from fastapi import Request
 from pydantic import BaseModel
@@ -45,7 +45,11 @@ def sqs(schema: Type[BaseModel]) -> Callable[[BaseModel], Dict[str, Any]]:
         assert isinstance(message, IntoSQSInfo)
 
         info = message.into()
-        message_attributes = build_messages_attributes(info.message_attributes)
+
+        message_attributes = {}
+        if not info.message_attributes:
+            message_attributes = helpers.build_message_attributes(info.message_attributes)
+
         event = {
             "Records": [
                 {
